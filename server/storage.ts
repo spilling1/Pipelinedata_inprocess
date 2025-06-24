@@ -1862,8 +1862,8 @@ export class PostgreSQLStorage implements IStorage {
           isNotNull(snapshots.lossReason),
           sql`${snapshots.lossReason} != ''`,
           // Apply date filtering to when they became closed lost (if provided)
-          ...(startDate ? [gte(snapshots.snapshotDate, startDate)] : []),
-          ...(endDate ? [lte(snapshots.snapshotDate, endDate)] : [])
+          ...(startDate ? [gte(snapshots.snapshotDate, new Date(startDate))] : []),
+          ...(endDate ? [lte(snapshots.snapshotDate, new Date(endDate))] : [])
         ))
         .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
 
