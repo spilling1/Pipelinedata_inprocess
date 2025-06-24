@@ -1842,9 +1842,44 @@ export class PostgreSQLStorage implements IStorage {
 
       console.log(`📊 Found ${allSnapshots.length} snapshots from latest snapshot date`);
 
-      // Get closed lost deals from the target snapshot
-      const closedLostSnapshots = allSnapshots.filter(s => s.stage === 'Closed Lost');
-      console.log(`📊 Found ${closedLostSnapshots.length} closed lost deals in target snapshot`);
+      // Instead of just looking at latest snapshot, get ALL closed lost deals with loss reasons
+      // This will include deals that became closed lost on any date, not just the latest snapshot
+      const allClosedLostSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          stage: snapshots.stage,
+          amount: snapshots.amount,
+          year1Value: snapshots.year1Value,
+          lossReason: snapshots.lossReason,
+          snapshotDate: snapshots.snapshotDate,
+          closeDate: snapshots.closeDate,
+          expectedCloseDate: snapshots.expectedCloseDate,
+        })
+        .from(snapshots)
+        .where(and(
+          eq(snapshots.stage, 'Closed Lost'),
+          isNotNull(snapshots.opportunityId),
+          isNotNull(snapshots.lossReason),
+          sql`${snapshots.lossReason} != ''`
+        ))
+        .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
+
+      // Get the latest closed lost snapshot for each opportunity
+      const latestClosedLostByOpportunity = new Map();
+      for (const snapshot of allClosedLostSnapshots) {
+        const oppId = snapshot.opportunityId!;
+        if (!latestClosedLostByOpportunity.has(oppId) || 
+            new Date(snapshot.snapshotDate) > new Date(latestClosedLostByOpportunity.get(oppId).snapshotDate)) {
+          latestClosedLostByOpportunity.set(oppId, snapshot);
+        }
+      }
+      
+      const closedLostSnapshots = Array.from(latestClosedLostByOpportunity.values());
+      console.log(`📊 Found ${closedLostSnapshots.length} unique closed lost deals with loss reasons across all snapshots`);
+      
+      // Check if opportunity 3612 is in our closed lost list
+      const has3612 = closedLostSnapshots.some(s => s.opportunityId === 3612);
+      console.log(`📊 DEBUG: Opportunity 3612 is ${has3612 ? 'INCLUDED' : 'NOT INCLUDED'} in closed lost deals`);
 
       // For each closed lost deal, get historical data to find the previous stage
       const lossReasonTransitions: Array<{
@@ -1876,6 +1911,11 @@ export class PostgreSQLStorage implements IStorage {
         }
         historicalGroups.get(snapshot.opportunityId!)!.push(snapshot);
       }
+      
+      // Check if opportunity 3612 has historical data
+      const has3612Historical = historicalGroups.has(3612);
+      const count3612Historical = historicalGroups.get(3612)?.length || 0;
+      console.log(`📊 DEBUG: Opportunity 3612 historical data: ${has3612Historical ? 'FOUND' : 'NOT FOUND'}, count: ${count3612Historical}`);
 
       // For each closed lost deal, find its previous stage from historical data
       for (const closedLostSnapshot of closedLostSnapshots) {
@@ -1887,33 +1927,35 @@ export class PostgreSQLStorage implements IStorage {
           ? closedLostSnapshot.lossReason.trim() 
           : 'Unknown';
         
-        // First check if we have stageBefore field in the closed lost snapshot
         let previousStage = null;
         
-        // Get the closed lost snapshot with stageBefore field
-        const closedLostWithStageBefore = await db
-          .select({
-            stageBefore: snapshots.stageBefore
-          })
-          .from(snapshots)
-          .where(and(
-            eq(snapshots.opportunityId, opportunityId),
-            eq(snapshots.stage, 'Closed Lost'),
-            sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`
-          ))
-          .limit(1);
+        // Find the most recent non-"Closed Lost" stage from historical data
+        // Sort by snapshot date and find the last non-closed lost stage
+        const sortedHistoricalSnapshots = historicalSnapshots
+          .filter(s => s.stage !== 'Closed Lost' && s.stage !== null)
+          .sort((a, b) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime());
         
-        if (closedLostWithStageBefore.length > 0 && closedLostWithStageBefore[0].stageBefore) {
-          previousStage = closedLostWithStageBefore[0].stageBefore;
-          console.log(`📊 Found previous stage from stageBefore field: ${previousStage} for opportunity ${opportunityId}`);
+        if (sortedHistoricalSnapshots.length > 0) {
+          // Get the last (most recent) non-closed lost stage
+          previousStage = sortedHistoricalSnapshots[sortedHistoricalSnapshots.length - 1].stage;
+          console.log(`📊 Found previous stage from historical data: ${previousStage} for opportunity ${opportunityId}`);
         } else {
-          // Fall back to historical snapshot analysis
-          for (let i = historicalSnapshots.length - 1; i >= 0; i--) {
-            if (historicalSnapshots[i].stage !== 'Closed Lost' && historicalSnapshots[i].stage !== null) {
-              previousStage = historicalSnapshots[i].stage;
-              console.log(`📊 Found previous stage from historical data: ${previousStage} for opportunity ${opportunityId}`);
-              break;
-            }
+          // Check if we have stageBefore field as fallback
+          const closedLostWithStageBefore = await db
+            .select({
+              stageBefore: snapshots.stageBefore
+            })
+            .from(snapshots)
+            .where(and(
+              eq(snapshots.opportunityId, opportunityId),
+              eq(snapshots.stage, 'Closed Lost'),
+              sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`
+            ))
+            .limit(1);
+          
+          if (closedLostWithStageBefore.length > 0 && closedLostWithStageBefore[0].stageBefore) {
+            previousStage = closedLostWithStageBefore[0].stageBefore;
+            console.log(`📊 Found previous stage from stageBefore field: ${previousStage} for opportunity ${opportunityId}`);
           }
         }
         
