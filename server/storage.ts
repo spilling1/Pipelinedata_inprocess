@@ -1887,23 +1887,48 @@ export class PostgreSQLStorage implements IStorage {
           ? closedLostSnapshot.lossReason.trim() 
           : 'Unknown';
         
-        // Find the previous non-"Closed Lost" stage from historical data
+        // First check if we have stageBefore field in the closed lost snapshot
         let previousStage = null;
-        for (let i = historicalSnapshots.length - 1; i >= 0; i--) {
-          if (historicalSnapshots[i].stage !== 'Closed Lost' && historicalSnapshots[i].stage !== null) {
-            previousStage = historicalSnapshots[i].stage;
-            break;
+        
+        // Get the closed lost snapshot with stageBefore field
+        const closedLostWithStageBefore = await db
+          .select({
+            stageBefore: snapshots.stageBefore
+          })
+          .from(snapshots)
+          .where(and(
+            eq(snapshots.opportunityId, opportunityId),
+            eq(snapshots.stage, 'Closed Lost'),
+            sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`
+          ))
+          .limit(1);
+        
+        if (closedLostWithStageBefore.length > 0 && closedLostWithStageBefore[0].stageBefore) {
+          previousStage = closedLostWithStageBefore[0].stageBefore;
+          console.log(`📊 Found previous stage from stageBefore field: ${previousStage} for opportunity ${opportunityId}`);
+        } else {
+          // Fall back to historical snapshot analysis
+          for (let i = historicalSnapshots.length - 1; i >= 0; i--) {
+            if (historicalSnapshots[i].stage !== 'Closed Lost' && historicalSnapshots[i].stage !== null) {
+              previousStage = historicalSnapshots[i].stage;
+              console.log(`📊 Found previous stage from historical data: ${previousStage} for opportunity ${opportunityId}`);
+              break;
+            }
           }
         }
         
-        if (previousStage) {
-          lossReasonTransitions.push({
-            reason: lossReason,
-            previousStage: previousStage,
-            amount: closedLostSnapshot.amount || closedLostSnapshot.year1Value || 0,
-            closeDate: closedLostSnapshot.closeDate || closedLostSnapshot.snapshotDate
-          });
+        // If no previous stage found, use a default
+        if (!previousStage) {
+          previousStage = 'Unknown Stage';
+          console.log(`📊 No previous stage found for opportunity ${opportunityId}, using 'Unknown Stage'`);
         }
+        
+        lossReasonTransitions.push({
+          reason: lossReason,
+          previousStage: previousStage,
+          amount: closedLostSnapshot.amount || closedLostSnapshot.year1Value || 0,
+          closeDate: closedLostSnapshot.closeDate || closedLostSnapshot.snapshotDate
+        });
       }
 
       // Now filter by the actual close date if date parameters are provided
