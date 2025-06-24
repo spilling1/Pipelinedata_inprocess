@@ -1,7 +1,7 @@
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BarChart3, TrendingUp, Users, LogOut, Target, Database } from "lucide-react";
+import { BarChart3, TrendingUp, Users, LogOut, Target, Database, UserCheck } from "lucide-react";
 import { Link } from "wouter";
 
 export default function Home() {
@@ -49,7 +49,7 @@ export default function Home() {
           <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
             Analytics
           </h3>
-          <div className="grid md:grid-cols-3 gap-6">
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             <Link href="/dashboard">
               <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                 <CardHeader>
@@ -85,6 +85,22 @@ export default function Home() {
                 </CardHeader>
               </Card>
             </Link>
+
+            <a 
+              href="https://lookerstudio.google.com/u/0/reporting/91488dc2-357c-4702-a465-1494756e8dac" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <UserCheck className="h-8 w-8 text-purple-600 mb-2" />
+                  <CardTitle>People Ops Analytics</CardTitle>
+                  <CardDescription>
+                    Access comprehensive HR and people operations insights
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </a>
           </div>
         </div>
 
