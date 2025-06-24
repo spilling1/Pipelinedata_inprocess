@@ -24,14 +24,19 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
     'Negotiation/Review'
   ];
   
-  // Get unique stages and sort by custom order
-  const uniqueStages = Array.from(new Set(data.map(d => d.previousStage)));
+  // Get unique stages and sort by custom order, excluding "Unknown Stage"
+  const uniqueStages = Array.from(new Set(data.map(d => d.previousStage)))
+    .filter(stage => stage !== 'Unknown Stage');
   const stages = stageOrder.filter(stage => uniqueStages.includes(stage))
     .concat(uniqueStages.filter(stage => !stageOrder.includes(stage)).sort());
   
+  // Separate out Unknown Stage data for summary
+  const unknownStageData = data.filter(d => d.previousStage === 'Unknown Stage');
+  const knownStageData = data.filter(d => d.previousStage !== 'Unknown Stage');
+  
   const reasons = Array.from(new Set(data.map(d => d.reason))).sort();
   
-  // Create matrix of counts
+  // Create matrix of counts (only for known stages)
   const matrix: { [stage: string]: { [reason: string]: number } } = {};
   stages.forEach(stage => {
     matrix[stage] = {};
@@ -40,13 +45,13 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
     });
   });
   
-  // Fill matrix with actual data
-  data.forEach(item => {
+  // Fill matrix with actual data (only known stages)
+  knownStageData.forEach(item => {
     matrix[item.previousStage][item.reason] = item.count;
   });
   
-  // Find max value for heat map intensity
-  const maxValue = Math.max(...data.map(d => d.count));
+  // Find max value for heat map intensity (only from known stages)
+  const maxValue = Math.max(...knownStageData.map(d => d.count), 1);
   
   const getHeatColor = (value: number) => {
     if (value === 0) return 'bg-gray-50';
@@ -103,6 +108,24 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
           ))}
         </tbody>
       </table>
+      
+      {/* Direct Import Summary Section */}
+      {unknownStageData.length > 0 && (
+        <div className="border-t border-gray-200 bg-gray-25">
+          <div className="p-3 text-sm">
+            <div className="font-medium text-gray-700 mb-2">Direct Import Totals (deals without stage progression history):</div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-xs">
+              {unknownStageData.map(item => (
+                <div key={item.reason} className="flex justify-between items-center bg-white border border-gray-200 rounded px-2 py-1">
+                  <span className="text-gray-600 truncate">{item.reason}</span>
+                  <span className="font-medium text-gray-800 ml-2">{item.count}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+      
       <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
         <div className="flex flex-wrap items-center gap-4">
           <span className="font-medium">Heat Map Legend:</span>
@@ -124,7 +147,7 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
           </div>
         </div>
         <div className="mt-2 text-gray-500">
-          * "Direct Import" indicates deals that were imported directly as "Closed Lost" without stage progression history
+          Heat map shows loss patterns for deals with known stage progression. Direct import totals shown separately above.
         </div>
       </div>
     </div>
