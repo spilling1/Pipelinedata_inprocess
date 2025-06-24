@@ -1842,8 +1842,8 @@ export class PostgreSQLStorage implements IStorage {
 
       console.log(`📊 Found ${allSnapshots.length} snapshots from latest snapshot date`);
 
-      // Instead of just looking at latest snapshot, get ALL closed lost deals with loss reasons
-      // This will include deals that became closed lost on any date, not just the latest snapshot
+      // Get ALL closed lost deals with loss reasons, not filtered by date range
+      // This ensures we capture all deals that became closed lost at any time
       const allClosedLostSnapshots = await db
         .select({
           opportunityId: snapshots.opportunityId,
@@ -1860,7 +1860,10 @@ export class PostgreSQLStorage implements IStorage {
           eq(snapshots.stage, 'Closed Lost'),
           isNotNull(snapshots.opportunityId),
           isNotNull(snapshots.lossReason),
-          sql`${snapshots.lossReason} != ''`
+          sql`${snapshots.lossReason} != ''`,
+          // Apply date filtering to when they became closed lost (if provided)
+          ...(startDate ? [gte(snapshots.snapshotDate, startDate)] : []),
+          ...(endDate ? [lte(snapshots.snapshotDate, endDate)] : [])
         ))
         .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
 
@@ -1876,10 +1879,6 @@ export class PostgreSQLStorage implements IStorage {
       
       const closedLostSnapshots = Array.from(latestClosedLostByOpportunity.values());
       console.log(`📊 Found ${closedLostSnapshots.length} unique closed lost deals with loss reasons across all snapshots`);
-      
-      // Check if opportunity 3612 is in our closed lost list
-      const has3612 = closedLostSnapshots.some(s => s.opportunityId === 3612);
-      console.log(`📊 DEBUG: Opportunity 3612 is ${has3612 ? 'INCLUDED' : 'NOT INCLUDED'} in closed lost deals`);
 
       // For each closed lost deal, get historical data to find the previous stage
       const lossReasonTransitions: Array<{
@@ -1912,10 +1911,7 @@ export class PostgreSQLStorage implements IStorage {
         historicalGroups.get(snapshot.opportunityId!)!.push(snapshot);
       }
       
-      // Check if opportunity 3612 has historical data
-      const has3612Historical = historicalGroups.has(3612);
-      const count3612Historical = historicalGroups.get(3612)?.length || 0;
-      console.log(`📊 DEBUG: Opportunity 3612 historical data: ${has3612Historical ? 'FOUND' : 'NOT FOUND'}, count: ${count3612Historical}`);
+
 
       // For each closed lost deal, find its previous stage from historical data
       for (const closedLostSnapshot of closedLostSnapshots) {

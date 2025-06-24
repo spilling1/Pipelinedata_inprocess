@@ -59,19 +59,19 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
   };
   
   return (
-    <div className="border rounded-lg overflow-x-auto">
-      <table className="w-full text-sm min-w-max">
+    <div className="border rounded-lg overflow-x-auto bg-white">
+      <table className="w-full text-sm border-collapse">
         <thead>
           <tr className="bg-gray-50">
-            <th className="p-2 text-left font-medium text-gray-700 border-r w-24">
-              <div className="text-xs leading-tight break-words">
+            <th className="p-3 text-left font-medium text-gray-700 border border-gray-200 min-w-[140px]">
+              <div className="text-xs leading-tight">
                 Previous Stage
               </div>
             </th>
             {reasons.map(reason => (
-              <th key={reason} className="p-2 text-center font-medium text-gray-700 border-r last:border-r-0 min-w-[100px] max-w-[120px]">
-                <div className="text-xs leading-tight break-words">
-                  {reason}
+              <th key={reason} className="p-3 text-center font-medium text-gray-700 border border-gray-200 min-w-[120px]">
+                <div className="text-xs leading-tight">
+                  {reason.length > 15 ? `${reason.substring(0, 15)}...` : reason}
                 </div>
               </th>
             ))}
@@ -79,10 +79,10 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
         </thead>
         <tbody>
           {stages.map(stage => (
-            <tr key={stage} className="border-t hover:bg-gray-50">
-              <td className="p-2 font-medium text-gray-700 border-r bg-gray-50 w-24">
-                <div className="text-xs leading-tight break-words">
-                  {stage}
+            <tr key={stage} className="hover:bg-gray-25">
+              <td className="p-3 font-medium text-gray-700 border border-gray-200 bg-gray-50 min-w-[140px]">
+                <div className="text-xs leading-tight">
+                  {stage === 'Unknown Stage' ? 'Direct Import' : stage}
                 </div>
               </td>
               {reasons.map(reason => {
@@ -90,10 +90,12 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
                 return (
                   <td 
                     key={`${stage}-${reason}`} 
-                    className={`p-3 text-center border-r last:border-r-0 ${getHeatColor(value)} transition-colors`}
-                    title={`${stage} → ${reason}: ${value} deals`}
+                    className={`p-3 text-center border border-gray-200 ${getHeatColor(value)} transition-colors min-w-[120px]`}
+                    title={`${stage === 'Unknown Stage' ? 'Direct Import' : stage} → ${reason}: ${value} deals`}
                   >
-                    {value > 0 ? value : ''}
+                    <div className="text-sm font-medium">
+                      {value > 0 ? value : ''}
+                    </div>
                   </td>
                 );
               })}
@@ -101,25 +103,28 @@ const StageReasonHeatMap = ({ data }: { data: LossReasonByStageData[] }) => {
           ))}
         </tbody>
       </table>
-      <div className="p-3 bg-gray-50 border-t text-xs text-gray-600">
-        <div className="flex items-center gap-4">
-          <span>Heat Map Legend:</span>
+      <div className="p-4 bg-gray-50 border-t border-gray-200 text-xs text-gray-600">
+        <div className="flex flex-wrap items-center gap-4">
+          <span className="font-medium">Heat Map Legend:</span>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-gray-50 border"></div>
-            <span>0</span>
+            <div className="w-4 h-4 bg-gray-50 border border-gray-300 rounded-sm"></div>
+            <span>0 deals</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-100"></div>
-            <span>Low</span>
+            <div className="w-4 h-4 bg-red-100 border border-gray-300 rounded-sm"></div>
+            <span>Low (1-20%)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-400"></div>
-            <span>Medium</span>
+            <div className="w-4 h-4 bg-red-400 border border-gray-300 rounded-sm"></div>
+            <span>Medium (40-60%)</span>
           </div>
           <div className="flex items-center gap-2">
-            <div className="w-4 h-4 bg-red-600"></div>
-            <span>High</span>
+            <div className="w-4 h-4 bg-red-600 border border-gray-300 rounded-sm"></div>
+            <span>High (80%+)</span>
           </div>
+        </div>
+        <div className="mt-2 text-gray-500">
+          * "Direct Import" indicates deals that were imported directly as "Closed Lost" without stage progression history
         </div>
       </div>
     </div>
