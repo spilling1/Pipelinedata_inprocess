@@ -1679,9 +1679,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
       
       // Get unique snapshot dates and sort them
-      const snapshotDates = [...new Set(allSnapshots.map(s => 
+      const snapshotDates = Array.from(new Set(allSnapshots.map(s => 
         new Date(s.snapshotDate).toISOString().split('T')[0]
-      ))].sort();
+      ))).sort();
       
       // Calculate fiscal year start/end for each date
       const getFiscalYear = (date: Date) => {
