@@ -115,7 +115,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   dataKey="fyWinRate"
                   stroke="#2563eb"
                   strokeWidth={2}
-                  dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+                  dot={false}
                   name="FY to Date"
                   connectNulls={false}
                 />
@@ -124,7 +124,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   dataKey="rolling12WinRate"
                   stroke="#dc2626"
                   strokeWidth={2}
-                  dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
+                  dot={false}
                   name="Rolling 12 Months"
                   connectNulls={false}
                 />
