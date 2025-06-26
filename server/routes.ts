@@ -1808,8 +1808,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
           }));
 
-          // Add hardcoded note for May 12th, 2025
-          const specialNote = dateStr === '2025-05-12' ? 'Entered Pipeline Introduced' : undefined;
+          // Add hardcoded note for May 11th, 2025
+          const specialNote = dateStr === '2025-05-11' ? 'Entered Pipeline Introduced' : undefined;
 
           winRateData.push({
             date: dateStr,
