@@ -145,9 +145,14 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* Win Rate Over Time - 2/4 width */}
+            {/* Win Rate and Close Rate Over Time - Each 2/4 width */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <WinRateOverTimeCard filters={filters} />
+              <div className="lg:col-span-2">
+                <WinRateOverTimeCard filters={filters} />
+              </div>
+              <div className="lg:col-span-2">
+                <CloseRateOverTimeCard />
+              </div>
             </div>
         </div>
       </div>
