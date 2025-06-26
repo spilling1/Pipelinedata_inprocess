@@ -65,12 +65,12 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                 </span>
               </div>
               
-              {/* Show deal details if available */}
-              {dataPoint && (
+              {/* Show deal details if available - only once per data point */}
+              {dataPoint && entry.dataKey === 'fyWinRate' && (
                 <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
                   {(() => {
-                    // Use the appropriate deals based on which line is being hovered
-                    const deals = entry.dataKey === 'fyWinRate' ? dataPoint.fyClosedDeals : dataPoint.rolling12ClosedDeals;
+                    // Use FY deals (they should be the same as rolling12 for the same date)
+                    const deals = dataPoint.fyClosedDeals;
                     if (!deals || deals.length === 0) return null;
                     
                     // Separate deals into won and lost
