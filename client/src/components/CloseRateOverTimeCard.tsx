@@ -218,9 +218,9 @@ export function CloseRateOverTimeCard() {
               </div>
               <div className="text-center p-3 bg-gray-50 rounded-lg">
                 <div className="text-2xl font-bold text-gray-600">
-                  {chartData.length > 0 ? chartData.length : 0}
+                  {data?.currentOpenDeals || 0}
                 </div>
-                <div className="text-sm text-gray-600">Data Points</div>
+                <div className="text-sm text-gray-600">Open Deals</div>
               </div>
             </div>
 
