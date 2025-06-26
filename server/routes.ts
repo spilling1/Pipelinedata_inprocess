@@ -1700,6 +1700,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calculate win rates for each snapshot date
       const winRateData = [];
       
+      console.log(`🔍 Processing ${snapshotDates.length} snapshot dates for win rate analysis`);
+      console.log(`🔍 Sample dates:`, snapshotDates.slice(0, 10));
+      
       for (const dateStr of snapshotDates) {
         const snapshotDate = new Date(dateStr);
         const fiscalYear = getFiscalYear(snapshotDate);
@@ -1754,15 +1757,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only add data points if we have at least one win rate calculation
         if (fyWinRate !== null || rolling12WinRate !== null) {
+          // Debug logging for dates around May 29th or significant win rate spikes
+          const isNearMay29 = dateStr.includes('2024-05') || dateStr.includes('2025-05');
+          const hasHighWinRate = (fyWinRate && fyWinRate > 80) || (rolling12WinRate && rolling12WinRate > 80);
+          
+          if (isNearMay29 || hasHighWinRate) {
+            console.log(`🔍 DEBUG ${dateStr} win rate details:`);
+            console.log(`  - FY Closed Snapshots: ${fyClosedSnapshots.length}`);
+            console.log(`  - FY Won Count: ${fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
+            console.log(`  - Rolling 12 Closed Snapshots: ${rolling12ClosedSnapshots.length}`);
+            console.log(`  - Rolling 12 Won Count: ${rolling12ClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
+            console.log(`  - FY Win Rate: ${fyWinRate}%`);
+            console.log(`  - Rolling 12 Win Rate: ${rolling12WinRate}%`);
+            
+            if (hasHighWinRate) {
+              console.log(`  - HIGH WIN RATE DETECTED - Sample closed deals:`);
+              fyClosedSnapshots.slice(0, 3).forEach(s => {
+                console.log(`    * ${s.opportunityName}: ${s.stage} (Close: ${s.expectedCloseDate})`);
+              });
+            }
+          }
+          
           winRateData.push({
             date: dateStr,
             fiscalYear: `FY${fiscalYear + 1}`, // Display as FY2025 for fiscal year 2024
             fyWinRate,
-            rolling12WinRate
+            rolling12WinRate,
+            // Add debug info for analysis
+            fyClosedCount: fyClosedSnapshots.length,
+            fyWonCount: fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length,
+            rolling12ClosedCount: rolling12ClosedSnapshots.length,
+            rolling12WonCount: rolling12ClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length
           });
         }
       }
       
+      // Log final result summary
+      console.log(`🔍 Final win rate data summary: ${winRateData.length} data points`);
+      if (winRateData.length > 0) {
+        const maxFyWinRate = Math.max(...winRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate));
+        const maxRolling12WinRate = Math.max(...winRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate));
+        console.log(`🔍 Highest FY win rate: ${maxFyWinRate}% on ${winRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
+        console.log(`🔍 Highest Rolling 12 win rate: ${maxRolling12WinRate}% on ${winRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
+      }
+
       res.json({ winRateData });
     } catch (error) {
       console.error('Error fetching win rate over time:', error);
