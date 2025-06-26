@@ -15,7 +15,7 @@ interface CloseRateDataPoint {
 }
 
 export function CloseRateOverTimeCard() {
-  const { data, isLoading, error } = useQuery<{ closeRateData: CloseRateDataPoint[] }>({
+  const { data, isLoading, error } = useQuery<{ closeRateData: CloseRateDataPoint[]; currentOpenDeals: number }>({
     queryKey: ['/api/analytics/close-rate-over-time'],
   });
 
@@ -131,7 +131,7 @@ export function CloseRateOverTimeCard() {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Close Rate Over Time</CardTitle>
-          <CardDescription>Rolling 12-month close rate trend</CardDescription>
+          <CardDescription>Loading open deals count...</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-80 flex items-center justify-center">
@@ -150,7 +150,7 @@ export function CloseRateOverTimeCard() {
       <Card className="w-full">
         <CardHeader>
           <CardTitle>Close Rate Over Time</CardTitle>
-          <CardDescription>Rolling 12-month close rate trend</CardDescription>
+          <CardDescription>Error loading data</CardDescription>
         </CardHeader>
         <CardContent>
           <div className="h-80 flex items-center justify-center">
@@ -167,7 +167,9 @@ export function CloseRateOverTimeCard() {
     <Card className="w-full">
       <CardHeader>
         <CardTitle>Close Rate Over Time</CardTitle>
-        <CardDescription>Rolling 12-month close rate trend</CardDescription>
+        <CardDescription>
+          {data?.currentOpenDeals ? `${data.currentOpenDeals} Open Deals in current snapshot` : 'Rolling 12-month close rate trend'}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         {chartData.length === 0 ? (

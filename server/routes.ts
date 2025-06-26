@@ -1786,7 +1786,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`🔍 Highest close rate: ${highestCloseRate.toFixed(1)}% on ${highestCloseRateDate}`);
       }
 
-      res.json({ closeRateData });
+      // Get current open deals count for the chart subtitle
+      // Find latest snapshot date
+      const latestDate = snapshotDates[snapshotDates.length - 1];
+      const latestSnapshots = allSnapshots.filter(s => 
+        new Date(s.snapshotDate).toISOString().split('T')[0] === latestDate
+      );
+      
+      const currentOpenDeals = latestSnapshots.filter((snapshot: any) => {
+        if (!snapshot.stage) return false;
+        const stage = snapshot.stage.toLowerCase();
+        const isOpen = !stage.includes('closed') && !stage.includes('validation') && !stage.includes('introduction');
+        return isOpen;
+      }).length;
+
+      res.json({ 
+        closeRateData,
+        currentOpenDeals 
+      });
     } catch (error) {
       console.error('❌ Error in close rate over time analysis:', error);
       res.status(500).json({ error: 'Failed to fetch close rate over time data' });
