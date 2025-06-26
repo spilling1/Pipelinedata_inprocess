@@ -1717,35 +1717,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
           new Date(s.snapshotDate).toISOString().split('T')[0] === dateStr
         );
         
-        // Get all closed deals from this snapshot date
-        const allClosedSnapshots = dateSnapshots.filter(s => {
-          if (!s.stage) return false;
+        // Calculate FY to Date win rate
+        let fyWinRate = null;
+        const fyClosedSnapshots = dateSnapshots.filter(s => {
+          if (!s.stage || !s.expectedCloseDate) return false;
           const stage = s.stage.toLowerCase();
-          return stage.includes('closed') || stage.includes('won') || stage.includes('lost');
+          const closeDate = new Date(s.expectedCloseDate);
+          const isClosed = stage.includes('closed') || stage.includes('won') || stage.includes('lost');
+          const isInFY = closeDate >= fyRange.start && closeDate <= fyRange.end;
+          return isClosed && isInFY;
         });
         
-        // Calculate win rates with data quality checks
-        let fyWinRate = null;
-        let rolling12WinRate = null;
-        
-        if (allClosedSnapshots.length > 0) {
-          const wonCount = allClosedSnapshots.filter(s => {
+        if (fyClosedSnapshots.length > 0) {
+          const fyWonCount = fyClosedSnapshots.filter(s => {
             const stage = s.stage?.toLowerCase() || '';
             return stage.includes('closed won') || stage.includes('won');
           }).length;
-          
-          const winRate = (wonCount / allClosedSnapshots.length) * 100;
-          
-          // Apply data quality filter: exclude extreme outliers (100% win rate with reasonable sample size)
-          // This handles data anomalies where only won deals were recorded on specific dates
-          const isDataAnomalyHigh = winRate === 100 && allClosedSnapshots.length >= 10;
-          const isDataAnomalyLow = winRate === 0 && allClosedSnapshots.length >= 10;
-          
-          if (!isDataAnomalyHigh && !isDataAnomalyLow) {
-            fyWinRate = winRate;
-            rolling12WinRate = winRate;
-          }
-          // If it's a data anomaly, we skip this data point (leave as null)
+          fyWinRate = (fyWonCount / fyClosedSnapshots.length) * 100;
+        }
+        
+        // Calculate Rolling 12 Months win rate
+        let rolling12WinRate = null;
+        const rolling12ClosedSnapshots = dateSnapshots.filter(s => {
+          if (!s.stage || !s.expectedCloseDate) return false;
+          const stage = s.stage.toLowerCase();
+          const closeDate = new Date(s.expectedCloseDate);
+          const isClosed = stage.includes('closed') || stage.includes('won') || stage.includes('lost');
+          const isInRolling12 = closeDate >= rolling12Start && closeDate <= snapshotDate;
+          return isClosed && isInRolling12;
+        });
+        
+        if (rolling12ClosedSnapshots.length > 0) {
+          const rolling12WonCount = rolling12ClosedSnapshots.filter(s => {
+            const stage = s.stage?.toLowerCase() || '';
+            return stage.includes('closed won') || stage.includes('won');
+          }).length;
+          rolling12WinRate = (rolling12WonCount / rolling12ClosedSnapshots.length) * 100;
         }
         
         // Only add data points if we have at least one win rate calculation
@@ -1756,14 +1763,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           if (isNearMay29 || hasHighWinRate) {
             console.log(`🔍 DEBUG ${dateStr} win rate details:`);
-            console.log(`  - Total Closed Snapshots: ${allClosedSnapshots.length}`);
-            console.log(`  - Won Count: ${allClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
+            console.log(`  - FY Closed Snapshots: ${fyClosedSnapshots.length}`);
+            console.log(`  - FY Won Count: ${fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
+            console.log(`  - Rolling 12 Closed Snapshots: ${rolling12ClosedSnapshots.length}`);
+            console.log(`  - Rolling 12 Won Count: ${rolling12ClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
             console.log(`  - FY Win Rate: ${fyWinRate}%`);
             console.log(`  - Rolling 12 Win Rate: ${rolling12WinRate}%`);
             
             if (hasHighWinRate) {
               console.log(`  - HIGH WIN RATE DETECTED - Sample closed deals:`);
-              allClosedSnapshots.slice(0, 3).forEach(s => {
+              fyClosedSnapshots.slice(0, 3).forEach(s => {
                 console.log(`    * ${s.opportunityName}: ${s.stage} (Close: ${s.expectedCloseDate})`);
               });
             }
@@ -1775,8 +1784,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             fyWinRate,
             rolling12WinRate,
             // Add debug info for analysis
-            totalClosedCount: allClosedSnapshots.length,
-            wonCount: allClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length
+            fyClosedCount: fyClosedSnapshots.length,
+            fyWonCount: fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length,
+            rolling12ClosedCount: rolling12ClosedSnapshots.length,
+            rolling12WonCount: rolling12ClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length
           });
         }
       }
@@ -1784,18 +1795,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log final result summary
       console.log(`🔍 Final win rate data summary: ${winRateData.length} data points`);
       if (winRateData.length > 0) {
-        const fyRates = winRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate as number);
-        const rolling12Rates = winRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate as number);
-        
-        if (fyRates.length > 0) {
-          const maxFyWinRate = Math.max(...fyRates);
-          console.log(`🔍 Highest FY win rate: ${maxFyWinRate}% on ${winRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
-        }
-        
-        if (rolling12Rates.length > 0) {
-          const maxRolling12WinRate = Math.max(...rolling12Rates);
-          console.log(`🔍 Highest Rolling 12 win rate: ${maxRolling12WinRate}% on ${winRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
-        }
+        const maxFyWinRate = Math.max(...winRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate));
+        const maxRolling12WinRate = Math.max(...winRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate));
+        console.log(`🔍 Highest FY win rate: ${maxFyWinRate}% on ${winRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
+        console.log(`🔍 Highest Rolling 12 win rate: ${maxRolling12WinRate}% on ${winRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
       }
 
       res.json({ winRateData });
