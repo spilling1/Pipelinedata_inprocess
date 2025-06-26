@@ -1,5 +1,5 @@
-import { db } from './db.js';
-import { campaigns, campaignCustomers, opportunities, snapshots } from '../shared/schema.js';
+import { db } from './db';
+import { campaigns, campaignCustomers, opportunities, snapshots } from '../shared/schema';
 import { eq, and, gte, lte, sql, desc, asc } from 'drizzle-orm';
 
 export class MarketingGraphStorage {

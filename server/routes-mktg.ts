@@ -1,7 +1,7 @@
 import { Express } from 'express';
-import { marketingGraphStorage } from './storage-mktg-graph.js';
-import { marketingStorage } from './storage-mktg.js';
-import { isAuthenticated } from './localAuthBypass.js';
+import { marketingGraphStorage } from './storage-mktg-graph';
+import { marketingStorage } from './storage-mktg';
+import { isAuthenticated } from './localAuthBypass';
 
 export function registerMarketingGraphRoutes(app: Express) {
   console.log('🔗 Registering marketing graph routes');

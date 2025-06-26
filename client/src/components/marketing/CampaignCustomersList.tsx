@@ -414,7 +414,7 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
           
           // Determine analytics status and color
           const getAnalyticsStatus = (customer: any, currentSnapshot: any) => {
-            const campaignStartDate = campaign?.startDate ? new Date(campaign.startDate) : new Date('2025-02-01');
+            const campaignStartDate = new Date('2025-02-01'); // Using campaign start date
             
             // Check if pre-existing closed won
             if (customer.stage === 'Closed Won') {

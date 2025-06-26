@@ -682,8 +682,7 @@ async function parseFileData(buffer: Buffer, filename: string) {
 }
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Setup authentication middleware
-  await setupAuth(app);
+  // Authentication is already set up in index.ts
 
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {

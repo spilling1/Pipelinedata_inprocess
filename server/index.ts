@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
+import { registerMarketingGraphRoutes } from './routes-mktg';
+import { registerSalesRoutes } from './routes-sales';
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -49,6 +51,23 @@ app.use((req, res, next) => {
     throw error;
   }
   
+  // Setup authentication first before any routes
+  console.log('🔐 Setting up authentication');
+  const { setupAuth } = await import('./localAuthBypass');
+  await setupAuth(app);
+  console.log('✅ Authentication setup completed');
+  
+  // Register marketing graph routes first
+  console.log('🔗 Registering marketing graph routes');
+  registerMarketingGraphRoutes(app);
+  console.log('✅ Marketing graph routes registered successfully');
+
+  // Register sales routes
+  console.log('🔗 Registering sales routes');
+  registerSalesRoutes(app);
+  console.log('✅ Sales routes registered successfully');
+
+  // Register main routes
   const server = await registerRoutes(app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {

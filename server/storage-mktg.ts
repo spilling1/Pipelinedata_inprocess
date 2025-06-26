@@ -1,4 +1,4 @@
-import { db } from './db.js';
+import { db } from './db';
 import { 
   campaigns, 
   campaignCustomers, 
@@ -6,7 +6,7 @@ import {
   snapshots,
   campaignTypes,
   influenceMethods
-} from '../shared/schema.js';
+} from '../shared/schema';
 import { 
   Campaign, 
   CampaignCustomer, 
@@ -14,7 +14,7 @@ import {
   InsertCampaignCustomer,
   CampaignType,
   InfluenceMethod
-} from '../shared/schema.js';
+} from '../shared/schema';
 import { eq, and, desc, asc, sql, ne, or, inArray, isNull, isNotNull } from 'drizzle-orm';
 import { gte, lte } from 'drizzle-orm';
 
@@ -819,38 +819,22 @@ export class MarketingStorage {
       outdatedNote?: string;
     }> = [];
 
-    // No outdated logic needed - always show the most recent snapshot
+    // Get system-wide latest snapshot date for outdated data detection
+    const [systemLatestSnapshot] = await db
+      .select({ latestDate: sql<Date>`MAX(${snapshots.snapshotDate})` })
+      .from(snapshots);
+    
+    const systemLatestDate = systemLatestSnapshot?.latestDate;
+    const cutoffDays = 7;
+    const cutoffDate = systemLatestDate ? new Date(systemLatestDate) : new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - cutoffDays);
 
-    // For each campaign customer, find their most recent opportunity and snapshot
+    // For each campaign customer, get their latest snapshot directly
     for (const customer of uniqueCustomers) {
-      const customerName = customer.opportunity.clientName || customer.opportunity.name;
-      console.log(`🔍 Processing customer: ${customerName} (Original ID: ${customer.opportunityId})`);
+      console.log(`🔍 Processing customer: ${customer.opportunity.name} (ID: ${customer.opportunityId})`);
       
-      // Find ALL opportunities for this customer name
-      const allCustomerOpportunities = await db
-        .select({
-          id: opportunities.id,
-          name: opportunities.name,
-          clientName: opportunities.clientName,
-        })
-        .from(opportunities)
-        .where(
-          or(
-            sql`LOWER(${opportunities.clientName}) = LOWER(${customerName})`,
-            sql`LOWER(${opportunities.name}) = LOWER(${customerName})`
-          )
-        );
-
-      if (allCustomerOpportunities.length === 0) {
-        console.log(`❌ No opportunities found for customer ${customerName}`);
-        continue;
-      }
-
-      console.log(`📋 Found ${allCustomerOpportunities.length} opportunities for ${customerName}:`, 
-        allCustomerOpportunities.map(o => o.id));
-
-      // Get the most recent snapshot across ALL opportunities for this customer
-      const allSnapshots = await db
+      // Get all snapshots for this specific opportunity
+      const opportunitySnapshots = await db
         .select({
           opportunityId: snapshots.opportunityId,
           stage: snapshots.stage,
@@ -861,29 +845,33 @@ export class MarketingStorage {
           enteredPipeline: snapshots.enteredPipeline,
         })
         .from(snapshots)
-        .where(inArray(snapshots.opportunityId, allCustomerOpportunities.map(o => o.id)))
+        .where(eq(snapshots.opportunityId, customer.opportunityId))
         .orderBy(desc(snapshots.snapshotDate), desc(snapshots.expectedCloseDate));
 
-      if (allSnapshots.length === 0) {
-        console.log(`❌ No snapshots found for any opportunity of customer ${customerName}`);
+      if (opportunitySnapshots.length === 0) {
+        console.log(`❌ No snapshots found for opportunity ${customer.opportunityId}`);
         continue;
       }
 
       // Get the most recent snapshot
-      const latestSnapshot = allSnapshots[0];
-      console.log(`📊 Latest snapshot for ${customerName}: ${latestSnapshot.stage} on ${latestSnapshot.snapshotDate} (Opportunity ID: ${latestSnapshot.opportunityId})`);
+      const latestSnapshot = opportunitySnapshots[0];
+      console.log(`📊 Latest snapshot for ${customer.opportunity.name}: ${latestSnapshot.stage} on ${latestSnapshot.snapshotDate}`);
 
-      // Always use the most recent snapshot data as-is
+      // Check if data is outdated
+      const isOutdated = latestSnapshot.snapshotDate < cutoffDate;
+      
       result.push({
         opportunityId: latestSnapshot.opportunityId!,
-        stage: latestSnapshot.stage || 'Unknown',
+        stage: isOutdated && latestSnapshot.stage !== 'Closed Lost' && latestSnapshot.stage !== 'Closed Won' 
+          ? 'Closed Lost' 
+          : latestSnapshot.stage || 'Unknown',
         year1Arr: latestSnapshot.year1Arr,
         tcv: latestSnapshot.tcv,
         snapshotDate: latestSnapshot.snapshotDate.toISOString(),
         enteredPipeline: latestSnapshot.enteredPipeline,
         closeDate: latestSnapshot.closeDate,
-        isOutdated: false,
-        outdatedNote: undefined
+        isOutdated,
+        outdatedNote: isOutdated ? `No data after ${latestSnapshot.snapshotDate.toISOString().split('T')[0]}` : undefined
       });
     }
 

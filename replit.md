@@ -244,7 +244,16 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - All calculations dynamically update based on timeframe selection (30, 60, 90 days, all time)
 - Metrics filtered to only include customers shown in the card for accurate attribution
 
-→ Marketing analytics system fully operational with authentic pipeline data filtering, real-time current data display, comprehensive campaign attribution logic, dynamic pipeline progression visualization, enhanced new deals creation tracking, and pipeline performance breakdown by opportunity owner
+✓ Marketing analytics system fully operational with authentic pipeline data filtering, real-time current data display, comprehensive campaign attribution logic, dynamic pipeline progression visualization, enhanced new deals creation tracking, and pipeline performance breakdown by opportunity owner
+
+✓ Sales Analytics System Rewrite Complete (June 25, 2025)
+- Completely rewrote sales analytics to use same foundation as original pipeline analysis code
+- Fixed Total Pipeline Value to use only most recent uploaded file data (like original)
+- Corrected Average Deal Size calculation: Total Pipeline Value / Active Opportunities
+- Implemented proper Win Rate: Closed Won / (Closed Won + Closed Lost) for current fiscal year
+- Implemented proper Close Rate: Closed Won / (Open Pipeline + Closed Won + Closed Lost) for last 12 months
+- Pipeline excludes Validation/Introduction stage (matches original pipeline analysis)
+- Sales analytics now work identically to main pipeline page but with optional sales rep filtering
 
 ✓ Pipeline by Owner Analytics Card Added (June 19, 2025)
 - Created new Pipeline by Owner card showing pipeline metrics grouped by opportunity owner
