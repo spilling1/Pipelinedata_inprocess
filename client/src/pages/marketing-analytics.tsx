@@ -258,43 +258,36 @@ export default function MarketingAnalyticsPage() {
               Select a campaign to view analytics
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Filters and Sorting Controls */}
-            <div className="space-y-3 border-b pb-4">
-              {/* Search and Type Filter Row */}
-              <div className="grid grid-cols-1 gap-2">
-                <div>
-                  <Label htmlFor="name-filter" className="text-xs text-gray-600">Search by name</Label>
-                  <Input
-                    id="name-filter"
-                    placeholder="Filter campaigns..."
-                    value={nameFilter}
-                    onChange={(e) => setNameFilter(e.target.value)}
-                    className="h-8 text-sm"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="type-filter" className="text-xs text-gray-600">Filter by type</Label>
-                  <Select value={typeFilter} onValueChange={setTypeFilter}>
-                    <SelectTrigger className="h-8 text-sm">
-                      <SelectValue placeholder="All types" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All types</SelectItem>
-                      {uniqueTypes.map(type => (
-                        <SelectItem key={type} value={type}>{type}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+          <CardContent className="space-y-2">
+            {/* Filters and Sorting Controls - Condensed */}
+            <div className="space-y-2 border-b pb-3">
+              {/* Search and Type Filter in one row */}
+              <div className="grid grid-cols-2 gap-2">
+                <Input
+                  placeholder="Search by name..."
+                  value={nameFilter}
+                  onChange={(e) => setNameFilter(e.target.value)}
+                  className="h-7 text-xs"
+                />
+                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                  <SelectTrigger className="h-7 text-xs">
+                    <SelectValue placeholder="Filter by type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All types</SelectItem>
+                    {uniqueTypes.map(type => (
+                      <SelectItem key={type} value={type}>{type}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
-              {/* Sort Controls */}
+              {/* Sort Controls - Condensed */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Label className="text-xs text-gray-600">Sort by:</Label>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs text-gray-600">Sort:</span>
                   <Select value={sortBy} onValueChange={(value: 'name' | 'date') => setSortBy(value)}>
-                    <SelectTrigger className="h-7 w-20 text-xs">
+                    <SelectTrigger className="h-6 w-16 text-xs border-0 p-1">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -305,7 +298,7 @@ export default function MarketingAnalyticsPage() {
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 w-7 p-0"
+                    className="h-6 w-6 p-0"
                     onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
                     title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
                   >
@@ -313,7 +306,7 @@ export default function MarketingAnalyticsPage() {
                   </Button>
                 </div>
                 <div className="text-xs text-gray-500">
-                  {filteredAndSortedCampaigns.length} of {campaigns.length} campaigns
+                  {filteredAndSortedCampaigns.length} / {campaigns.length}
                 </div>
               </div>
             </div>
@@ -345,7 +338,7 @@ export default function MarketingAnalyticsPage() {
               filteredAndSortedCampaigns.map((campaign: any) => (
                 <div
                   key={campaign.id}
-                  className={`p-3 rounded-lg border transition-colors ${
+                  className={`p-2 rounded border transition-colors cursor-pointer ${
                     selectedCampaign?.id === campaign.id
                       ? 'bg-blue-50 border-blue-200 dark:bg-blue-950 dark:border-blue-800'
                       : 'hover:bg-gray-50 dark:hover:bg-gray-800'
@@ -353,26 +346,21 @@ export default function MarketingAnalyticsPage() {
                 >
                   <div className="flex items-start justify-between">
                     <div 
-                      className="flex-1 cursor-pointer"
+                      className="flex-1"
                       onClick={() => setSelectedCampaign(campaign)}
                     >
-                      <div className="font-medium text-sm">{campaign.name}</div>
-                      <div className="text-xs text-gray-500 capitalize">{campaign.type}</div>
-                      
-                      {/* Campaign Date */}
-                      {campaign.startDate && (
-                        <div className="text-xs text-blue-600 flex items-center mt-1">
-                          <Calendar className="h-3 w-3 mr-1" />
-                          {new Date(campaign.startDate).toLocaleDateString()}
-                        </div>
-                      )}
-                      
-                      {campaign.cost && (
-                        <div className="text-xs text-green-600 flex items-center mt-1">
-                          <DollarSign className="h-3 w-3 mr-1" />
-                          ${campaign.cost.toLocaleString()}
-                        </div>
-                      )}
+                      <div className="font-medium text-sm leading-tight">{campaign.name}</div>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-gray-500 capitalize">{campaign.type}</span>
+                        {campaign.startDate && (
+                          <>
+                            <span className="text-xs text-gray-400">•</span>
+                            <span className="text-xs text-blue-600">
+                              {new Date(campaign.startDate).toLocaleDateString()}
+                            </span>
+                          </>
+                        )}
+                      </div>
                     </div>
                     
                     <DropdownMenu>
@@ -380,7 +368,7 @@ export default function MarketingAnalyticsPage() {
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          className="h-6 w-6 p-0"
+                          className="h-5 w-5 p-0 opacity-60 hover:opacity-100"
                           onClick={(e) => e.stopPropagation()}
                         >
                           <MoreVertical className="h-3 w-3" />
