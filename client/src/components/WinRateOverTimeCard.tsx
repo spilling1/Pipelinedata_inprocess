@@ -68,39 +68,57 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
               {/* Show deal details if available */}
               {dataPoint && (
                 <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
-                  {entry.dataKey === 'fyWinRate' && dataPoint.fyClosedDeals && dataPoint.fyClosedDeals.length > 0 && (
-                    <div>
-                      <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
-                      {dataPoint.fyClosedDeals.slice(0, 8).map((deal: any, i: number) => (
-                        <div key={i} className="flex justify-between">
-                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
-                          <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
-                            ${deal.year1Arr?.toLocaleString() || 0}
-                          </span>
-                        </div>
-                      ))}
-                      {dataPoint.fyClosedDeals.length > 8 && (
-                        <p className="text-gray-500 mt-1">...and {dataPoint.fyClosedDeals.length - 8} more</p>
-                      )}
-                    </div>
-                  )}
-                  
-                  {entry.dataKey === 'rolling12WinRate' && dataPoint.rolling12ClosedDeals && dataPoint.rolling12ClosedDeals.length > 0 && (
-                    <div>
-                      <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
-                      {dataPoint.rolling12ClosedDeals.slice(0, 8).map((deal: any, i: number) => (
-                        <div key={i} className="flex justify-between">
-                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
-                          <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
-                            ${deal.year1Arr?.toLocaleString() || 0}
-                          </span>
-                        </div>
-                      ))}
-                      {dataPoint.rolling12ClosedDeals.length > 8 && (
-                        <p className="text-gray-500 mt-1">...and {dataPoint.rolling12ClosedDeals.length - 8} more</p>
-                      )}
-                    </div>
-                  )}
+                  {(() => {
+                    // Use the appropriate deals based on which line is being hovered
+                    const deals = entry.dataKey === 'fyWinRate' ? dataPoint.fyClosedDeals : dataPoint.rolling12ClosedDeals;
+                    if (!deals || deals.length === 0) return null;
+                    
+                    // Separate deals into won and lost
+                    const wonDeals = deals.filter((deal: any) => deal.stage.toLowerCase().includes('won'));
+                    const lostDeals = deals.filter((deal: any) => !deal.stage.toLowerCase().includes('won'));
+                    
+                    return (
+                      <div>
+                        <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
+                        
+                        {/* Closed Won Section */}
+                        {wonDeals.length > 0 && (
+                          <div className="mb-2">
+                            <p className="text-green-600 font-medium text-xs mb-1">Closed Won:</p>
+                            {wonDeals.slice(0, 6).map((deal: any, i: number) => (
+                              <div key={`won-${i}`} className="flex justify-between">
+                                <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
+                                <span className="text-green-600 font-medium">
+                                  ${deal.year1Arr?.toLocaleString() || 0}
+                                </span>
+                              </div>
+                            ))}
+                            {wonDeals.length > 6 && (
+                              <p className="text-gray-500 mt-1">...and {wonDeals.length - 6} more won</p>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Closed Lost Section */}
+                        {lostDeals.length > 0 && (
+                          <div>
+                            <p className="text-red-600 font-medium text-xs mb-1">Closed Lost:</p>
+                            {lostDeals.slice(0, 6).map((deal: any, i: number) => (
+                              <div key={`lost-${i}`} className="flex justify-between">
+                                <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
+                                <span className="text-red-600">
+                                  ${deal.year1Arr?.toLocaleString() || 0}
+                                </span>
+                              </div>
+                            ))}
+                            {lostDeals.length > 6 && (
+                              <p className="text-gray-500 mt-1">...and {lostDeals.length - 6} more lost</p>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
             </div>
