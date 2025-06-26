@@ -63,6 +63,14 @@ export function CloseRateOverTimeCard() {
               </p>
               
               {(() => {
+                if (dataPoint.closedDeals.length === 0) {
+                  return (
+                    <p className="text-gray-500 text-center italic py-2">
+                      No deals created or closed in this period
+                    </p>
+                  );
+                }
+                
                 // Separate deals into created, closed won, and closed lost
                 const createdDeals = dataPoint.closedDeals.filter((deal: any) => deal.changeType === 'created');
                 const closedWonDeals = dataPoint.closedDeals.filter((deal: any) => deal.changeType === 'closed' && deal.stage.toLowerCase().includes('won'));
