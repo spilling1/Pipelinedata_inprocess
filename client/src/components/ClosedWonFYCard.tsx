@@ -1,15 +1,17 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Trophy, TrendingUp, TrendingDown } from "lucide-react";
+import { Trophy, TrendingUp, TrendingDown, ChevronDown, ChevronUp } from "lucide-react";
 import { FilterState } from "@/types/pipeline";
 import { getDateRangeByValue } from "@/utils/dateRanges";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 
 interface ClosedWonFYCardProps {
   filters: FilterState;
 }
 
 export default function ClosedWonFYCard({ filters }: ClosedWonFYCardProps) {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
   // Calculate FY to Date range
   const fyDateRange = useMemo(() => {
     return getDateRangeByValue("fy-to-date");
@@ -79,75 +81,96 @@ export default function ClosedWonFYCard({ filters }: ClosedWonFYCardProps) {
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-sm">
-          <Trophy className="h-5 w-5 text-green-600" />
+          <Trophy className="h-4 w-4 text-green-600" />
           Closed Won FY to Date
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        <div>
+        {/* Main Value with Inline Metrics */}
+        <div className="space-y-2">
           <div className="text-2xl font-bold text-green-600">
             {formatCurrency(closedWonValue)}
           </div>
-          <div className="flex items-center gap-1 text-sm text-gray-600 mt-1">
-            {growth !== 0 && (
-              <>
-                {growth > 0 ? (
-                  <TrendingUp className="h-4 w-4 text-green-500" />
-                ) : (
-                  <TrendingDown className="h-4 w-4 text-red-500" />
-                )}
-                <span className={growth > 0 ? "text-green-600" : "text-red-600"}>
-                  {growth > 0 ? '+' : ''}{growth.toFixed(1)}%
-                </span>
-                <span className="text-gray-500">vs last FY</span>
-              </>
-            )}
-          </div>
-        </div>
-        
-        <div className="space-y-2 pt-2 border-t">
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Deals Closed:</span>
-            <span className="font-semibold">{closedWonCount}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-600">Avg Deal Size:</span>
-            <span className="font-semibold">{formatCurrency(avgDealSize)}</span>
+          
+          {/* Growth and Key Metrics in same row */}
+          <div className="flex items-center justify-between text-sm">
+            <div className="flex items-center gap-1 text-gray-600">
+              {growth !== 0 && (
+                <>
+                  {growth > 0 ? (
+                    <TrendingUp className="h-3 w-3 text-green-500" />
+                  ) : (
+                    <TrendingDown className="h-3 w-3 text-red-500" />
+                  )}
+                  <span className={growth > 0 ? "text-green-600" : "text-red-600"}>
+                    {growth > 0 ? '+' : ''}{growth.toFixed(1)}%
+                  </span>
+                  <span className="text-gray-500">vs last FY</span>
+                </>
+              )}
+            </div>
+            
+            <div className="flex items-center gap-4 text-xs text-gray-600">
+              <div>
+                <span className="text-gray-500">Deals:</span>{' '}
+                <span className="font-semibold text-gray-900">{closedWonCount}</span>
+              </div>
+              <div>
+                <span className="text-gray-500">Avg:</span>{' '}
+                <span className="font-semibold text-gray-900">{formatCurrency(avgDealSize)}</span>
+              </div>
+            </div>
           </div>
         </div>
 
+        {/* Collapsible Deal Details */}
         {deals.length > 0 && (
           <div className="pt-2 border-t">
-            <h4 className="text-sm font-semibold text-gray-700 mb-2">Recent Wins</h4>
-            <div className="space-y-2 max-h-32 overflow-y-auto">
-              {deals.slice(0, 10).map((deal, index) => (
-                <div key={index} className="flex justify-between items-start text-xs">
-                  <div className="flex-1 min-w-0">
-                    <div className="font-medium text-gray-900 truncate">
-                      {deal.opportunityName}
-                    </div>
-                    {deal.clientName && (
-                      <div className="text-gray-500 truncate">
-                        {deal.clientName}
+            <button
+              onClick={() => setIsExpanded(!isExpanded)}
+              className="flex items-center justify-between w-full text-left hover:bg-gray-50 rounded p-1 -m-1"
+            >
+              <span className="text-sm font-medium text-gray-700">
+                Recent Wins ({deals.length})
+              </span>
+              {isExpanded ? (
+                <ChevronUp className="h-4 w-4 text-gray-500" />
+              ) : (
+                <ChevronDown className="h-4 w-4 text-gray-500" />
+              )}
+            </button>
+            
+            {isExpanded && (
+              <div className="space-y-2 mt-2 max-h-40 overflow-y-auto">
+                {deals.slice(0, 15).map((deal: any, index: number) => (
+                  <div key={index} className="flex justify-between items-start text-xs">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-gray-900 truncate">
+                        {deal.opportunityName}
                       </div>
-                    )}
-                    <div className="text-gray-400">
-                      {formatDate(deal.closeDate)}
+                      {deal.clientName && (
+                        <div className="text-gray-500 truncate">
+                          {deal.clientName}
+                        </div>
+                      )}
+                      <div className="text-gray-400">
+                        {formatDate(deal.closeDate)}
+                      </div>
+                    </div>
+                    <div className="text-right ml-2 flex-shrink-0">
+                      <div className="font-semibold text-green-600">
+                        {formatCurrency(deal.value)}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right ml-2 flex-shrink-0">
-                    <div className="font-semibold text-green-600">
-                      {formatCurrency(deal.value)}
-                    </div>
+                ))}
+                {deals.length > 15 && (
+                  <div className="text-xs text-gray-500 text-center pt-1">
+                    +{deals.length - 15} more deals
                   </div>
-                </div>
-              ))}
-            </div>
-            {deals.length > 10 && (
-              <div className="text-xs text-gray-500 mt-2">
-                +{deals.length - 10} more deals
+                )}
               </div>
             )}
           </div>
