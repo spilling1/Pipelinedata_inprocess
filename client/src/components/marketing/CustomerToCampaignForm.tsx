@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -40,6 +40,11 @@ export default function CustomerToCampaignForm({
     actualDate: string;
   } | null>(null);
   const { toast } = useToast();
+
+  // Fetch campaign details to get start date
+  const { data: campaignData } = useQuery<any>({
+    queryKey: [`/api/marketing/campaigns/${campaignId}`],
+  });
 
   // Fetch available customers
   const { data: availableCustomers = [], isLoading: customersLoading } = useQuery({
@@ -109,13 +114,29 @@ export default function CustomerToCampaignForm({
     },
   });
 
+  // Calculate default snapshot date - use campaign start date if available, otherwise today
+  const getDefaultSnapshotDate = () => {
+    if (campaignData?.startDate) {
+      return new Date(campaignData.startDate).toISOString().split('T')[0];
+    }
+    return new Date().toISOString().split('T')[0];
+  };
+
   const form = useForm<CustomerToCampaignData>({
     resolver: zodResolver(customerToCampaignSchema),
     defaultValues: {
       customerId: "",
-      snapshotDate: new Date().toISOString().split('T')[0], // Default to today
+      snapshotDate: getDefaultSnapshotDate(),
     },
   });
+
+  // Update snapshot date when campaign data loads
+  useEffect(() => {
+    if (campaignData?.startDate) {
+      const campaignStartDate = new Date(campaignData.startDate).toISOString().split('T')[0];
+      form.setValue('snapshotDate', campaignStartDate);
+    }
+  }, [campaignData?.startDate, form]);
 
   const handleSubmit = async (data: CustomerToCampaignData) => {
     // First, check if the actual snapshot date differs from requested date
