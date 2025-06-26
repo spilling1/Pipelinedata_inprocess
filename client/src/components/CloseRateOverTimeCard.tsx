@@ -54,8 +54,8 @@ export function CloseRateOverTimeCard() {
           </div>
         </div>
 
-        {/* Show deal details if available */}
-        {dataPoint.closedDeals && dataPoint.closedDeals.length > 0 && (
+        {/* Show deal details */}
+        {dataPoint.closedDeals && (
           <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs max-h-40 overflow-y-auto">
             <div className="space-y-3">
               <p className="font-semibold text-gray-800 text-center border-b border-gray-300 pb-2">

@@ -1763,11 +1763,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Get deals that changed between this snapshot and the previous one
         let dealsChangedInPeriod: any[] = [];
+        const currentSnapshots = new Map();
+        const prevSnapshots = new Map();
         
         if (i > 0) {
           const prevDate = snapshotDates[i - 1];
-          const currentSnapshots = new Map();
-          const prevSnapshots = new Map();
           
           // Build maps of current and previous snapshots by opportunity ID
           allSnapshots.forEach((s: any) => {
@@ -1811,6 +1811,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const closedDeals = dealsChangedInPeriod;
+        
+        // Debug for the last few dates to verify logic
+        if (i >= snapshotDates.length - 5) {
+          console.log(`🔍 DEBUG Period changes for ${dateStr} (index ${i}):`);
+          console.log(`  Previous date: ${i > 0 ? snapshotDates[i - 1] : 'N/A'}`);
+          console.log(`  Current snapshots: ${currentSnapshots.size}`);
+          console.log(`  Previous snapshots: ${prevSnapshots.size}`);
+          console.log(`  Deals changed in period: ${dealsChangedInPeriod.length}`);
+          if (dealsChangedInPeriod.length > 0) {
+            console.log('  Sample changes:', dealsChangedInPeriod.slice(0, 2).map(d => `${d.name} (${d.changeType})`));
+          }
+        }
 
         closeRateData.push({
           date: dateStr,
