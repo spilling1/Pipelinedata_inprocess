@@ -1761,63 +1761,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        // Get deals that changed between this snapshot and the previous one
+        // Get deals that were created or closed in the period between this date and previous date
         let dealsChangedInPeriod: any[] = [];
-        const currentSnapshots = new Map();
-        const prevSnapshots = new Map();
         
         if (i > 0) {
-          const prevDate = snapshotDates[i - 1];
+          const prevDate = new Date(snapshotDates[i - 1]);
+          const currentDate = new Date(dateStr);
           
-          // Build maps of current and previous snapshots by opportunity ID
-          allSnapshots.forEach((s: any) => {
-            if (s.snapshotDate === dateStr) {
-              currentSnapshots.set(s.opportunityId, s);
-            } else if (s.snapshotDate === prevDate) {
-              prevSnapshots.set(s.opportunityId, s);
-            }
-          });
+          // Get current snapshot data for this date
+          const currentDateSnapshots = allSnapshots.filter(s => 
+            new Date(s.snapshotDate).toISOString().split('T')[0] === dateStr
+          );
           
-          // Find deals that were newly closed or created in this period
-          currentSnapshots.forEach((currentSnapshot: any, oppId: number) => {
-            const prevSnapshot = prevSnapshots.get(oppId);
-            const opp = opportunityMap.get(oppId);
-            
+          currentDateSnapshots.forEach((snapshot: any) => {
+            const opp = opportunityMap.get(snapshot.opportunityId);
             if (!opp) return;
             
-            // Deal was created in this period (exists in current but not previous)
-            const wasCreated = !prevSnapshot;
+            // Check if deal was created in this period
+            if (opp.createdDate) {
+              const createdDate = new Date(opp.createdDate);
+              if (createdDate > prevDate && createdDate <= currentDate) {
+                dealsChangedInPeriod.push({
+                  name: opp.name || 'Unknown Opportunity',
+                  stage: snapshot.stage || 'Unknown',
+                  year1Arr: snapshot.amount || 0,
+                  closeDate: snapshot.expectedCloseDate ? new Date(snapshot.expectedCloseDate).toISOString().split('T')[0] : 'Unknown',
+                  changeType: 'created'
+                });
+              }
+            }
             
-            // Deal was newly closed in this period
-            const wasNewlyClosed = prevSnapshot && 
-              prevSnapshot.stage && currentSnapshot.stage &&
-              !prevSnapshot.stage.toLowerCase().includes('closed') && 
-              !prevSnapshot.stage.toLowerCase().includes('won') && 
-              !prevSnapshot.stage.toLowerCase().includes('lost') &&
-              (currentSnapshot.stage.toLowerCase().includes('closed') || 
-               currentSnapshot.stage.toLowerCase().includes('won') || 
-               currentSnapshot.stage.toLowerCase().includes('lost'));
-            
-            if (wasCreated || wasNewlyClosed) {
-              dealsChangedInPeriod.push({
-                name: opp.name || 'Unknown Opportunity',
-                stage: currentSnapshot.stage || 'Unknown',
-                year1Arr: currentSnapshot.amount || 0,
-                closeDate: currentSnapshot.expectedCloseDate ? new Date(currentSnapshot.expectedCloseDate).toISOString().split('T')[0] : 'Unknown',
-                changeType: wasCreated ? 'created' : 'closed'
-              });
+            // Check if deal was closed in this period (using close date)
+            if (snapshot.expectedCloseDate && snapshot.stage) {
+              const closeDate = new Date(snapshot.expectedCloseDate);
+              const isClosed = snapshot.stage.toLowerCase().includes('closed') || 
+                             snapshot.stage.toLowerCase().includes('won') || 
+                             snapshot.stage.toLowerCase().includes('lost');
+              
+              if (isClosed && closeDate > prevDate && closeDate <= currentDate) {
+                dealsChangedInPeriod.push({
+                  name: opp.name || 'Unknown Opportunity',
+                  stage: snapshot.stage || 'Unknown',
+                  year1Arr: snapshot.amount || 0,
+                  closeDate: new Date(snapshot.expectedCloseDate).toISOString().split('T')[0],
+                  changeType: 'closed'
+                });
+              }
             }
           });
         }
         
         const closedDeals = dealsChangedInPeriod;
         
-        // Debug for the last few dates to verify logic
-        if (i >= snapshotDates.length - 5) {
-          console.log(`🔍 DEBUG Period changes for ${dateStr} (index ${i}):`);
+        // Debug the new approach for recent dates
+        if (i >= snapshotDates.length - 3) {
+          console.log(`🔍 DEBUG New Period changes for ${dateStr}:`);
           console.log(`  Previous date: ${i > 0 ? snapshotDates[i - 1] : 'N/A'}`);
-          console.log(`  Current snapshots: ${currentSnapshots.size}`);
-          console.log(`  Previous snapshots: ${prevSnapshots.size}`);
+          console.log(`  Current date snapshots found: ${currentDateSnapshots?.length || 0}`);
           console.log(`  Deals changed in period: ${dealsChangedInPeriod.length}`);
           if (dealsChangedInPeriod.length > 0) {
             console.log('  Sample changes:', dealsChangedInPeriod.slice(0, 2).map(d => `${d.name} (${d.changeType})`));
