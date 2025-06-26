@@ -1817,7 +1817,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (i >= snapshotDates.length - 3) {
           console.log(`🔍 DEBUG New Period changes for ${dateStr}:`);
           console.log(`  Previous date: ${i > 0 ? snapshotDates[i - 1] : 'N/A'}`);
-          console.log(`  Current date snapshots found: ${currentDateSnapshots?.length || 0}`);
           console.log(`  Deals changed in period: ${dealsChangedInPeriod.length}`);
           if (dealsChangedInPeriod.length > 0) {
             console.log('  Sample changes:', dealsChangedInPeriod.slice(0, 2).map(d => `${d.name} (${d.changeType})`));
