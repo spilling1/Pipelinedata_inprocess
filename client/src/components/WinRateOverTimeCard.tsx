@@ -12,8 +12,8 @@ interface WinRateDataPoint {
   fiscalYear: string;
   fyWinRate: number | null;
   rolling12WinRate: number | null;
-  fyClosedDeals?: Array<{ name: string; year1Arr: number; stage: string }>;
-  rolling12ClosedDeals?: Array<{ name: string; year1Arr: number; stage: string }>;
+  fyClosedDeals?: Array<{ name: string; year1Arr: number; stage: string; closeDate: string }>;
+  rolling12ClosedDeals?: Array<{ name: string; year1Arr: number; stage: string; closeDate: string }>;
 }
 
 export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProps) {
@@ -70,10 +70,13 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                 <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
                   {entry.dataKey === 'fyWinRate' && dataPoint.fyClosedDeals && dataPoint.fyClosedDeals.length > 0 && (
                     <div>
-                      <p className="font-medium mb-1">Deals Closed on {formatDate(label)}:</p>
+                      <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
                       {dataPoint.fyClosedDeals.slice(0, 8).map((deal: any, i: number) => (
-                        <div key={i} className="flex justify-between">
-                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
+                        <div key={i} className="flex justify-between items-start">
+                          <div className="flex-1 truncate mr-2">
+                            <div className="truncate" title={deal.name}>{deal.name}</div>
+                            <div className="text-xs text-gray-500">Closed: {new Date(deal.closeDate).toLocaleDateString()}</div>
+                          </div>
                           <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
                             ${deal.year1Arr?.toLocaleString() || 0}
                           </span>
@@ -87,10 +90,13 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   
                   {entry.dataKey === 'rolling12WinRate' && dataPoint.rolling12ClosedDeals && dataPoint.rolling12ClosedDeals.length > 0 && (
                     <div>
-                      <p className="font-medium mb-1">Deals Closed on {formatDate(label)}:</p>
+                      <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
                       {dataPoint.rolling12ClosedDeals.slice(0, 8).map((deal: any, i: number) => (
-                        <div key={i} className="flex justify-between">
-                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
+                        <div key={i} className="flex justify-between items-start">
+                          <div className="flex-1 truncate mr-2">
+                            <div className="truncate" title={deal.name}>{deal.name}</div>
+                            <div className="text-xs text-gray-500">Closed: {new Date(deal.closeDate).toLocaleDateString()}</div>
+                          </div>
                           <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
                             ${deal.year1Arr?.toLocaleString() || 0}
                           </span>

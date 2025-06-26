@@ -1761,32 +1761,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`🔍 Filtering out data point ${dateStr} with unusually high win rate (FY: ${fyWinRate}%, Rolling: ${rolling12WinRate}%)`);
           }
           
-          // Get deals that closed specifically on this snapshot date (for tooltip detail)
-          const fyDealsClosedToday = fyClosedSnapshots.filter(s => {
+          // Get deals that closed between this snapshot date and the previous snapshot date
+          const currentIndex = snapshotDates.indexOf(dateStr);
+          const previousSnapshotDate = currentIndex > 0 ? snapshotDates[currentIndex - 1] : null;
+          
+          const fyDealsClosedInPeriod = fyClosedSnapshots.filter(s => {
             if (!s.expectedCloseDate) return false;
             const closeDate = new Date(s.expectedCloseDate);
-            const closedOnThisDate = closeDate.toISOString().split('T')[0] === dateStr;
-            return closedOnThisDate;
+            const closeDateStr = closeDate.toISOString().split('T')[0];
+            
+            if (previousSnapshotDate) {
+              // Show deals that closed after the previous snapshot date and up to current snapshot date
+              return closeDateStr > previousSnapshotDate && closeDateStr <= dateStr;
+            } else {
+              // For the first snapshot, show deals that closed on or before this date
+              return closeDateStr <= dateStr;
+            }
           });
 
-          const rolling12DealsClosedToday = rolling12ClosedSnapshots.filter(s => {
+          const rolling12DealsClosedInPeriod = rolling12ClosedSnapshots.filter(s => {
             if (!s.expectedCloseDate) return false;
             const closeDate = new Date(s.expectedCloseDate);
-            const closedOnThisDate = closeDate.toISOString().split('T')[0] === dateStr;
-            return closedOnThisDate;
+            const closeDateStr = closeDate.toISOString().split('T')[0];
+            
+            if (previousSnapshotDate) {
+              // Show deals that closed after the previous snapshot date and up to current snapshot date
+              return closeDateStr > previousSnapshotDate && closeDateStr <= dateStr;
+            } else {
+              // For the first snapshot, show deals that closed on or before this date
+              return closeDateStr <= dateStr;
+            }
           });
 
-          // Prepare deal details for tooltip - only deals that closed on this specific date
-          const fyClosedDeals = fyDealsClosedToday.map(s => ({
+          // Prepare deal details for tooltip - deals that closed in the period between snapshots
+          const fyClosedDeals = fyDealsClosedInPeriod.map(s => ({
             name: s.opportunityName || 'Unknown',
             year1Arr: s.amount || 0,
-            stage: s.stage || 'Unknown'
+            stage: s.stage || 'Unknown',
+            closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
           }));
           
-          const rolling12ClosedDeals = rolling12DealsClosedToday.map(s => ({
+          const rolling12ClosedDeals = rolling12DealsClosedInPeriod.map(s => ({
             name: s.opportunityName || 'Unknown',
             year1Arr: s.amount || 0,
-            stage: s.stage || 'Unknown'
+            stage: s.stage || 'Unknown',
+            closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
           }));
 
           winRateData.push({
