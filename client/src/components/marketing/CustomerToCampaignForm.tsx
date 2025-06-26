@@ -25,6 +25,19 @@ interface CustomerToCampaignFormProps {
   onSuccess: () => void;
 }
 
+interface Campaign {
+  id: number;
+  name: string;
+  type: string;
+  startDate: string;
+  influence?: string;
+  cost?: number;
+  notes?: string;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 export default function CustomerToCampaignForm({
   campaignId,
   onClose,
@@ -42,7 +55,7 @@ export default function CustomerToCampaignForm({
   const { toast } = useToast();
 
   // Fetch campaign details to get start date
-  const { data: campaignData } = useQuery<any>({
+  const { data: campaignData } = useQuery<Campaign>({
     queryKey: [`/api/marketing/campaigns/${campaignId}`],
   });
 
