@@ -63,10 +63,19 @@ export default function ClosedWonFYCard({ filters }: ClosedWonFYCardProps) {
     }
   };
 
+  const formatDate = (date: string | Date) => {
+    return new Date(date).toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+  };
+
   const closedWonValue = fyClosedWonData?.totalValue || 0;
   const closedWonCount = fyClosedWonData?.totalCount || 0;
   const avgDealSize = closedWonCount > 0 ? closedWonValue / closedWonCount : 0;
   const growth = fyClosedWonData?.growth || 0;
+  const deals = fyClosedWonData?.deals || [];
 
   return (
     <Card>
@@ -108,6 +117,41 @@ export default function ClosedWonFYCard({ filters }: ClosedWonFYCardProps) {
             <span className="font-semibold">{formatCurrency(avgDealSize)}</span>
           </div>
         </div>
+
+        {deals.length > 0 && (
+          <div className="pt-2 border-t">
+            <h4 className="text-sm font-semibold text-gray-700 mb-2">Recent Wins</h4>
+            <div className="space-y-2 max-h-32 overflow-y-auto">
+              {deals.slice(0, 10).map((deal, index) => (
+                <div key={index} className="flex justify-between items-start text-xs">
+                  <div className="flex-1 min-w-0">
+                    <div className="font-medium text-gray-900 truncate">
+                      {deal.opportunityName}
+                    </div>
+                    {deal.clientName && (
+                      <div className="text-gray-500 truncate">
+                        {deal.clientName}
+                      </div>
+                    )}
+                    <div className="text-gray-400">
+                      {formatDate(deal.closeDate)}
+                    </div>
+                  </div>
+                  <div className="text-right ml-2 flex-shrink-0">
+                    <div className="font-semibold text-green-600">
+                      {formatCurrency(deal.value)}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {deals.length > 10 && (
+              <div className="text-xs text-gray-500 mt-2">
+                +{deals.length - 10} more deals
+              </div>
+            )}
+          </div>
+        )}
       </CardContent>
     </Card>
   );
