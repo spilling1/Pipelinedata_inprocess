@@ -87,7 +87,8 @@ export default function MarketingAnalyticsPage() {
     });
 
   // Get unique campaign types for filter dropdown
-  const uniqueTypes = [...new Set(campaigns.map(c => c.type).filter(Boolean))].sort();
+  const typesSet = new Set(campaigns.map(c => c.type).filter(Boolean));
+  const uniqueTypes = Array.from(typesSet).sort();
 
   const { data: campaignAnalytics } = useQuery<any>({
     queryKey: [`/api/marketing/campaigns/${selectedCampaign?.id}/analytics`],
@@ -257,7 +258,66 @@ export default function MarketingAnalyticsPage() {
               Select a campaign to view analytics
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-3">
+          <CardContent className="space-y-4">
+            {/* Filters and Sorting Controls */}
+            <div className="space-y-3 border-b pb-4">
+              {/* Search and Type Filter Row */}
+              <div className="grid grid-cols-1 gap-2">
+                <div>
+                  <Label htmlFor="name-filter" className="text-xs text-gray-600">Search by name</Label>
+                  <Input
+                    id="name-filter"
+                    placeholder="Filter campaigns..."
+                    value={nameFilter}
+                    onChange={(e) => setNameFilter(e.target.value)}
+                    className="h-8 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="type-filter" className="text-xs text-gray-600">Filter by type</Label>
+                  <Select value={typeFilter} onValueChange={setTypeFilter}>
+                    <SelectTrigger className="h-8 text-sm">
+                      <SelectValue placeholder="All types" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All types</SelectItem>
+                      {uniqueTypes.map(type => (
+                        <SelectItem key={type} value={type}>{type}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Sort Controls */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Label className="text-xs text-gray-600">Sort by:</Label>
+                  <Select value={sortBy} onValueChange={(value: 'name' | 'date') => setSortBy(value)}>
+                    <SelectTrigger className="h-7 w-20 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="name">Name</SelectItem>
+                      <SelectItem value="date">Date</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 w-7 p-0"
+                    onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    title={`Sort ${sortOrder === 'asc' ? 'descending' : 'ascending'}`}
+                  >
+                    <ArrowUpDown className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="text-xs text-gray-500">
+                  {filteredAndSortedCampaigns.length} of {campaigns.length} campaigns
+                </div>
+              </div>
+            </div>
+
             {campaigns.length === 0 ? (
               <div className="text-center py-8">
                 <Target className="h-12 w-12 text-gray-400 mx-auto mb-4" />
