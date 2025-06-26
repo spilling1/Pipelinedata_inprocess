@@ -1645,6 +1645,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
 
 
+  // Closed Won FY to Date endpoint (protected)
+  app.get("/api/closed-won-fy", isAuthenticated, async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      console.log(`🏆 Closed Won FY API called with date range: ${startDate} to ${endDate}`);
+      
+      const closedWonData = await storage.getClosedWonFYData(startDate, endDate);
+      
+      res.json(closedWonData);
+    } catch (error) {
+      console.error("❌ Error fetching closed won FY data:", error);
+      res.status(500).json({ 
+        error: "Failed to fetch closed won data",
+        message: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+
   // Loss reason analytics endpoint (protected)
   app.get("/api/analytics/loss-reasons", isAuthenticated, async (req, res) => {
     try {

@@ -128,6 +128,19 @@ export interface IStorage {
     percentage: number;
   }>>;
 
+  // Closed Won FY data
+  getClosedWonFYData(startDate?: string, endDate?: string): Promise<{
+    totalValue: number;
+    totalCount: number;
+    growth: number;
+    deals: Array<{
+      opportunityName: string;
+      clientName?: string;
+      value: number;
+      closeDate: Date;
+    }>;
+  }>;
+
   // Duplicate opportunities analysis (for specific end date)
   getDuplicateOpportunities(endDate?: string): Promise<Array<{
     clientName: string;
@@ -2585,6 +2598,149 @@ export class PostgreSQLStorage implements IStorage {
     } catch (error) {
       console.error('❌ Error in getRecentLosses:', error);
       return [];
+    }
+  }
+
+  async getClosedWonFYData(startDate?: string, endDate?: string): Promise<{
+    totalValue: number;
+    totalCount: number;
+    growth: number;
+    deals: Array<{
+      opportunityName: string;
+      clientName?: string;
+      value: number;
+      closeDate: Date;
+    }>;
+  }> {
+    try {
+      console.log(`🏆 Closed Won FY Analysis called with date range: ${startDate} to ${endDate}`);
+      
+      // Get the most recent snapshot date
+      const latestDateResult = await db
+        .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
+        .from(snapshots);
+      
+      const latestDateStr = latestDateResult[0]?.maxDate;
+      
+      if (!latestDateStr) {
+        return { totalValue: 0, totalCount: 0, growth: 0, deals: [] };
+      }
+      
+      console.log(`🏆 Using latest snapshot date: ${latestDateStr}`);
+      
+      // Build where conditions for date filtering
+      let whereConditions = [
+        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
+        sql`${snapshots.stage} = 'Closed Won'`,
+        isNotNull(snapshots.opportunityId)
+      ];
+      
+      // If date range is provided, filter by close date
+      if (startDate && endDate) {
+        whereConditions.push(
+          sql`${snapshots.closeDate} >= ${startDate}`,
+          sql`${snapshots.closeDate} <= ${endDate}`
+        );
+      }
+      
+      // Get closed won deals
+      const closedWonSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          opportunityName: snapshots.opportunityName,
+          accountName: snapshots.accountName,
+          year1Value: snapshots.year1Value,
+          closeDate: snapshots.closeDate,
+          expectedCloseDate: snapshots.expectedCloseDate,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(and(...whereConditions))
+        .orderBy(desc(snapshots.closeDate), desc(snapshots.year1Value));
+      
+      console.log(`🏆 Found ${closedWonSnapshots.length} closed won deals`);
+      
+      // Calculate totals
+      const uniqueDeals = new Map();
+      let totalValue = 0;
+      
+      // Deduplicate by opportunity ID and sum values
+      for (const snapshot of closedWonSnapshots) {
+        if (snapshot.opportunityId && !uniqueDeals.has(snapshot.opportunityId)) {
+          const value = Number(snapshot.year1Value) || 0;
+          const closeDate = snapshot.closeDate || snapshot.expectedCloseDate || snapshot.snapshotDate;
+          
+          uniqueDeals.set(snapshot.opportunityId, {
+            opportunityName: snapshot.opportunityName || 'Unknown',
+            clientName: snapshot.accountName || undefined,
+            value: value,
+            closeDate: new Date(closeDate)
+          });
+          
+          totalValue += value;
+        }
+      }
+      
+      const deals = Array.from(uniqueDeals.values());
+      const totalCount = deals.length;
+      
+      // Calculate growth (placeholder - you can implement comparison to previous FY)
+      let growth = 0;
+      if (startDate && endDate) {
+        // Calculate previous year's same period for growth comparison
+        const prevYearStart = new Date(startDate);
+        const prevYearEnd = new Date(endDate);
+        prevYearStart.setFullYear(prevYearStart.getFullYear() - 1);
+        prevYearEnd.setFullYear(prevYearEnd.getFullYear() - 1);
+        
+        const prevYearWhere = [
+          sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
+          sql`${snapshots.stage} = 'Closed Won'`,
+          isNotNull(snapshots.opportunityId),
+          sql`${snapshots.closeDate} >= ${prevYearStart.toISOString().split('T')[0]}`,
+          sql`${snapshots.closeDate} <= ${prevYearEnd.toISOString().split('T')[0]}`
+        ];
+        
+        const prevYearSnapshots = await db
+          .select({
+            opportunityId: snapshots.opportunityId,
+            year1Value: snapshots.year1Value
+          })
+          .from(snapshots)
+          .where(and(...prevYearWhere));
+        
+        const prevYearDeals = new Map();
+        let prevYearValue = 0;
+        
+        for (const snapshot of prevYearSnapshots) {
+          if (snapshot.opportunityId && !prevYearDeals.has(snapshot.opportunityId)) {
+            const value = Number(snapshot.year1Value) || 0;
+            prevYearDeals.set(snapshot.opportunityId, value);
+            prevYearValue += value;
+          }
+        }
+        
+        if (prevYearValue > 0) {
+          growth = ((totalValue - prevYearValue) / prevYearValue) * 100;
+        } else if (totalValue > 0) {
+          growth = 100; // 100% growth if no previous year data
+        }
+        
+        console.log(`🏆 Growth calculation: Current: $${totalValue}, Previous: $${prevYearValue}, Growth: ${growth.toFixed(1)}%`);
+      }
+      
+      console.log(`🏆 Closed Won FY Summary: ${totalCount} deals, $${totalValue.toLocaleString()} total value, ${growth.toFixed(1)}% growth`);
+      
+      return {
+        totalValue,
+        totalCount,
+        growth,
+        deals: deals.sort((a, b) => b.closeDate.getTime() - a.closeDate.getTime())
+      };
+      
+    } catch (error) {
+      console.error('❌ Error in getClosedWonFYData:', error);
+      return { totalValue: 0, totalCount: 0, growth: 0, deals: [] };
     }
   }
 }
