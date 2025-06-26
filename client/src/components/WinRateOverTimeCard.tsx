@@ -70,8 +70,8 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                 <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
                   {entry.dataKey === 'fyWinRate' && dataPoint.fyClosedDeals && dataPoint.fyClosedDeals.length > 0 && (
                     <div>
-                      <p className="font-medium mb-1">FY Closed Deals:</p>
-                      {dataPoint.fyClosedDeals.slice(0, 8).map((deal, i) => (
+                      <p className="font-medium mb-1">Deals Closed on {formatDate(label)}:</p>
+                      {dataPoint.fyClosedDeals.slice(0, 8).map((deal: any, i: number) => (
                         <div key={i} className="flex justify-between">
                           <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
                           <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
@@ -87,8 +87,8 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   
                   {entry.dataKey === 'rolling12WinRate' && dataPoint.rolling12ClosedDeals && dataPoint.rolling12ClosedDeals.length > 0 && (
                     <div>
-                      <p className="font-medium mb-1">Rolling 12 Closed Deals:</p>
-                      {dataPoint.rolling12ClosedDeals.slice(0, 8).map((deal, i) => (
+                      <p className="font-medium mb-1">Deals Closed on {formatDate(label)}:</p>
+                      {dataPoint.rolling12ClosedDeals.slice(0, 8).map((deal: any, i: number) => (
                         <div key={i} className="flex justify-between">
                           <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
                           <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>

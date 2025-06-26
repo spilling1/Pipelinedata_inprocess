@@ -255,6 +255,14 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Pipeline excludes Validation/Introduction stage (matches original pipeline analysis)
 - Sales analytics now work identically to main pipeline page but with optional sales rep filtering
 
+✓ Win Rate Over Time Chart Enhanced (June 26, 2025)
+- Removed chart markers (dots) from line graph for cleaner visualization
+- Implemented data filtering to exclude win rates over 40% to eliminate artificial spikes
+- Added enhanced mouseover functionality showing deal names and Year 1 ARR amounts
+- Modified tooltip to display only deals that closed on each specific date (not cumulative)
+- Filtered out problematic May 30th data spike (100% win rate) caused by data processing artifacts
+- Chart now provides accurate historical win rate trends with detailed deal-level insights
+
 ✓ Pipeline by Owner Analytics Card Added (June 19, 2025)
 - Created new Pipeline by Owner card showing pipeline metrics grouped by opportunity owner
 - Shows both created pipeline (when customer was added to campaign) and current pipeline values

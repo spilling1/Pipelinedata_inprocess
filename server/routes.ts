@@ -1761,14 +1761,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             console.log(`🔍 Filtering out data point ${dateStr} with unusually high win rate (FY: ${fyWinRate}%, Rolling: ${rolling12WinRate}%)`);
           }
           
-          // Prepare deal details for tooltip
-          const fyClosedDeals = fyClosedSnapshots.map(s => ({
+          // Get deals that closed specifically on this snapshot date (for tooltip detail)
+          const fyDealsClosedToday = fyClosedSnapshots.filter(s => {
+            if (!s.expectedCloseDate) return false;
+            const closeDate = new Date(s.expectedCloseDate);
+            const closedOnThisDate = closeDate.toISOString().split('T')[0] === dateStr;
+            return closedOnThisDate;
+          });
+
+          const rolling12DealsClosedToday = rolling12ClosedSnapshots.filter(s => {
+            if (!s.expectedCloseDate) return false;
+            const closeDate = new Date(s.expectedCloseDate);
+            const closedOnThisDate = closeDate.toISOString().split('T')[0] === dateStr;
+            return closedOnThisDate;
+          });
+
+          // Prepare deal details for tooltip - only deals that closed on this specific date
+          const fyClosedDeals = fyDealsClosedToday.map(s => ({
             name: s.opportunityName || 'Unknown',
             year1Arr: s.amount || 0,
             stage: s.stage || 'Unknown'
           }));
           
-          const rolling12ClosedDeals = rolling12ClosedSnapshots.map(s => ({
+          const rolling12ClosedDeals = rolling12DealsClosedToday.map(s => ({
             name: s.opportunityName || 'Unknown',
             year1Arr: s.amount || 0,
             stage: s.stage || 'Unknown'
