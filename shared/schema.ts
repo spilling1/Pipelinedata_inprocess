@@ -20,8 +20,31 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  role: varchar("role", { length: 50 }).default("Ops").notNull(), // Default role for new users
+  isActive: integer("is_active").default(1).notNull(), // 1 = active, 0 = inactive
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Roles and permissions system
+export const roles = pgTable("roles", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).unique().notNull(),
+  displayName: varchar("display_name", { length: 100 }).notNull(),
+  description: text("description"),
+  permissions: jsonb("permissions").notNull(), // JSON array of permission strings
+  isActive: integer("is_active").default(1).notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Permission categories for organization
+export const permissionCategories = pgTable("permission_categories", {
+  id: serial("id").primaryKey(),
+  name: varchar("name", { length: 50 }).unique().notNull(),
+  displayName: varchar("display_name", { length: 100 }).notNull(),
+  description: text("description"),
+  isActive: integer("is_active").default(1).notNull(),
 });
 
 export const opportunities = pgTable("opportunities", {
@@ -169,6 +192,24 @@ export const insertInfluenceMethodSchema = createInsertSchema(influenceMethods).
   createdAt: true,
 });
 
+export const insertRoleSchema = createInsertSchema(roles).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertPermissionCategorySchema = createInsertSchema(permissionCategories).omit({
+  id: true,
+});
+
+// Update user schema to include role validation
+export const updateUserSchema = createInsertSchema(users).omit({
+  id: true,
+  createdAt: true,
+}).extend({
+  role: z.enum(["Admin", "Leadership", "Marketing", "Ops", "Finance", "Sales", "Post-Sales", "Engineering"]),
+});
+
 export type InsertOpportunity = z.infer<typeof insertOpportunitySchema>;
 export type InsertSnapshot = z.infer<typeof insertSnapshotSchema>;
 export type InsertUploadedFile = z.infer<typeof insertUploadedFileSchema>;
@@ -176,10 +217,15 @@ export type InsertCampaign = z.infer<typeof insertCampaignSchema>;
 export type InsertCampaignCustomer = z.infer<typeof insertCampaignCustomerSchema>;
 export type InsertCampaignType = z.infer<typeof insertCampaignTypeSchema>;
 export type InsertInfluenceMethod = z.infer<typeof insertInfluenceMethodSchema>;
+export type InsertRole = z.infer<typeof insertRoleSchema>;
+export type InsertPermissionCategory = z.infer<typeof insertPermissionCategorySchema>;
+export type UpdateUser = z.infer<typeof updateUserSchema>;
 
 export type CampaignType = typeof campaignTypes.$inferSelect;
 export type InfluenceMethod = typeof influenceMethods.$inferSelect;
 export type UpsertUser = typeof users.$inferInsert;
+export type Role = typeof roles.$inferSelect;
+export type PermissionCategory = typeof permissionCategories.$inferSelect;
 
 export type Opportunity = typeof opportunities.$inferSelect;
 export type Snapshot = typeof snapshots.$inferSelect;
