@@ -250,6 +250,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
               <p><strong>FY to Date:</strong> Win rate for deals that closed within the fiscal year (Feb 1 - Jan 31)</p>
               <p><strong>Rolling 12 Months:</strong> Win rate for deals that closed within the last 12 months from each data point</p>
               <p>Data points shown only when closed deals exist for the respective time periods</p>
+              <p className="mt-2 text-blue-600 font-medium">May 12, 2025: Entered Pipeline Introduced</p>
             </div>
           </div>
         )}
