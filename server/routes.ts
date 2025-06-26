@@ -1701,7 +1701,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const winRateData = [];
       
       console.log(`🔍 Processing ${snapshotDates.length} snapshot dates for win rate analysis`);
-      console.log(`🔍 Sample dates:`, snapshotDates.slice(0, 10));
       
       for (const dateStr of snapshotDates) {
         const snapshotDate = new Date(dateStr);
@@ -1757,25 +1756,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Only add data points if we have at least one win rate calculation
         if (fyWinRate !== null || rolling12WinRate !== null) {
-          // Debug logging for dates around May 29th or significant win rate spikes
-          const isNearMay29 = dateStr.includes('2024-05') || dateStr.includes('2025-05');
-          const hasHighWinRate = (fyWinRate && fyWinRate > 80) || (rolling12WinRate && rolling12WinRate > 80);
-          
-          if (isNearMay29 || hasHighWinRate) {
-            console.log(`🔍 DEBUG ${dateStr} win rate details:`);
-            console.log(`  - FY Closed Snapshots: ${fyClosedSnapshots.length}`);
-            console.log(`  - FY Won Count: ${fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
-            console.log(`  - Rolling 12 Closed Snapshots: ${rolling12ClosedSnapshots.length}`);
-            console.log(`  - Rolling 12 Won Count: ${rolling12ClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length}`);
-            console.log(`  - FY Win Rate: ${fyWinRate}%`);
-            console.log(`  - Rolling 12 Win Rate: ${rolling12WinRate}%`);
-            
-            if (hasHighWinRate) {
-              console.log(`  - HIGH WIN RATE DETECTED - Sample closed deals:`);
-              fyClosedSnapshots.slice(0, 3).forEach(s => {
-                console.log(`    * ${s.opportunityName}: ${s.stage} (Close: ${s.expectedCloseDate})`);
-              });
-            }
+          // Filter out unusually high win rates that are likely data artifacts
+          if ((fyWinRate && fyWinRate > 40) || (rolling12WinRate && rolling12WinRate > 40)) {
+            console.log(`🔍 Filtering out data point ${dateStr} with unusually high win rate (FY: ${fyWinRate}%, Rolling: ${rolling12WinRate}%)`);
           }
           
           // Prepare deal details for tooltip
@@ -1817,10 +1800,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Log final result summary
       console.log(`🔍 Final win rate data summary: ${filteredWinRateData.length} data points (${winRateData.length - filteredWinRateData.length} filtered out for being >40%)`);
       if (filteredWinRateData.length > 0) {
-        const maxFyWinRate = Math.max(...filteredWinRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate));
-        const maxRolling12WinRate = Math.max(...filteredWinRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate));
-        console.log(`🔍 Highest FY win rate (after filter): ${maxFyWinRate}% on ${filteredWinRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
-        console.log(`🔍 Highest Rolling 12 win rate (after filter): ${maxRolling12WinRate}% on ${filteredWinRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
+        const fyValues = filteredWinRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate!);
+        const rolling12Values = filteredWinRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate!);
+        
+        if (fyValues.length > 0) {
+          const maxFyWinRate = Math.max(...fyValues);
+          console.log(`🔍 Highest FY win rate (after filter): ${maxFyWinRate}% on ${filteredWinRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
+        }
+        
+        if (rolling12Values.length > 0) {
+          const maxRolling12WinRate = Math.max(...rolling12Values);
+          console.log(`🔍 Highest Rolling 12 win rate (after filter): ${maxRolling12WinRate}% on ${filteredWinRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
+        }
       }
 
       res.json({ winRateData: filteredWinRateData });
