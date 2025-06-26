@@ -1760,8 +1760,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        // Get deal details for tooltip (from all opportunities that entered pipeline in period)
-        const closedDeals = pipelineEnteredInPeriod.map((s: any) => {
+        // Get deal details for tooltip (only closed deals from the rolling 12-month cohort)
+        const closedDealsFromCohort = pipelineEnteredInPeriod.filter((s: any) => {
+          if (!s.stage) return false;
+          const stage = s.stage.toLowerCase();
+          return stage.includes('closed') || stage.includes('won') || stage.includes('lost');
+        });
+        
+        const closedDeals = closedDealsFromCohort.map((s: any) => {
           const opp = opportunityMap.get(s.opportunityId);
           return {
             name: opp?.name || 'Unknown Opportunity',
@@ -1770,6 +1776,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
           };
         });
+        
+        // Debug for the latest data point
+        if (dateStr === snapshotDates[snapshotDates.length - 1]) {
+          console.log(`🔍 DEBUG Close Rate tooltip for ${dateStr}:`);
+          console.log(`  Total cohort deals: ${pipelineEnteredInPeriod.length}`);
+          console.log(`  Closed deals in cohort: ${closedDealsFromCohort.length}`);
+          console.log(`  Sample closed stages: ${closedDealsFromCohort.slice(0, 3).map(s => s.stage).join(', ')}`);
+        }
 
         closeRateData.push({
           date: dateStr,
