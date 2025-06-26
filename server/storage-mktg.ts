@@ -819,15 +819,7 @@ export class MarketingStorage {
       outdatedNote?: string;
     }> = [];
 
-    // Get system-wide latest snapshot date for outdated data detection
-    const [systemLatestSnapshot] = await db
-      .select({ latestDate: sql<Date>`MAX(${snapshots.snapshotDate})` })
-      .from(snapshots);
-    
-    const systemLatestDate = systemLatestSnapshot?.latestDate;
-    const cutoffDays = 7;
-    const cutoffDate = systemLatestDate ? new Date(systemLatestDate) : new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - cutoffDays);
+    // No outdated logic needed - always show the most recent snapshot
 
     // For each campaign customer, get their latest snapshot directly
     for (const customer of uniqueCustomers) {
@@ -857,21 +849,17 @@ export class MarketingStorage {
       const latestSnapshot = opportunitySnapshots[0];
       console.log(`📊 Latest snapshot for ${customer.opportunity.name}: ${latestSnapshot.stage} on ${latestSnapshot.snapshotDate}`);
 
-      // Check if data is outdated
-      const isOutdated = latestSnapshot.snapshotDate < cutoffDate;
-      
+      // Always use the most recent snapshot data as-is
       result.push({
         opportunityId: latestSnapshot.opportunityId!,
-        stage: isOutdated && latestSnapshot.stage !== 'Closed Lost' && latestSnapshot.stage !== 'Closed Won' 
-          ? 'Closed Lost' 
-          : latestSnapshot.stage || 'Unknown',
+        stage: latestSnapshot.stage || 'Unknown',
         year1Arr: latestSnapshot.year1Arr,
         tcv: latestSnapshot.tcv,
         snapshotDate: latestSnapshot.snapshotDate.toISOString(),
         enteredPipeline: latestSnapshot.enteredPipeline,
         closeDate: latestSnapshot.closeDate,
-        isOutdated,
-        outdatedNote: isOutdated ? `No data after ${latestSnapshot.snapshotDate.toISOString().split('T')[0]}` : undefined
+        isOutdated: false,
+        outdatedNote: undefined
       });
     }
 
