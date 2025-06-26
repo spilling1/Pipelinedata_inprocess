@@ -1701,32 +1701,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
           new Date(s.snapshotDate).toISOString().split('T')[0] === dateStr
         );
 
-        // Get deals that closed in rolling 12 months
-        const closedInPeriod = dateSnapshots.filter(s => {
-          if (!s.stage || !s.expectedCloseDate) return false;
-          const stage = s.stage.toLowerCase();
-          const closeDate = new Date(s.expectedCloseDate);
-          const isClosed = stage.includes('closed');
-          const isInPeriod = closeDate >= rolling12StartDate && closeDate <= snapshotDate;
-          return isClosed && isInPeriod;
-        });
+        // Calculate rolling 12 months date range for "entered pipeline" filter
+        const rolling12EnteredStart = new Date(snapshotDate);
+        rolling12EnteredStart.setFullYear(rolling12EnteredStart.getFullYear() - 1);
 
-        // Get all pipeline opportunities (for denominator - exclude Validation/Introduction)
-        const allPipelineOpps = dateSnapshots.filter(s => {
+        // Get opportunities that entered pipeline in rolling 12 months (same as Close Rate card logic)
+        const pipelineEnteredInPeriod = dateSnapshots.filter(s => {
           if (!s.enteredPipeline || !s.stage) return false;
+          const enteredDate = new Date(s.enteredPipeline);
+          const isInPeriod = enteredDate >= rolling12EnteredStart && enteredDate <= snapshotDate;
           const stage = s.stage.toLowerCase();
-          return !stage.includes('validation') && !stage.includes('introduction');
+          const isValidStage = !stage.includes('validation') && !stage.includes('introduction');
+          return isInPeriod && isValidStage;
         });
 
-        // Calculate close rate: Closed Won / (Closed Won + Closed Lost + Open Pipeline)
-        const closedWon = closedInPeriod.filter(s => s.stage?.toLowerCase().includes('won')).length;
-        const closedLost = closedInPeriod.filter(s => s.stage?.toLowerCase().includes('lost')).length;
-        const openPipeline = allPipelineOpps.filter(s => 
-          !s.stage?.toLowerCase().includes('closed')
-        ).length;
+        // Calculate close rate using same methodology as Close Rate card:
+        // Closed Won / (All opportunities that entered pipeline in period)
+        const closedWon = pipelineEnteredInPeriod.filter(s => s.stage?.toLowerCase().includes('won')).length;
+        const totalInPeriod = pipelineEnteredInPeriod.length;
         
-        const totalDenominator = closedWon + closedLost + openPipeline;
-        const closeRate = totalDenominator > 0 ? (closedWon / totalDenominator) * 100 : null;
+        const closeRate = totalInPeriod > 0 ? (closedWon / totalInPeriod) * 100 : null;
 
         // Skip data points with no relevant deals or unusually high close rates (>80%)
         if (!closeRate || closeRate > 80) {
@@ -1736,8 +1730,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        // Get deal details for tooltip
-        const closedDeals = closedInPeriod.map(s => {
+        // Get deal details for tooltip (from all opportunities that entered pipeline in period)
+        const closedDeals = pipelineEnteredInPeriod.map((s: any) => {
           const opp = opportunityMap.get(s.opportunityId);
           return {
             name: opp?.name || 'Unknown Opportunity',
