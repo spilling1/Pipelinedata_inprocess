@@ -821,12 +821,36 @@ export class MarketingStorage {
 
     // No outdated logic needed - always show the most recent snapshot
 
-    // For each campaign customer, get their latest snapshot directly
+    // For each campaign customer, find their most recent opportunity and snapshot
     for (const customer of uniqueCustomers) {
-      console.log(`🔍 Processing customer: ${customer.opportunity.name} (ID: ${customer.opportunityId})`);
+      const customerName = customer.opportunity.clientName || customer.opportunity.name;
+      console.log(`🔍 Processing customer: ${customerName} (Original ID: ${customer.opportunityId})`);
       
-      // Get all snapshots for this specific opportunity
-      const opportunitySnapshots = await db
+      // Find ALL opportunities for this customer name
+      const allCustomerOpportunities = await db
+        .select({
+          id: opportunities.id,
+          name: opportunities.name,
+          clientName: opportunities.clientName,
+        })
+        .from(opportunities)
+        .where(
+          or(
+            sql`LOWER(${opportunities.clientName}) = LOWER(${customerName})`,
+            sql`LOWER(${opportunities.name}) = LOWER(${customerName})`
+          )
+        );
+
+      if (allCustomerOpportunities.length === 0) {
+        console.log(`❌ No opportunities found for customer ${customerName}`);
+        continue;
+      }
+
+      console.log(`📋 Found ${allCustomerOpportunities.length} opportunities for ${customerName}:`, 
+        allCustomerOpportunities.map(o => o.id));
+
+      // Get the most recent snapshot across ALL opportunities for this customer
+      const allSnapshots = await db
         .select({
           opportunityId: snapshots.opportunityId,
           stage: snapshots.stage,
@@ -837,17 +861,17 @@ export class MarketingStorage {
           enteredPipeline: snapshots.enteredPipeline,
         })
         .from(snapshots)
-        .where(eq(snapshots.opportunityId, customer.opportunityId))
+        .where(inArray(snapshots.opportunityId, allCustomerOpportunities.map(o => o.id)))
         .orderBy(desc(snapshots.snapshotDate), desc(snapshots.expectedCloseDate));
 
-      if (opportunitySnapshots.length === 0) {
-        console.log(`❌ No snapshots found for opportunity ${customer.opportunityId}`);
+      if (allSnapshots.length === 0) {
+        console.log(`❌ No snapshots found for any opportunity of customer ${customerName}`);
         continue;
       }
 
       // Get the most recent snapshot
-      const latestSnapshot = opportunitySnapshots[0];
-      console.log(`📊 Latest snapshot for ${customer.opportunity.name}: ${latestSnapshot.stage} on ${latestSnapshot.snapshotDate}`);
+      const latestSnapshot = allSnapshots[0];
+      console.log(`📊 Latest snapshot for ${customerName}: ${latestSnapshot.stage} on ${latestSnapshot.snapshotDate} (Opportunity ID: ${latestSnapshot.opportunityId})`);
 
       // Always use the most recent snapshot data as-is
       result.push({
