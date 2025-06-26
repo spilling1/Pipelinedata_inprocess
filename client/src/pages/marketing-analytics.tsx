@@ -356,7 +356,7 @@ export default function MarketingAnalyticsPage() {
                           <>
                             <span className="text-xs text-gray-400">•</span>
                             <span className="text-xs text-blue-600">
-                              {new Date(campaign.startDate).toLocaleDateString()}
+                              {new Date(campaign.startDate).toLocaleDateString('en-US', { timeZone: 'UTC' })}
                             </span>
                           </>
                         )}
@@ -427,7 +427,7 @@ export default function MarketingAnalyticsPage() {
                       <div className="text-sm text-gray-600 dark:text-gray-400">Start Date</div>
                       <div className="text-lg font-semibold">
                         {selectedCampaign.startDate 
-                          ? new Date(selectedCampaign.startDate).toLocaleDateString()
+                          ? new Date(selectedCampaign.startDate).toLocaleDateString('en-US', { timeZone: 'UTC' })
                           : 'Not set'
                         }
                       </div>

@@ -130,7 +130,12 @@ export default function CustomerToCampaignForm({
   // Calculate default snapshot date - use campaign start date if available, otherwise today
   const getDefaultSnapshotDate = () => {
     if (campaignData?.startDate) {
-      return new Date(campaignData.startDate).toISOString().split('T')[0];
+      // Handle timezone properly to get the correct date
+      const date = new Date(campaignData.startDate);
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
     return new Date().toISOString().split('T')[0];
   };
@@ -146,7 +151,12 @@ export default function CustomerToCampaignForm({
   // Update snapshot date when campaign data loads
   useEffect(() => {
     if (campaignData?.startDate) {
-      const campaignStartDate = new Date(campaignData.startDate).toISOString().split('T')[0];
+      // Handle timezone properly to get the correct date
+      const date = new Date(campaignData.startDate);
+      const year = date.getUTCFullYear();
+      const month = String(date.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(date.getUTCDate()).padStart(2, '0');
+      const campaignStartDate = `${year}-${month}-${day}`;
       form.setValue('snapshotDate', campaignStartDate);
     }
   }, [campaignData?.startDate, form]);
