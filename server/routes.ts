@@ -1778,11 +1778,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
+          // Prepare deal details for tooltip
+          const fyClosedDeals = fyClosedSnapshots.map(s => ({
+            name: s.opportunityName || 'Unknown',
+            year1Arr: s.amount || 0,
+            stage: s.stage || 'Unknown'
+          }));
+          
+          const rolling12ClosedDeals = rolling12ClosedSnapshots.map(s => ({
+            name: s.opportunityName || 'Unknown',
+            year1Arr: s.amount || 0,
+            stage: s.stage || 'Unknown'
+          }));
+
           winRateData.push({
             date: dateStr,
             fiscalYear: `FY${fiscalYear + 1}`, // Display as FY2025 for fiscal year 2024
             fyWinRate,
             rolling12WinRate,
+            fyClosedDeals,
+            rolling12ClosedDeals,
             // Add debug info for analysis
             fyClosedCount: fyClosedSnapshots.length,
             fyWonCount: fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length,
@@ -1792,16 +1807,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Filter out data points over 40% to avoid artificial spikes (similar to frontend filter)
+      const filteredWinRateData = winRateData.filter(point => {
+        const fyValid = !point.fyWinRate || point.fyWinRate <= 40;
+        const rollingValid = !point.rolling12WinRate || point.rolling12WinRate <= 40;
+        return fyValid && rollingValid;
+      });
+
       // Log final result summary
-      console.log(`🔍 Final win rate data summary: ${winRateData.length} data points`);
-      if (winRateData.length > 0) {
-        const maxFyWinRate = Math.max(...winRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate));
-        const maxRolling12WinRate = Math.max(...winRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate));
-        console.log(`🔍 Highest FY win rate: ${maxFyWinRate}% on ${winRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
-        console.log(`🔍 Highest Rolling 12 win rate: ${maxRolling12WinRate}% on ${winRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
+      console.log(`🔍 Final win rate data summary: ${filteredWinRateData.length} data points (${winRateData.length - filteredWinRateData.length} filtered out for being >40%)`);
+      if (filteredWinRateData.length > 0) {
+        const maxFyWinRate = Math.max(...filteredWinRateData.filter(d => d.fyWinRate !== null).map(d => d.fyWinRate));
+        const maxRolling12WinRate = Math.max(...filteredWinRateData.filter(d => d.rolling12WinRate !== null).map(d => d.rolling12WinRate));
+        console.log(`🔍 Highest FY win rate (after filter): ${maxFyWinRate}% on ${filteredWinRateData.find(d => d.fyWinRate === maxFyWinRate)?.date}`);
+        console.log(`🔍 Highest Rolling 12 win rate (after filter): ${maxRolling12WinRate}% on ${filteredWinRateData.find(d => d.rolling12WinRate === maxRolling12WinRate)?.date}`);
       }
 
-      res.json({ winRateData });
+      res.json({ winRateData: filteredWinRateData });
     } catch (error) {
       console.error('Error fetching win rate over time:', error);
       res.status(500).json({ error: 'Failed to fetch win rate over time data' });

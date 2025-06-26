@@ -12,6 +12,8 @@ interface WinRateDataPoint {
   fiscalYear: string;
   fyWinRate: number | null;
   rolling12WinRate: number | null;
+  fyClosedDeals?: Array<{ name: string; year1Arr: number; stage: string }>;
+  rolling12ClosedDeals?: Array<{ name: string; year1Arr: number; stage: string }>;
 }
 
 export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProps) {
@@ -24,7 +26,12 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
     }
   });
 
-  const chartData = winRateData?.winRateData || [];
+  // Filter out data points over 40% to avoid artificial spikes and prepare chart data
+  const chartData = (winRateData?.winRateData || []).filter((point: WinRateDataPoint) => {
+    const fyValid = !point.fyWinRate || point.fyWinRate <= 40;
+    const rollingValid = !point.rolling12WinRate || point.rolling12WinRate <= 40;
+    return fyValid && rollingValid;
+  });
 
   // Format date for display
   const formatDate = (dateStr: string) => {
@@ -36,21 +43,66 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
     });
   };
 
-  // Custom tooltip to show formatted values
+  // Custom tooltip to show formatted values with deal details
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
+      // Find the data point to get deal details
+      const dataPoint = chartData.find((d: WinRateDataPoint) => d.date === label);
+      
       return (
-        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
+        <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg max-w-md">
           <p className="font-medium text-gray-900 mb-2">{formatDate(label)}</p>
+          
           {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-2">
-              <div 
-                className="w-3 h-3 rounded-full" 
-                style={{ backgroundColor: entry.color }}
-              />
-              <span className="text-sm text-gray-700">
-                {entry.name}: {entry.value ? `${entry.value.toFixed(1)}%` : 'No data'}
-              </span>
+            <div key={index} className="mb-3">
+              <div className="flex items-center gap-2 mb-1">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm text-gray-700 font-medium">
+                  {entry.name}: {entry.value ? `${entry.value.toFixed(1)}%` : 'No data'}
+                </span>
+              </div>
+              
+              {/* Show deal details if available */}
+              {dataPoint && (
+                <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
+                  {entry.dataKey === 'fyWinRate' && dataPoint.fyClosedDeals && dataPoint.fyClosedDeals.length > 0 && (
+                    <div>
+                      <p className="font-medium mb-1">FY Closed Deals:</p>
+                      {dataPoint.fyClosedDeals.slice(0, 8).map((deal, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
+                          <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
+                            ${deal.year1Arr?.toLocaleString() || 0}
+                          </span>
+                        </div>
+                      ))}
+                      {dataPoint.fyClosedDeals.length > 8 && (
+                        <p className="text-gray-500 mt-1">...and {dataPoint.fyClosedDeals.length - 8} more</p>
+                      )}
+                    </div>
+                  )}
+                  
+                  {entry.dataKey === 'rolling12WinRate' && dataPoint.rolling12ClosedDeals && dataPoint.rolling12ClosedDeals.length > 0 && (
+                    <div>
+                      <p className="font-medium mb-1">Rolling 12 Closed Deals:</p>
+                      {dataPoint.rolling12ClosedDeals.slice(0, 8).map((deal, i) => (
+                        <div key={i} className="flex justify-between">
+                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
+                          <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
+                            ${deal.year1Arr?.toLocaleString() || 0}
+                          </span>
+                        </div>
+                      ))}
+                      {dataPoint.rolling12ClosedDeals.length > 8 && (
+                        <p className="text-gray-500 mt-1">...and {dataPoint.rolling12ClosedDeals.length - 8} more</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -115,7 +167,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   dataKey="fyWinRate"
                   stroke="#2563eb"
                   strokeWidth={2}
-                  dot={{ fill: '#2563eb', strokeWidth: 2, r: 4 }}
+                  dot={false}
                   name="FY to Date"
                   connectNulls={false}
                 />
@@ -124,7 +176,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   dataKey="rolling12WinRate"
                   stroke="#dc2626"
                   strokeWidth={2}
-                  dot={{ fill: '#dc2626', strokeWidth: 2, r: 4 }}
+                  dot={false}
                   name="Rolling 12 Months"
                   connectNulls={false}
                 />
