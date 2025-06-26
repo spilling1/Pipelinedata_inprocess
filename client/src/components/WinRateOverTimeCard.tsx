@@ -14,6 +14,7 @@ interface WinRateDataPoint {
   rolling12WinRate: number | null;
   fyClosedDeals?: Array<{ name: string; year1Arr: number; stage: string; closeDate: string }>;
   rolling12ClosedDeals?: Array<{ name: string; year1Arr: number; stage: string; closeDate: string }>;
+  specialNote?: string;
 }
 
 export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProps) {
@@ -80,6 +81,13 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                     return (
                       <div>
                         <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
+                        
+                        {/* Special Note for specific dates */}
+                        {dataPoint.specialNote && (
+                          <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
+                            <p className="text-blue-800 font-medium text-xs">{dataPoint.specialNote}</p>
+                          </div>
+                        )}
                         
                         {/* Closed Won Section */}
                         {wonDeals.length > 0 && (

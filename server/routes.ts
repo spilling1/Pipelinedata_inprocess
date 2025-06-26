@@ -1808,6 +1808,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
           }));
 
+          // Add hardcoded note for May 11th, 2025
+          const specialNote = dateStr === '2025-05-11' ? 'Entered Pipeline Introduced' : undefined;
+
           winRateData.push({
             date: dateStr,
             fiscalYear: `FY${fiscalYear + 1}`, // Display as FY2025 for fiscal year 2024
@@ -1815,6 +1818,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             rolling12WinRate,
             fyClosedDeals,
             rolling12ClosedDeals,
+            specialNote, // Add the note field
             // Add debug info for analysis
             fyClosedCount: fyClosedSnapshots.length,
             fyWonCount: fyClosedSnapshots.filter(s => s.stage?.toLowerCase().includes('won')).length,
