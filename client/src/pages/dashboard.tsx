@@ -19,6 +19,7 @@ import WinRateCard from "@/components/WinRateCard";
 import CloseRateCard from "@/components/CloseRateCard";
 import ClosedWonFYCard from "@/components/ClosedWonFYCard";
 import WinRateOverTimeCard from "@/components/WinRateOverTimeCard";
+import { CloseRateOverTimeCard } from "@/components/CloseRateOverTimeCard";
 import { LossReasonOverview } from "@/components/LossReasonOverview";
 import { LossReasonByStage } from "@/components/LossReasonByStage";
 import RecentLossesTable from "@/components/RecentLossesTable";

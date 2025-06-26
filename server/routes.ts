@@ -1665,6 +1665,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Close rate over time endpoint (protected)
+  app.get("/api/analytics/close-rate-over-time", isAuthenticated, async (req, res) => {
+    try {
+      console.log('🔍 Processing close rate over time analysis');
+      
+      // Get all snapshots and opportunities for historical analysis
+      const allSnapshots = await storage.getAllSnapshots();
+      const allOpportunities = await storage.getAllOpportunities();
+      
+      // Create opportunity lookup for faster access
+      const opportunityMap = new Map();
+      allOpportunities.forEach(opp => {
+        opportunityMap.set(opp.id, opp);
+      });
+      
+      // Get unique snapshot dates and sort them
+      const snapshotDates = Array.from(new Set(allSnapshots.map(s => 
+        new Date(s.snapshotDate).toISOString().split('T')[0]
+      ))).sort();
+      
+      console.log(`🔍 Processing ${snapshotDates.length} snapshot dates for close rate analysis`);
+
+      const closeRateData = [];
+
+      for (const dateStr of snapshotDates) {
+        const snapshotDate = new Date(dateStr);
+        
+        // Calculate rolling 12 months date range
+        const rolling12StartDate = new Date(snapshotDate);
+        rolling12StartDate.setFullYear(rolling12StartDate.getFullYear() - 1);
+        
+        // Get snapshots for this date
+        const dateSnapshots = allSnapshots.filter(s => 
+          new Date(s.snapshotDate).toISOString().split('T')[0] === dateStr
+        );
+
+        // Get deals that closed in rolling 12 months
+        const closedInPeriod = dateSnapshots.filter(s => {
+          if (!s.stage || !s.expectedCloseDate) return false;
+          const stage = s.stage.toLowerCase();
+          const closeDate = new Date(s.expectedCloseDate);
+          const isClosed = stage.includes('closed');
+          const isInPeriod = closeDate >= rolling12StartDate && closeDate <= snapshotDate;
+          return isClosed && isInPeriod;
+        });
+
+        // Get all pipeline opportunities (for denominator - exclude Validation/Introduction)
+        const allPipelineOpps = dateSnapshots.filter(s => {
+          if (!s.enteredPipeline || !s.stage) return false;
+          const stage = s.stage.toLowerCase();
+          return !stage.includes('validation') && !stage.includes('introduction');
+        });
+
+        // Calculate close rate: Closed Won / (Closed Won + Closed Lost + Open Pipeline)
+        const closedWon = closedInPeriod.filter(s => s.stage?.toLowerCase().includes('won')).length;
+        const closedLost = closedInPeriod.filter(s => s.stage?.toLowerCase().includes('lost')).length;
+        const openPipeline = allPipelineOpps.filter(s => 
+          !s.stage?.toLowerCase().includes('closed')
+        ).length;
+        
+        const totalDenominator = closedWon + closedLost + openPipeline;
+        const closeRate = totalDenominator > 0 ? (closedWon / totalDenominator) * 100 : null;
+
+        // Skip data points with no relevant deals or unusually high close rates (>80%)
+        if (!closeRate || closeRate > 80) {
+          if (closeRate && closeRate > 80) {
+            console.log(`🔍 Filtering out data point ${dateStr} with unusually high close rate: ${closeRate.toFixed(1)}%`);
+          }
+          continue;
+        }
+
+        // Get deal details for tooltip
+        const closedDeals = closedInPeriod.map(s => {
+          const opp = opportunityMap.get(s.opportunityId);
+          return {
+            name: opp?.name || 'Unknown Opportunity',
+            stage: s.stage || 'Unknown',
+            year1Arr: s.amount || 0,
+            closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
+          };
+        });
+
+        closeRateData.push({
+          date: dateStr,
+          closeRate: closeRate,
+          closedDeals: closedDeals
+        });
+      }
+
+      console.log(`🔍 Final close rate data summary: ${closeRateData.length} data points`);
+      
+      if (closeRateData.length > 0) {
+        const highestCloseRate = Math.max(...closeRateData.map(d => d.closeRate));
+        const highestCloseRateDate = closeRateData.find(d => d.closeRate === highestCloseRate)?.date;
+        console.log(`🔍 Highest close rate: ${highestCloseRate.toFixed(1)}% on ${highestCloseRateDate}`);
+      }
+
+      res.json({ closeRateData });
+    } catch (error) {
+      console.error('❌ Error in close rate over time analysis:', error);
+      res.status(500).json({ error: 'Failed to fetch close rate over time data' });
+    }
+  });
+
   // Win rate over time endpoint (protected)
   app.get("/api/analytics/win-rate-over-time", isAuthenticated, async (req, res) => {
     try {
