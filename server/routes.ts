@@ -1504,48 +1504,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Use the same date range as win rate calculation
         console.log(`📊 Close Rate calculation: ${dateRangeStart.toISOString().split('T')[0]} to ${dateRangeEnd.toISOString().split('T')[0]}`);
         
-        // Get opportunities from current snapshot only, excluding Validation stage and requiring entered_pipeline
+        // Get opportunities from current snapshot only, excluding Validation stage
         const currentSnapshotForCloseRate = allSnapshotsForWinRate.filter(snapshot => {
           const snapshotDateStr = new Date(snapshot.snapshotDate).toISOString().split('T')[0];
-          const hasEnteredPipeline = snapshot.enteredPipeline !== null && snapshot.enteredPipeline !== undefined;
           return snapshotDateStr === latestDateStr && 
                  snapshot.opportunityId && 
                  snapshot.stage &&
-                 !snapshot.stage.toLowerCase().includes('validation') &&
-                 hasEnteredPipeline;
+                 !snapshot.stage.toLowerCase().includes('validation');
         });
         
         // Get opportunity IDs from current snapshot (non-validation)
         const currentOpportunityIds = new Set(currentSnapshotForCloseRate.map(s => s.opportunityId));
         
         // Filter to opportunities that entered pipeline in the provided date range
-        // We need to get enteredPipeline from snapshots, not opportunities
+        // Use entered_pipeline if available, otherwise fall back to created date
         const opportunitiesInWindowBeyondValidation: Opportunity[] = [];
         const processedOpportunityIds = new Set<number>();
         
         for (const snapshot of currentSnapshotForCloseRate) {
-          if (snapshot.opportunityId && snapshot.enteredPipeline && !processedOpportunityIds.has(snapshot.opportunityId)) {
-            const enteredDate = new Date(snapshot.enteredPipeline);
-            const inTimeWindow = enteredDate >= dateRangeStart && enteredDate <= dateRangeEnd;
+          if (snapshot.opportunityId && !processedOpportunityIds.has(snapshot.opportunityId)) {
+            const opportunity = await storage.getOpportunity(snapshot.opportunityId);
             
-            if (inTimeWindow) {
-              const opportunity = await storage.getOpportunity(snapshot.opportunityId);
-              if (opportunity) {
-                opportunitiesInWindowBeyondValidation.push(opportunity);
-                processedOpportunityIds.add(snapshot.opportunityId);
+            if (opportunity) {
+              // Use entered_pipeline if available, otherwise fall back to created date
+              let entryDate: Date | null = null;
+              if (snapshot.enteredPipeline) {
+                entryDate = new Date(snapshot.enteredPipeline);
+              } else if (opportunity.createdDate) {
+                entryDate = new Date(opportunity.createdDate);
+              }
+              
+              if (entryDate) {
+                const inTimeWindow = entryDate >= dateRangeStart && entryDate <= dateRangeEnd;
+                
+                if (inTimeWindow) {
+                  opportunitiesInWindowBeyondValidation.push(opportunity);
+                  processedOpportunityIds.add(snapshot.opportunityId);
+                }
               }
             }
           }
         }
         
-        console.log(`📊 Found ${currentSnapshotForCloseRate.length} opportunities in current snapshot (excluding Validation, requiring entered_pipeline)`);
+        console.log(`📊 Found ${currentSnapshotForCloseRate.length} opportunities in current snapshot (excluding Validation)`);
         console.log(`📊 Found ${opportunitiesInWindowBeyondValidation.length} opportunities that entered pipeline in date range and in current snapshot`);
         
         // Debug: Show sample opportunities that entered pipeline in range
         console.log(`📊 DEBUG: Sample opportunities that entered pipeline in date range:`);
         opportunitiesInWindowBeyondValidation.slice(0, 5).forEach(opp => {
           const snapshot = currentSnapshotForCloseRate.find(s => s.opportunityId === opp.id);
-          console.log(`  - ${opp.name} (ID: ${opp.id}) entered: ${snapshot?.enteredPipeline}`);
+          let entryDateStr = 'Unknown';
+          if (snapshot?.enteredPipeline) {
+            entryDateStr = new Date(snapshot.enteredPipeline).toDateString();
+          } else if (opp.createdDate) {
+            entryDateStr = new Date(opp.createdDate).toDateString() + ' (created)';
+          }
+          console.log(`  - ${opp.name} (ID: ${opp.id}) entered: ${entryDateStr}`);
         });
         
         if (opportunitiesInWindowBeyondValidation.length > 0) {
@@ -1706,13 +1720,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         rolling12EnteredStart.setFullYear(rolling12EnteredStart.getFullYear() - 1);
 
         // Get opportunities that entered pipeline in rolling 12 months (same as Close Rate card logic)
+        // Use entered_pipeline if available, otherwise fall back to created date
         const pipelineEnteredInPeriod = dateSnapshots.filter(s => {
-          if (!s.enteredPipeline || !s.stage) return false;
-          const enteredDate = new Date(s.enteredPipeline);
-          const isInPeriod = enteredDate >= rolling12EnteredStart && enteredDate <= snapshotDate;
+          if (!s.stage) return false;
+          
           const stage = s.stage.toLowerCase();
           const isValidStage = !stage.includes('validation') && !stage.includes('introduction');
-          return isInPeriod && isValidStage;
+          if (!isValidStage) return false;
+          
+          // Use entered_pipeline if available, otherwise fall back to created date from opportunity
+          const opp = opportunityMap.get(s.opportunityId);
+          if (!opp) return false;
+          
+          let entryDate: Date | null = null;
+          if (s.enteredPipeline) {
+            entryDate = new Date(s.enteredPipeline);
+          } else if (opp.createdDate) {
+            entryDate = new Date(opp.createdDate);
+          }
+          
+          if (!entryDate) return false;
+          
+          const isInPeriod = entryDate >= rolling12EnteredStart && entryDate <= snapshotDate;
+          return isInPeriod;
         });
 
         // Calculate close rate using same methodology as Close Rate card:
