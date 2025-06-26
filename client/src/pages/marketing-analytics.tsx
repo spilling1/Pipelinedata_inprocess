@@ -10,6 +10,15 @@ import {
   DropdownMenuItem, 
   DropdownMenuTrigger 
 } from "@/components/ui/dropdown-menu";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { 
   AlertDialog,
   AlertDialogAction,
@@ -20,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CampaignForm from "../components/marketing/CampaignForm";
 import CustomerToCampaignForm from "../components/marketing/CustomerToCampaignForm";
@@ -38,12 +47,47 @@ export default function MarketingAnalyticsPage() {
   const [deletingCampaign, setDeletingCampaign] = useState<any>(null);
   const [showCustomerForm, setShowCustomerForm] = useState(false);
   const [activeTab, setActiveTab] = useState("analytics");
+  
+  // Sorting and filtering state
+  const [sortBy, setSortBy] = useState<'name' | 'date'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+  const [typeFilter, setTypeFilter] = useState<string>('all');
+  const [nameFilter, setNameFilter] = useState<string>('');
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
   const { data: campaigns = [], isLoading } = useQuery<any[]>({
     queryKey: ['/api/marketing/campaigns'],
   });
+
+  // Process campaigns with sorting and filtering
+  const filteredAndSortedCampaigns = campaigns
+    .filter(campaign => {
+      // Filter by type
+      if (typeFilter !== 'all' && campaign.type?.toLowerCase() !== typeFilter.toLowerCase()) {
+        return false;
+      }
+      // Filter by name
+      if (nameFilter && !campaign.name?.toLowerCase().includes(nameFilter.toLowerCase())) {
+        return false;
+      }
+      return true;
+    })
+    .sort((a, b) => {
+      let comparison = 0;
+      if (sortBy === 'name') {
+        comparison = (a.name || '').localeCompare(b.name || '');
+      } else if (sortBy === 'date') {
+        const dateA = a.startDate ? new Date(a.startDate).getTime() : 0;
+        const dateB = b.startDate ? new Date(b.startDate).getTime() : 0;
+        comparison = dateA - dateB;
+      }
+      return sortOrder === 'desc' ? -comparison : comparison;
+    });
+
+  // Get unique campaign types for filter dropdown
+  const uniqueTypes = [...new Set(campaigns.map(c => c.type).filter(Boolean))].sort();
 
   const { data: campaignAnalytics } = useQuery<any>({
     queryKey: [`/api/marketing/campaigns/${selectedCampaign?.id}/analytics`],
@@ -222,8 +266,23 @@ export default function MarketingAnalyticsPage() {
                   Create First Campaign
                 </Button>
               </div>
+            ) : filteredAndSortedCampaigns.length === 0 ? (
+              <div className="text-center py-8">
+                <Filter className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 mb-4">No campaigns match your filters</p>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setNameFilter('');
+                    setTypeFilter('all');
+                  }}
+                >
+                  Clear Filters
+                </Button>
+              </div>
             ) : (
-              campaigns.map((campaign: any) => (
+              filteredAndSortedCampaigns.map((campaign: any) => (
                 <div
                   key={campaign.id}
                   className={`p-3 rounded-lg border transition-colors ${
@@ -239,10 +298,19 @@ export default function MarketingAnalyticsPage() {
                     >
                       <div className="font-medium text-sm">{campaign.name}</div>
                       <div className="text-xs text-gray-500 capitalize">{campaign.type}</div>
-                      {campaign.budget && (
+                      
+                      {/* Campaign Date */}
+                      {campaign.startDate && (
+                        <div className="text-xs text-blue-600 flex items-center mt-1">
+                          <Calendar className="h-3 w-3 mr-1" />
+                          {new Date(campaign.startDate).toLocaleDateString()}
+                        </div>
+                      )}
+                      
+                      {campaign.cost && (
                         <div className="text-xs text-green-600 flex items-center mt-1">
                           <DollarSign className="h-3 w-3 mr-1" />
-                          {campaign.budget.toLocaleString()}
+                          ${campaign.cost.toLocaleString()}
                         </div>
                       )}
                     </div>
@@ -302,10 +370,19 @@ export default function MarketingAnalyticsPage() {
                 
                 <TabsContent value="analytics" className="space-y-6">
                   {/* Campaign Overview */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="text-sm text-gray-600 dark:text-gray-400">Type</div>
                       <div className="text-lg font-semibold capitalize">{selectedCampaign.type}</div>
+                    </div>
+                    <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                      <div className="text-sm text-gray-600 dark:text-gray-400">Start Date</div>
+                      <div className="text-lg font-semibold">
+                        {selectedCampaign.startDate 
+                          ? new Date(selectedCampaign.startDate).toLocaleDateString()
+                          : 'Not set'
+                        }
+                      </div>
                     </div>
                     <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
                       <div className="text-sm text-gray-600 dark:text-gray-400">Status</div>
