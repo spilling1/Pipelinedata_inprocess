@@ -68,7 +68,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
               
               {/* Show deal details if available - only once per data point */}
               {dataPoint && entry.dataKey === 'rolling12WinRate' && (
-                <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
+                <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs max-h-40 overflow-y-auto">
                   {(() => {
                     // Use FY deals (they should be the same as rolling12 for the same date)
                     const deals = dataPoint.fyClosedDeals;
@@ -79,49 +79,63 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                     const lostDeals = deals.filter((deal: any) => !deal.stage.toLowerCase().includes('won'));
                     
                     return (
-                      <div>
-                        <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
+                      <div className="space-y-3">
+                        <p className="font-semibold text-gray-800 text-center border-b border-gray-300 pb-2">
+                          Deals Closed in Period (through {formatDate(label)})
+                        </p>
                         
                         {/* Special Note for specific dates */}
                         {dataPoint.specialNote && (
-                          <div className="mb-2 p-2 bg-blue-50 border border-blue-200 rounded">
-                            <p className="text-blue-800 font-medium text-xs">{dataPoint.specialNote}</p>
+                          <div className="p-2 bg-blue-50 border border-blue-300 rounded-md">
+                            <p className="text-blue-800 font-semibold text-center">{dataPoint.specialNote}</p>
                           </div>
                         )}
                         
                         {/* Closed Won Section */}
                         {wonDeals.length > 0 && (
-                          <div className="mb-2">
-                            <p className="text-green-600 font-medium text-xs mb-1">Closed Won:</p>
-                            {wonDeals.slice(0, 6).map((deal: any, i: number) => (
-                              <div key={`won-${i}`} className="flex justify-between">
-                                <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
-                                <span className="text-green-600 font-medium">
-                                  ${deal.year1Arr?.toLocaleString() || 0}
-                                </span>
-                              </div>
-                            ))}
-                            {wonDeals.length > 6 && (
-                              <p className="text-gray-500 mt-1">...and {wonDeals.length - 6} more won</p>
-                            )}
+                          <div>
+                            <p className="text-green-700 font-semibold mb-2 text-left">Closed Won:</p>
+                            <div className="space-y-1">
+                              {wonDeals.slice(0, 6).map((deal: any, i: number) => (
+                                <div key={`won-${i}`} className="flex justify-between items-center py-1">
+                                  <span className="text-gray-700 truncate mr-3 flex-1 text-left" title={deal.name}>
+                                    {deal.name}
+                                  </span>
+                                  <span className="text-green-600 font-semibold whitespace-nowrap">
+                                    ${deal.year1Arr?.toLocaleString() || 0}
+                                  </span>
+                                </div>
+                              ))}
+                              {wonDeals.length > 6 && (
+                                <p className="text-gray-500 text-center mt-2 italic">
+                                  ...and {wonDeals.length - 6} more won
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                         
                         {/* Closed Lost Section */}
                         {lostDeals.length > 0 && (
                           <div>
-                            <p className="text-red-600 font-medium text-xs mb-1">Closed Lost:</p>
-                            {lostDeals.slice(0, 6).map((deal: any, i: number) => (
-                              <div key={`lost-${i}`} className="flex justify-between">
-                                <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
-                                <span className="text-red-600">
-                                  ${deal.year1Arr?.toLocaleString() || 0}
-                                </span>
-                              </div>
-                            ))}
-                            {lostDeals.length > 6 && (
-                              <p className="text-gray-500 mt-1">...and {lostDeals.length - 6} more lost</p>
-                            )}
+                            <p className="text-red-700 font-semibold mb-2 text-left">Closed Lost:</p>
+                            <div className="space-y-1">
+                              {lostDeals.slice(0, 6).map((deal: any, i: number) => (
+                                <div key={`lost-${i}`} className="flex justify-between items-center py-1">
+                                  <span className="text-gray-700 truncate mr-3 flex-1 text-left" title={deal.name}>
+                                    {deal.name}
+                                  </span>
+                                  <span className="text-red-600 font-semibold whitespace-nowrap">
+                                    ${deal.year1Arr?.toLocaleString() || 0}
+                                  </span>
+                                </div>
+                              ))}
+                              {lostDeals.length > 6 && (
+                                <p className="text-gray-500 text-center mt-2 italic">
+                                  ...and {lostDeals.length - 6} more lost
+                                </p>
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
