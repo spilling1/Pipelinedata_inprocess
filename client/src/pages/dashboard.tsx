@@ -18,6 +18,7 @@ import StageFunnelChart from "@/components/StageFunnelChart";
 import WinRateCard from "@/components/WinRateCard";
 import CloseRateCard from "@/components/CloseRateCard";
 import ClosedWonFYCard from "@/components/ClosedWonFYCard";
+import WinRateOverTimeCard from "@/components/WinRateOverTimeCard";
 import { LossReasonOverview } from "@/components/LossReasonOverview";
 import { LossReasonByStage } from "@/components/LossReasonByStage";
 import RecentLossesTable from "@/components/RecentLossesTable";
@@ -141,6 +142,11 @@ export default function Dashboard() {
               <div className="lg:col-span-1">
                 <CloseRateCard filters={filters} />
               </div>
+            </div>
+
+            {/* Win Rate Over Time - 2/4 width */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <WinRateOverTimeCard filters={filters} />
             </div>
         </div>
       </div>

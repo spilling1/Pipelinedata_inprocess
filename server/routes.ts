@@ -1665,6 +1665,111 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Win rate over time endpoint (protected)
+  app.get("/api/analytics/win-rate-over-time", isAuthenticated, async (req, res) => {
+    try {
+      // Get all snapshots and opportunities for historical analysis
+      const allSnapshots = await storage.getAllSnapshots();
+      const allOpportunities = await storage.getAllOpportunities();
+      
+      // Create opportunity lookup for faster access
+      const opportunityMap = new Map();
+      allOpportunities.forEach(opp => {
+        opportunityMap.set(opp.id, opp);
+      });
+      
+      // Get unique snapshot dates and sort them
+      const snapshotDates = [...new Set(allSnapshots.map(s => 
+        new Date(s.snapshotDate).toISOString().split('T')[0]
+      ))].sort();
+      
+      // Calculate fiscal year start/end for each date
+      const getFiscalYear = (date: Date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        return month >= 1 ? year : year - 1; // FY starts in Feb (month 1)
+      };
+      
+      const getFiscalYearRange = (fiscalYear: number) => {
+        return {
+          start: new Date(fiscalYear, 1, 1), // Feb 1st
+          end: new Date(fiscalYear + 1, 0, 31) // Jan 31st next year
+        };
+      };
+      
+      // Calculate win rates for each snapshot date
+      const winRateData = [];
+      
+      for (const dateStr of snapshotDates) {
+        const snapshotDate = new Date(dateStr);
+        const fiscalYear = getFiscalYear(snapshotDate);
+        const fyRange = getFiscalYearRange(fiscalYear);
+        
+        // Get 12 months rolling window
+        const rolling12Start = new Date(snapshotDate);
+        rolling12Start.setFullYear(rolling12Start.getFullYear() - 1);
+        
+        // Get snapshots for this date
+        const dateSnapshots = allSnapshots.filter(s => 
+          new Date(s.snapshotDate).toISOString().split('T')[0] === dateStr
+        );
+        
+        // Calculate FY to Date win rate
+        let fyWinRate = null;
+        const fyClosedSnapshots = dateSnapshots.filter(s => {
+          if (!s.stage || !s.expectedCloseDate) return false;
+          const stage = s.stage.toLowerCase();
+          const closeDate = new Date(s.expectedCloseDate);
+          const isClosed = stage.includes('closed') || stage.includes('won') || stage.includes('lost');
+          const isInFY = closeDate >= fyRange.start && closeDate <= fyRange.end;
+          return isClosed && isInFY;
+        });
+        
+        if (fyClosedSnapshots.length > 0) {
+          const fyWonCount = fyClosedSnapshots.filter(s => {
+            const stage = s.stage?.toLowerCase() || '';
+            return stage.includes('closed won') || stage.includes('won');
+          }).length;
+          fyWinRate = (fyWonCount / fyClosedSnapshots.length) * 100;
+        }
+        
+        // Calculate Rolling 12 Months win rate
+        let rolling12WinRate = null;
+        const rolling12ClosedSnapshots = dateSnapshots.filter(s => {
+          if (!s.stage || !s.expectedCloseDate) return false;
+          const stage = s.stage.toLowerCase();
+          const closeDate = new Date(s.expectedCloseDate);
+          const isClosed = stage.includes('closed') || stage.includes('won') || stage.includes('lost');
+          const isInRolling12 = closeDate >= rolling12Start && closeDate <= snapshotDate;
+          return isClosed && isInRolling12;
+        });
+        
+        if (rolling12ClosedSnapshots.length > 0) {
+          const rolling12WonCount = rolling12ClosedSnapshots.filter(s => {
+            const stage = s.stage?.toLowerCase() || '';
+            return stage.includes('closed won') || stage.includes('won');
+          }).length;
+          rolling12WinRate = (rolling12WonCount / rolling12ClosedSnapshots.length) * 100;
+        }
+        
+        // Only add data points if we have at least one win rate calculation
+        if (fyWinRate !== null || rolling12WinRate !== null) {
+          winRateData.push({
+            date: dateStr,
+            fiscalYear: `FY${fiscalYear + 1}`, // Display as FY2025 for fiscal year 2024
+            fyWinRate,
+            rolling12WinRate
+          });
+        }
+      }
+      
+      res.json({ winRateData });
+    } catch (error) {
+      console.error('Error fetching win rate over time:', error);
+      res.status(500).json({ error: 'Failed to fetch win rate over time data' });
+    }
+  });
+
   // Loss reason analytics endpoint (protected)
   app.get("/api/analytics/loss-reasons", isAuthenticated, async (req, res) => {
     try {
