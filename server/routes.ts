@@ -1724,27 +1724,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return stage.includes('closed') || stage.includes('won') || stage.includes('lost');
         });
         
-        // Apply minimum threshold to avoid misleading win rates from small sample sizes
-        const minSampleSize = 10;
-        
-        // Calculate FY to Date win rate
+        // Calculate win rates with data quality checks
         let fyWinRate = null;
-        if (allClosedSnapshots.length >= minSampleSize) {
-          const fyWonCount = allClosedSnapshots.filter(s => {
-            const stage = s.stage?.toLowerCase() || '';
-            return stage.includes('closed won') || stage.includes('won');
-          }).length;
-          fyWinRate = (fyWonCount / allClosedSnapshots.length) * 100;
-        }
-        
-        // Calculate Rolling 12 Months win rate
         let rolling12WinRate = null;
-        if (allClosedSnapshots.length >= minSampleSize) {
-          const rolling12WonCount = allClosedSnapshots.filter(s => {
+        
+        if (allClosedSnapshots.length > 0) {
+          const wonCount = allClosedSnapshots.filter(s => {
             const stage = s.stage?.toLowerCase() || '';
             return stage.includes('closed won') || stage.includes('won');
           }).length;
-          rolling12WinRate = (rolling12WonCount / allClosedSnapshots.length) * 100;
+          
+          const winRate = (wonCount / allClosedSnapshots.length) * 100;
+          
+          // Apply data quality filter: exclude extreme outliers (100% win rate with reasonable sample size)
+          // This handles data anomalies where only won deals were recorded on specific dates
+          const isDataAnomalyHigh = winRate === 100 && allClosedSnapshots.length >= 10;
+          const isDataAnomalyLow = winRate === 0 && allClosedSnapshots.length >= 10;
+          
+          if (!isDataAnomalyHigh && !isDataAnomalyLow) {
+            fyWinRate = winRate;
+            rolling12WinRate = winRate;
+          }
+          // If it's a data anomaly, we skip this data point (leave as null)
         }
         
         // Only add data points if we have at least one win rate calculation
