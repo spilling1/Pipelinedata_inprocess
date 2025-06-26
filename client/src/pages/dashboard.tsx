@@ -17,6 +17,7 @@ import ClosingProbabilityCard from "@/components/ClosingProbabilityCard";
 import StageFunnelChart from "@/components/StageFunnelChart";
 import WinRateCard from "@/components/WinRateCard";
 import CloseRateCard from "@/components/CloseRateCard";
+import ClosedWonFYCard from "@/components/ClosedWonFYCard";
 import { LossReasonOverview } from "@/components/LossReasonOverview";
 import { LossReasonByStage } from "@/components/LossReasonByStage";
 import RecentLossesTable from "@/components/RecentLossesTable";
@@ -105,11 +106,12 @@ export default function Dashboard() {
             </div>
 
             {/* Advanced Analytics Cards */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
               <StageTimingCard filters={filters} />
               <DateSlippageCard filters={filters} />
               <ValueChangeCard filters={filters} />
               <ClosingProbabilityCard filters={filters} />
+              <ClosedWonFYCard filters={filters} />
             </div>
 
 
