@@ -72,11 +72,8 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                     <div>
                       <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
                       {dataPoint.fyClosedDeals.slice(0, 8).map((deal: any, i: number) => (
-                        <div key={i} className="flex justify-between items-start">
-                          <div className="flex-1 truncate mr-2">
-                            <div className="truncate" title={deal.name}>{deal.name}</div>
-                            <div className="text-xs text-gray-500">Closed: {new Date(deal.closeDate).toLocaleDateString()}</div>
-                          </div>
+                        <div key={i} className="flex justify-between">
+                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
                           <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
                             ${deal.year1Arr?.toLocaleString() || 0}
                           </span>
@@ -92,11 +89,8 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                     <div>
                       <p className="font-medium mb-1">Deals Closed in Period (through {formatDate(label)}):</p>
                       {dataPoint.rolling12ClosedDeals.slice(0, 8).map((deal: any, i: number) => (
-                        <div key={i} className="flex justify-between items-start">
-                          <div className="flex-1 truncate mr-2">
-                            <div className="truncate" title={deal.name}>{deal.name}</div>
-                            <div className="text-xs text-gray-500">Closed: {new Date(deal.closeDate).toLocaleDateString()}</div>
-                          </div>
+                        <div key={i} className="flex justify-between">
+                          <span className="truncate mr-2" title={deal.name}>{deal.name}</span>
                           <span className={deal.stage.toLowerCase().includes('won') ? 'text-green-600 font-medium' : 'text-red-600'}>
                             ${deal.year1Arr?.toLocaleString() || 0}
                           </span>
