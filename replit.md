@@ -266,10 +266,12 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 ✓ Close Rate Over Time Chart Created and Aligned (June 26, 2025)
 - Built new Close Rate Over Time chart positioned next to Win Rate chart (each 2/4 width)
 - Created `/api/analytics/close-rate-over-time` endpoint with rolling 12-month calculations
-- Fixed calculation methodology discrepancy between Close Rate card (15.7%) and Over Time chart (18.7%)
+- Fixed calculation methodology discrepancy between Close Rate card and Over Time chart
 - Aligned both to use identical rolling 12-month methodology: Closed Won / (All opportunities that entered pipeline in period)
-- Excludes Validation/Introduction stage and opportunities without entered_pipeline date
-- Both components now consistently show 15.7% close rate for latest data point
+- Enhanced fallback logic: Uses entered_pipeline date if available, otherwise falls back to created date
+- Expanded time coverage back to June 2, 2024 for full rolling 12-month analysis
+- Excludes Validation/Introduction stage but includes all deals with valid entry dates
+- Both components now consistently show 15.4% close rate for latest data point
 - Enhanced tooltip functionality with deal details matching Win Rate chart styling
 
 ✓ Pipeline by Owner Analytics Card Added (June 19, 2025)
