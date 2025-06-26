@@ -1703,7 +1703,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const closeRateData = [];
 
-      for (const dateStr of snapshotDates) {
+      for (let i = 0; i < snapshotDates.length; i++) {
+        const dateStr = snapshotDates[i];
         const snapshotDate = new Date(dateStr);
         
         // Calculate rolling 12 months date range
@@ -1760,30 +1761,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           continue;
         }
 
-        // Get deal details for tooltip (only closed deals from the rolling 12-month cohort)
-        const closedDealsFromCohort = pipelineEnteredInPeriod.filter((s: any) => {
-          if (!s.stage) return false;
-          const stage = s.stage.toLowerCase();
-          return stage.includes('closed') || stage.includes('won') || stage.includes('lost');
-        });
+        // Get deals that changed between this snapshot and the previous one
+        let dealsChangedInPeriod: any[] = [];
         
-        const closedDeals = closedDealsFromCohort.map((s: any) => {
-          const opp = opportunityMap.get(s.opportunityId);
-          return {
-            name: opp?.name || 'Unknown Opportunity',
-            stage: s.stage || 'Unknown',
-            year1Arr: s.amount || 0,
-            closeDate: s.expectedCloseDate ? new Date(s.expectedCloseDate).toISOString().split('T')[0] : 'Unknown'
-          };
-        });
-        
-        // Debug for the latest data point
-        if (dateStr === snapshotDates[snapshotDates.length - 1]) {
-          console.log(`🔍 DEBUG Close Rate tooltip for ${dateStr}:`);
-          console.log(`  Total cohort deals: ${pipelineEnteredInPeriod.length}`);
-          console.log(`  Closed deals in cohort: ${closedDealsFromCohort.length}`);
-          console.log(`  Sample closed stages: ${closedDealsFromCohort.slice(0, 3).map(s => s.stage).join(', ')}`);
+        if (i > 0) {
+          const prevDate = snapshotDates[i - 1];
+          const currentSnapshots = new Map();
+          const prevSnapshots = new Map();
+          
+          // Build maps of current and previous snapshots by opportunity ID
+          allSnapshots.forEach((s: any) => {
+            if (s.snapshotDate === dateStr) {
+              currentSnapshots.set(s.opportunityId, s);
+            } else if (s.snapshotDate === prevDate) {
+              prevSnapshots.set(s.opportunityId, s);
+            }
+          });
+          
+          // Find deals that were newly closed or created in this period
+          currentSnapshots.forEach((currentSnapshot: any, oppId: number) => {
+            const prevSnapshot = prevSnapshots.get(oppId);
+            const opp = opportunityMap.get(oppId);
+            
+            if (!opp) return;
+            
+            // Deal was created in this period (exists in current but not previous)
+            const wasCreated = !prevSnapshot;
+            
+            // Deal was newly closed in this period
+            const wasNewlyClosed = prevSnapshot && 
+              prevSnapshot.stage && currentSnapshot.stage &&
+              !prevSnapshot.stage.toLowerCase().includes('closed') && 
+              !prevSnapshot.stage.toLowerCase().includes('won') && 
+              !prevSnapshot.stage.toLowerCase().includes('lost') &&
+              (currentSnapshot.stage.toLowerCase().includes('closed') || 
+               currentSnapshot.stage.toLowerCase().includes('won') || 
+               currentSnapshot.stage.toLowerCase().includes('lost'));
+            
+            if (wasCreated || wasNewlyClosed) {
+              dealsChangedInPeriod.push({
+                name: opp.name || 'Unknown Opportunity',
+                stage: currentSnapshot.stage || 'Unknown',
+                year1Arr: currentSnapshot.amount || 0,
+                closeDate: currentSnapshot.expectedCloseDate ? new Date(currentSnapshot.expectedCloseDate).toISOString().split('T')[0] : 'Unknown',
+                changeType: wasCreated ? 'created' : 'closed'
+              });
+            }
+          });
         }
+        
+        const closedDeals = dealsChangedInPeriod;
 
         closeRateData.push({
           date: dateStr,

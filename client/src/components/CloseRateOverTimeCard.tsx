@@ -59,22 +59,47 @@ export function CloseRateOverTimeCard() {
           <div className="mt-3 p-3 bg-gray-50 border border-gray-200 rounded-lg text-xs max-h-40 overflow-y-auto">
             <div className="space-y-3">
               <p className="font-semibold text-gray-800 text-center border-b border-gray-300 pb-2">
-                Deals Closed in Period (through {formatDate(label)})
+                Deals Changed in Period (through {formatDate(label)})
               </p>
               
               {(() => {
-                // Separate deals into won and lost
-                const wonDeals = dataPoint.closedDeals.filter((deal: any) => deal.stage.toLowerCase().includes('won'));
-                const lostDeals = dataPoint.closedDeals.filter((deal: any) => !deal.stage.toLowerCase().includes('won'));
+                // Separate deals into created, closed won, and closed lost
+                const createdDeals = dataPoint.closedDeals.filter((deal: any) => deal.changeType === 'created');
+                const closedWonDeals = dataPoint.closedDeals.filter((deal: any) => deal.changeType === 'closed' && deal.stage.toLowerCase().includes('won'));
+                const closedLostDeals = dataPoint.closedDeals.filter((deal: any) => deal.changeType === 'closed' && !deal.stage.toLowerCase().includes('won'));
                 
                 return (
                   <>
+                    {/* Created Deals Section */}
+                    {createdDeals.length > 0 && (
+                      <div>
+                        <p className="text-blue-700 font-semibold mb-2 text-left">Created Deals:</p>
+                        <div className="space-y-1">
+                          {createdDeals.slice(0, 4).map((deal: any, i: number) => (
+                            <div key={`created-${i}`} className="flex justify-between items-center py-1">
+                              <span className="text-gray-700 truncate mr-3 flex-1 text-left" title={deal.name}>
+                                {deal.name}
+                              </span>
+                              <span className="text-blue-600 font-semibold whitespace-nowrap">
+                                ${deal.year1Arr?.toLocaleString() || 0}
+                              </span>
+                            </div>
+                          ))}
+                          {createdDeals.length > 4 && (
+                            <p className="text-gray-500 text-center mt-2 italic">
+                              ...and {createdDeals.length - 4} more created
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
                     {/* Closed Won Section */}
-                    {wonDeals.length > 0 && (
+                    {closedWonDeals.length > 0 && (
                       <div>
                         <p className="text-green-700 font-semibold mb-2 text-left">Closed Won:</p>
                         <div className="space-y-1">
-                          {wonDeals.slice(0, 6).map((deal: any, i: number) => (
+                          {closedWonDeals.slice(0, 4).map((deal: any, i: number) => (
                             <div key={`won-${i}`} className="flex justify-between items-center py-1">
                               <span className="text-gray-700 truncate mr-3 flex-1 text-left" title={deal.name}>
                                 {deal.name}
@@ -84,9 +109,9 @@ export function CloseRateOverTimeCard() {
                               </span>
                             </div>
                           ))}
-                          {wonDeals.length > 6 && (
+                          {closedWonDeals.length > 4 && (
                             <p className="text-gray-500 text-center mt-2 italic">
-                              ...and {wonDeals.length - 6} more won
+                              ...and {closedWonDeals.length - 4} more won
                             </p>
                           )}
                         </div>
@@ -94,11 +119,11 @@ export function CloseRateOverTimeCard() {
                     )}
                     
                     {/* Closed Lost Section */}
-                    {lostDeals.length > 0 && (
+                    {closedLostDeals.length > 0 && (
                       <div>
                         <p className="text-red-700 font-semibold mb-2 text-left">Closed Lost:</p>
                         <div className="space-y-1">
-                          {lostDeals.slice(0, 6).map((deal: any, i: number) => (
+                          {closedLostDeals.slice(0, 4).map((deal: any, i: number) => (
                             <div key={`lost-${i}`} className="flex justify-between items-center py-1">
                               <span className="text-gray-700 truncate mr-3 flex-1 text-left" title={deal.name}>
                                 {deal.name}
@@ -108,9 +133,9 @@ export function CloseRateOverTimeCard() {
                               </span>
                             </div>
                           ))}
-                          {lostDeals.length > 6 && (
+                          {closedLostDeals.length > 4 && (
                             <p className="text-gray-500 text-center mt-2 italic">
-                              ...and {lostDeals.length - 6} more lost
+                              ...and {closedLostDeals.length - 4} more lost
                             </p>
                           )}
                         </div>
