@@ -93,6 +93,9 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
   // Get Win Rate and Close Rate from their respective queries
   const winRate = (winRateData as any)?.metrics?.conversionRate || 0;
   const closeRate = (closeRateData as any)?.metrics?.closeRate || 0;
+  
+  // Get fiscal year average deal size for closed won from winRateData (matches ClosedWonFYCard)
+  const fyAvgDealSizeClosedWon = (winRateData as any)?.metrics?.avgDealSizeClosedWon || 0;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
@@ -138,7 +141,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     {
       title: "Avg. Deal Size",
       value: formatCurrency(metrics.avgDealSizePipeline || metrics.avgDealSize || 0),
-      secondaryValue: formatCurrency(metrics.avgDealSizeClosedWon || 0),
+      secondaryValue: formatCurrency(fyAvgDealSizeClosedWon || 0),
       icon: Target,
       change: "+8%",
       changeType: "positive" as const,
