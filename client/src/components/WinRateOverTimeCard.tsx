@@ -66,7 +66,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
               </div>
               
               {/* Show deal details if available - only once per data point */}
-              {dataPoint && entry.dataKey === 'fyWinRate' && (
+              {dataPoint && entry.dataKey === 'rolling12WinRate' && (
                 <div className="ml-5 text-xs text-gray-600 max-h-32 overflow-y-auto">
                   {(() => {
                     // Use FY deals (they should be the same as rolling12 for the same date)
