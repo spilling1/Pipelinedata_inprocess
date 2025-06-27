@@ -10,13 +10,24 @@ interface MetricsCardsProps {
 }
 
 export default function MetricsCards({ filters }: MetricsCardsProps) {
+  console.log('MetricsCards component rendering with filters:', filters);
   // Calculate date ranges for Win Rate (FY to Date) and Close Rate (Last 12 months)
   const winRateDateRange = useMemo(() => {
-    return getDateRangeByValue("fy-to-date");
+    try {
+      return getDateRangeByValue("fy-to-date");
+    } catch (error) {
+      console.error('Error getting win rate date range:', error);
+      return { startDate: null, endDate: null };
+    }
   }, []);
 
   const closeRateDateRange = useMemo(() => {
-    return getDateRangeByValue("last-12-months");
+    try {
+      return getDateRangeByValue("last-12-months");
+    } catch (error) {
+      console.error('Error getting close rate date range:', error);
+      return { startDate: null, endDate: null };
+    }
   }, []);
 
   // Main pipeline metrics query using main analytics endpoint for accurate closed won metrics
@@ -24,9 +35,13 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     queryKey: ['/api/analytics'],
   });
 
+  console.log('Analytics data:', analytics);
+  console.log('Analytics metrics:', analytics?.metrics);
+  console.log('avgDealSizeClosedWon value:', analytics?.metrics?.avgDealSizeClosedWon);
+
   // Win Rate query with FY to Date range using lightweight endpoint
   const { data: winRateData, isLoading: winRateLoading } = useQuery({
-    queryKey: ['/api/analytics/win-rate', winRateDateRange.startDate?.toISOString(), winRateDateRange.endDate?.toISOString()],
+    queryKey: ['/api/analytics/win-rate', winRateDateRange.startDate?.toISOString() || null, winRateDateRange.endDate?.toISOString() || null],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (winRateDateRange.startDate) {
@@ -44,7 +59,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
 
   // Close Rate query with Last 12 months range using lightweight endpoint
   const { data: closeRateData, isLoading: closeRateLoading } = useQuery({
-    queryKey: ['/api/analytics/close-rate', closeRateDateRange.startDate?.toISOString(), closeRateDateRange.endDate?.toISOString()],
+    queryKey: ['/api/analytics/close-rate', closeRateDateRange.startDate?.toISOString() || null, closeRateDateRange.endDate?.toISOString() || null],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (closeRateDateRange.startDate) {
