@@ -1,0 +1,81 @@
+import { useQuery } from "@tanstack/react-query";
+
+interface UserPermissions {
+  user: {
+    id: string;
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    role: string;
+    isActive: number;
+    roleInfo?: {
+      name: string;
+      displayName: string;
+      permissions: string[];
+    };
+  };
+  permissions: string[];
+  isAdmin: boolean;
+}
+
+// Permission definitions with descriptions
+export const PERMISSIONS = {
+  pipeline: 'Pipeline Analytics',
+  marketing: 'Marketing Analytics', 
+  sales: 'Sales Analytics',
+  database: 'Database Management',
+  settings: 'System Settings',
+  user_management: 'User Management',
+  financial: 'Financial Data',
+  reporting: 'Advanced Reporting'
+} as const;
+
+export type Permission = keyof typeof PERMISSIONS;
+
+export function usePermissions() {
+  const { data, isLoading, error } = useQuery<UserPermissions>({
+    queryKey: ['/api/users/me'],
+    retry: false,
+  });
+
+  const hasPermission = (permission: Permission): boolean => {
+    if (!data) return false;
+    return data.isAdmin || data.permissions.includes(permission);
+  };
+
+  const hasAnyPermission = (permissions: Permission[]): boolean => {
+    if (!data) return false;
+    return data.isAdmin || permissions.some(p => data.permissions.includes(p));
+  };
+
+  const canAccessPage = (page: string): boolean => {
+    switch (page) {
+      case 'dashboard':
+      case 'pipeline':
+        return hasPermission('pipeline');
+      case 'marketing':
+        return hasPermission('marketing');
+      case 'sales':
+        return hasPermission('sales');
+      case 'database':
+        return hasPermission('database');
+      case 'settings':
+        return hasPermission('settings');
+      case 'user-management':
+        return data?.isAdmin || false;
+      default:
+        return true; // Default pages are accessible to all
+    }
+  };
+
+  return {
+    user: data?.user,
+    permissions: data?.permissions || [],
+    isAdmin: data?.isAdmin || false,
+    isLoading,
+    error,
+    hasPermission,
+    hasAnyPermission,
+    canAccessPage,
+  };
+}

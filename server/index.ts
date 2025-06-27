@@ -3,6 +3,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerMarketingGraphRoutes } from './routes-mktg';
 import { registerSalesRoutes } from './routes-sales';
+import { registerUserManagementRoutes } from './routes-users';
 import { setupVite, serveStatic, log } from "./vite";
 import { db } from "./db";
 import { sql } from "drizzle-orm";
@@ -66,6 +67,11 @@ app.use((req, res, next) => {
   console.log('🔗 Registering sales routes');
   registerSalesRoutes(app);
   console.log('✅ Sales routes registered successfully');
+
+  // Register user management routes
+  console.log('🔗 Registering user management routes');
+  registerUserManagementRoutes(app);
+  console.log('✅ User management routes registered successfully');
 
   // Register main routes
   const server = await registerRoutes(app);
