@@ -1,13 +1,13 @@
 import type { RequestHandler } from "express";
 import { isAuthenticated as replitAuth } from "./replitAuth";
 
-// Mock user for local development
+// Mock user for local development - use an actual admin user
 const mockUser = {
   claims: {
-    sub: "local-dev-user",
-    email: "developer@localhost.com",
-    first_name: "Local",
-    last_name: "Developer",
+    sub: "40293358", // sampilling@higharc.com user ID
+    email: "sampilling@higharc.com",
+    first_name: "Sam",
+    last_name: "Pilling",
     profile_image_url: null
   },
   access_token: "mock-access-token",
