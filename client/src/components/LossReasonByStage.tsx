@@ -2,7 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { GitBranch, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
+// Function to decode HTML entities
+const decodeHtmlEntities = (text: string): string => {
+  const textarea = document.createElement('textarea');
+  textarea.innerHTML = text;
+  return textarea.value;
+};
 
 interface LossReasonByStageData {
   reason: string;
@@ -266,7 +273,7 @@ export function LossReasonByStage() {
 
   const dateRange = getDateRange(selectedRange);
 
-  const { data: lossReasonsByStage, isLoading } = useQuery<LossReasonByStageData[]>({
+  const { data: rawLossReasonsByStage, isLoading } = useQuery<LossReasonByStageData[]>({
     queryKey: ['/api/analytics/loss-reasons-by-previous-stage', dateRange.startDate, dateRange.endDate],
     queryFn: async () => {
       const params = new URLSearchParams();
@@ -280,6 +287,16 @@ export function LossReasonByStage() {
       return response.json();
     },
   });
+
+  // Clean HTML entities from the data
+  const lossReasonsByStage = useMemo(() => {
+    if (!rawLossReasonsByStage) return [];
+    return rawLossReasonsByStage.map(item => ({
+      ...item,
+      reason: decodeHtmlEntities(item.reason),
+      previousStage: decodeHtmlEntities(item.previousStage)
+    }));
+  }, [rawLossReasonsByStage]);
 
   if (isLoading) {
     return (
