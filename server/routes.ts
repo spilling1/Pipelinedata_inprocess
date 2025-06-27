@@ -55,7 +55,7 @@ function normalizeHeader(header: string): string {
 // Helper function to normalize stage names using dynamic mappings
 async function normalizeStage(stage: string): Promise<string> {
   const trimmedStage = stage.trim();
-  const mappings = await storage.getStageMappings();
+  const mappings = await storage.settingsStorage.getStageMappings();
   
   // Check for dynamic mappings (case-insensitive)
   const mapping = mappings.find(m => m.from.toLowerCase() === trimmedStage.toLowerCase());
@@ -2757,7 +2757,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/settings/probability-configs", async (_req, res) => {
     try {
-      const configs = await storage.getProbabilityConfigs();
+      const configs = await storage.settingsStorage.getProbabilityConfigs();
       res.json({ configs });
     } catch (error) {
       console.error("Error fetching probability configs:", error);
@@ -2783,7 +2783,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      await storage.setProbabilityConfigs(configs);
+      await storage.settingsStorage.setProbabilityConfigs(configs);
       res.json({ success: true });
     } catch (error) {
       console.error("Error saving probability configs:", error);
