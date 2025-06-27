@@ -115,8 +115,16 @@ export default function UserManagement() {
     setIsEditDialogOpen(true);
   };
 
-  const handleUpdateUser = (updates: Partial<User>) => {
+  const handleUpdateUser = () => {
     if (!editingUser) return;
+    
+    // Only send the fields we want to update
+    const updates = {
+      firstName: editingUser.firstName,
+      lastName: editingUser.lastName,
+      role: editingUser.role,
+    };
+    
     updateUserMutation.mutate({ userId: editingUser.id, updates });
   };
 
@@ -343,7 +351,7 @@ export default function UserManagement() {
             <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={() => handleUpdateUser(editingUser!)}>
+            <Button onClick={handleUpdateUser}>
               Save Changes
             </Button>
           </DialogFooter>

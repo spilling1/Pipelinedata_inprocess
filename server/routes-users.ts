@@ -113,12 +113,30 @@ export function registerUserManagementRoutes(app: Express) {
   // Update user (Admin only)
   router.put('/users/:id', isAuthenticated, requireAdmin, async (req, res) => {
     try {
-      const validation = updateUserSchema.safeParse(req.body);
-      if (!validation.success) {
-        return res.status(400).json({ error: 'Invalid user data', details: validation.error.errors });
+      console.log('🔄 Update user request body:', req.body);
+      
+      // Simple validation for user updates
+      const allowedFields = ['firstName', 'lastName', 'role', 'isActive'];
+      const updates: any = {};
+      
+      // Only include allowed fields that are present in the request
+      for (const field of allowedFields) {
+        if (req.body[field] !== undefined) {
+          updates[field] = req.body[field];
+        }
       }
-
-      const updatedUser = await userManagementStorage.updateUser(req.params.id, validation.data);
+      
+      // Validate role if provided
+      if (updates.role) {
+        const validRoles = ["Admin", "Leadership", "Marketing", "Ops", "Finance", "Sales", "Post-Sales", "Engineering"];
+        if (!validRoles.includes(updates.role)) {
+          return res.status(400).json({ error: 'Invalid role' });
+        }
+      }
+      
+      console.log('🔄 Filtered updates:', updates);
+      
+      const updatedUser = await userManagementStorage.updateUser(req.params.id, updates);
       res.json(updatedUser);
     } catch (error) {
       console.error('Error updating user:', error);
