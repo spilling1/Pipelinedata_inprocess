@@ -886,7 +886,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
           
           // Save file record
-          const uploadedFile = await storage.createUploadedFile({
+          const uploadedFile = await storage.filesStorage.createUploadedFile({
             filename: file.originalname,
             snapshotDate,
             recordCount: parsedData.length,
@@ -1007,7 +1007,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const enrichedOpportunities = [];
       
       for (const opportunity of opportunities) {
-        const latestSnapshot = await storage.getLatestSnapshotByOpportunity(opportunity.id);
+        const latestSnapshot = await storage.snapshotsStorage.getLatestSnapshotByOpportunity(opportunity.id);
         
         if (!latestSnapshot) continue;
 
@@ -1047,7 +1047,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all opportunities and their snapshots
       const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
-      const allSnapshots = await storage.getAllSnapshots();
+      const allSnapshots = await storage.snapshotsStorage.getAllSnapshots();
       
       console.log(`📋 Found ${allOpportunities.length} opportunities and ${allSnapshots.length} snapshots`);
       
@@ -1288,7 +1288,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { startDate, endDate, period } = req.query;
       
       // Get the most recent snapshot date
-      const latestDateResult = await storage.getAllSnapshots();
+      const latestDateResult = await storage.snapshotsStorage.getAllSnapshots();
       const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
         const snapshotDate = new Date(snapshot.snapshotDate);
         return snapshotDate > latest ? snapshotDate : latest;
@@ -1344,7 +1344,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/stage-distribution", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       // Get the most recent snapshot date
-      const latestDateResult = await storage.getAllSnapshots();
+      const latestDateResult = await storage.snapshotsStorage.getAllSnapshots();
       const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
         const snapshotDate = new Date(snapshot.snapshotDate);
         return snapshotDate > latest ? snapshotDate : latest;
@@ -1390,7 +1390,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/fiscal-pipeline", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       // Get the most recent snapshot date
-      const latestDateResult = await storage.getAllSnapshots();
+      const latestDateResult = await storage.snapshotsStorage.getAllSnapshots();
       const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
         const snapshotDate = new Date(snapshot.snapshotDate);
         return snapshotDate > latest ? snapshotDate : latest;
@@ -1588,7 +1588,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let conversionRate = 0;
       
       // Get all snapshots to find deals that closed
-      const allSnapshotsForWinRate = await storage.getAllSnapshots();
+      const allSnapshotsForWinRate = await storage.snapshotsStorage.getAllSnapshots();
       
       // First, let's see what stage names we have
       const uniqueStages = new Set();
@@ -1661,7 +1661,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get the most recent snapshot date to filter closed deals
-      const latestDateResult = await storage.getAllSnapshots();
+      const latestDateResult = await storage.snapshotsStorage.getAllSnapshots();
       const latestSnapshotDateForWinRate = latestDateResult.length > 0 
         ? new Date(Math.max(...latestDateResult.map(s => new Date(s.snapshotDate).getTime())))
         : null;
@@ -2043,7 +2043,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('🔍 Processing close rate over time analysis');
       
       // Get all snapshots and opportunities for historical analysis
-      const allSnapshots = await storage.getAllSnapshots();
+      const allSnapshots = await storage.snapshotsStorage.getAllSnapshots();
       const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
       
       // Create opportunity lookup for faster access
@@ -2224,7 +2224,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/analytics/win-rate-over-time", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       // Get all snapshots and opportunities for historical analysis
-      const allSnapshots = await storage.getAllSnapshots();
+      const allSnapshots = await storage.snapshotsStorage.getAllSnapshots();
       const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
       
       // Create opportunity lookup for faster access
@@ -2573,12 +2573,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       let files;
       if (startDate && endDate) {
-        files = await storage.getUploadedFilesByDateRange(
+        files = await storage.filesStorage.getUploadedFilesByDateRange(
           new Date(startDate as string),
           new Date(endDate as string)
         );
       } else {
-        files = await storage.getAllUploadedFiles();
+        files = await storage.filesStorage.getAllUploadedFiles();
       }
       
       res.json(files);
@@ -2600,16 +2600,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Get file info before deletion for response
-      const file = await storage.getUploadedFile(fileId);
+      const file = await storage.filesStorage.getUploadedFile(fileId);
       if (!file) {
         return res.status(404).json({ error: 'File not found' });
       }
 
       // Delete all snapshots associated with this file's snapshot date
-      await storage.deleteSnapshotsByUploadedFile(fileId);
+      await storage.filesStorage.deleteSnapshotsByUploadedFile(fileId);
       
       // Delete the uploaded file record
-      await storage.deleteUploadedFile(fileId);
+      await storage.filesStorage.deleteUploadedFile(fileId);
       
       res.json({ 
         message: 'File and associated data deleted successfully',
