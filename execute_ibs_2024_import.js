@@ -1,5 +1,5 @@
 // Direct bulk import for 2024 IBS Event using marketing storage
-import { marketingStorage } from './server/storage-mktg.js';
+import { marketingStorage } from './server/storage-mktg.ts';
 
 const customerNames = [
   "Abrazo Homes",
