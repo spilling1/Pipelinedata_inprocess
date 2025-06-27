@@ -1075,7 +1075,7 @@ export class PostgreSQLStorage implements IStorage {
           
           return {
             opportunityName: latestSnapshot?.opportunityName || 'Unknown',
-            clientName: latestSnapshot?.client || undefined,
+            clientName: latestSnapshot?.accountName || undefined,
             finalStage: dealOutcome?.stage || 'Unknown',
             closeDate: dealOutcome?.closeDate.toISOString().split('T')[0] || '',
             value: latestSnapshot?.amount || 0
@@ -1722,10 +1722,12 @@ export class PostgreSQLStorage implements IStorage {
       // Group snapshots by opportunity
       const opportunityGroups = new Map<number, any[]>();
       for (const snapshot of allSnapshots) {
-        if (!opportunityGroups.has(snapshot.opportunityId)) {
-          opportunityGroups.set(snapshot.opportunityId, []);
+        const oppId = snapshot.opportunityId;
+        if (oppId === null) continue;
+        if (!opportunityGroups.has(oppId)) {
+          opportunityGroups.set(oppId, []);
         }
-        opportunityGroups.get(snapshot.opportunityId)!.push(snapshot);
+        opportunityGroups.get(oppId)!.push(snapshot);
       }
 
       // Calculate slippage for each stage transition
@@ -1844,10 +1846,12 @@ export class PostgreSQLStorage implements IStorage {
       // Group snapshots by opportunity to track stage entries
       const opportunityGroups = new Map<number, any[]>();
       for (const snapshot of allSnapshots) {
-        if (!opportunityGroups.has(snapshot.opportunityId)) {
-          opportunityGroups.set(snapshot.opportunityId, []);
+        const oppId = snapshot.opportunityId;
+        if (oppId === null) continue;
+        if (!opportunityGroups.has(oppId)) {
+          opportunityGroups.set(oppId, []);
         }
-        opportunityGroups.get(snapshot.opportunityId)!.push(snapshot);
+        opportunityGroups.get(oppId)!.push(snapshot);
       }
 
       // Calculate quarter retention for each stage
@@ -1858,7 +1862,7 @@ export class PostgreSQLStorage implements IStorage {
       }>();
 
       for (const [opportunityId, snapshots] of opportunityGroups) {
-        const closedSnapshot = snapshots.find(s => s.stage === 'Closed Won' || s.stage === 'Closed Lost');
+        const closedSnapshot = snapshots.find((s: any) => s.stage === 'Closed Won' || s.stage === 'Closed Lost');
         if (!closedSnapshot) continue;
 
         const actualCloseDate = new Date(closedSnapshot.snapshotDate);
@@ -1943,10 +1947,12 @@ export class PostgreSQLStorage implements IStorage {
       const opportunityGroups = new Map<number, any[]>();
       for (const row of allSnapshots) {
         const snapshot = row.snapshots;
-        if (!opportunityGroups.has(snapshot.opportunityId)) {
-          opportunityGroups.set(snapshot.opportunityId, []);
+        const oppId = snapshot.opportunityId;
+        if (oppId === null) continue;
+        if (!opportunityGroups.has(oppId)) {
+          opportunityGroups.set(oppId, []);
         }
-        opportunityGroups.get(snapshot.opportunityId)!.push(snapshot);
+        opportunityGroups.get(oppId)!.push(snapshot);
       }
 
       console.log(`💰 Grouped into ${opportunityGroups.size} opportunities`);
