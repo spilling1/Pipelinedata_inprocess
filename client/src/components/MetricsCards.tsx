@@ -36,7 +36,20 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
 
   // Get correct closed won FY data using dedicated endpoint (for accuracy)
   const { data: closedWonFYData, isLoading: closedWonLoading } = useQuery({
-    queryKey: ['/api/closed-won-fy'],
+    queryKey: ['/api/closed-won-fy', winRateDateRange.startDate?.toISOString(), winRateDateRange.endDate?.toISOString()],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (winRateDateRange.startDate) {
+        params.append('startDate', winRateDateRange.startDate.toISOString().split('T')[0]);
+      }
+      if (winRateDateRange.endDate) {
+        params.append('endDate', winRateDateRange.endDate.toISOString().split('T')[0]);
+      }
+      
+      const response = await fetch(`/api/closed-won-fy?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch closed won FY data');
+      return response.json();
+    }
   });
 
   // Win Rate query with FY to Date range using lightweight endpoint
