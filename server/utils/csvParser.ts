@@ -127,7 +127,6 @@ export async function parseCSVData(buffer: Buffer, filename: string) {
                       null;
 
     const enteredPipeline = normalizedRow.entered_pipeline || 
-                            normalizedRow.created_date || 
                             normalizedRow.pipeline_entry_date ||
                             null;
 
