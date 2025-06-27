@@ -7,9 +7,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Switch } from "@/components/ui/switch";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Users, UserPlus, Settings, Shield, ChevronLeft, RefreshCw } from "lucide-react";
+import { Users, UserPlus, Settings, Shield, ChevronLeft, RefreshCw, Search, Filter, Edit } from "lucide-react";
 import { Link } from "wouter";
 
 interface User {
@@ -66,6 +71,8 @@ export default function UserManagement() {
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [isRoleEditDialogOpen, setIsRoleEditDialogOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
 
   const canManageUsers = hasPermission('user_management');
 
@@ -219,6 +226,18 @@ export default function UserManagement() {
       permissions: currentPermissions
     });
   };
+
+  // Filter and search users
+  const filteredUsers = users?.filter(user => {
+    const matchesSearch = searchTerm === '' || 
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (user.firstName && user.firstName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (user.lastName && user.lastName.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+    
+    return matchesSearch && matchesRole;
+  }) || [];
 
   if (permissionsLoading) {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
