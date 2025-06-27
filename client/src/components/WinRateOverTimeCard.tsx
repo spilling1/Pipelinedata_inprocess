@@ -27,12 +27,15 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
     }
   });
 
-  // Filter out data points over 40% to avoid artificial spikes and prepare chart data
+  // Filter out data points over 40% to avoid artificial spikes and prepare chart data with timestamp conversion
   const chartData = (winRateData?.winRateData || []).filter((point: WinRateDataPoint) => {
     const fyValid = !point.fyWinRate || point.fyWinRate <= 40;
     const rollingValid = !point.rolling12WinRate || point.rolling12WinRate <= 40;
     return fyValid && rollingValid;
-  });
+  }).map((point: WinRateDataPoint) => ({
+    ...point,
+    timestamp: new Date(point.date).getTime()
+  }));
 
   // Format date for display - Monthly format Mon-YY
   const formatDate = (dateStr: string) => {
@@ -189,8 +192,11 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
               >
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
-                  dataKey="date" 
-                  tickFormatter={formatDate}
+                  dataKey="timestamp" 
+                  type="number"
+                  scale="time"
+                  domain={['dataMin', 'dataMax']}
+                  tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
                   stroke="#666"
                   fontSize={12}
                 />

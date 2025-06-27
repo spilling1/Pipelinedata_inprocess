@@ -194,7 +194,10 @@ export function CloseRateOverTimeCard() {
     );
   }
 
-  const chartData = data?.closeRateData || [];
+  const chartData = (data?.closeRateData || []).map((point: any) => ({
+    ...point,
+    timestamp: new Date(point.date).getTime()
+  }));
 
   return (
     <Card className="w-full">
@@ -215,12 +218,14 @@ export function CloseRateOverTimeCard() {
               <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
-                  dataKey="date" 
-                  tickFormatter={formatDate}
+                  dataKey="timestamp" 
+                  type="number"
+                  scale="time"
+                  domain={['dataMin', 'dataMax']}
+                  tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
                   stroke="#666"
                   fontSize={12}
                   height={60}
-                  interval="preserveStartEnd"
                 />
                 <YAxis 
                   stroke="#666"
