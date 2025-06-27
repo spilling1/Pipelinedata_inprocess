@@ -126,9 +126,20 @@ export async function parseCSVData(buffer: Buffer, filename: string) {
                       normalizedRow.target_close_date ||
                       null;
 
-    const enteredPipeline = normalizedRow.entered_pipeline || 
+    const enteredPipeline = normalizedRow.entered_pipeline_date || 
+                            normalizedRow.entered_pipeline ||
                             normalizedRow.pipeline_entry_date ||
                             null;
+    
+    // Debug logging for first few rows to see what's happening
+    if (i < 5) {
+      console.log(`🔍 Row ${i + 1} entered pipeline debug:`);
+      console.log(`  entered_pipeline_date: "${normalizedRow.entered_pipeline_date}"`);
+      console.log(`  entered_pipeline: "${normalizedRow.entered_pipeline}"`);
+      console.log(`  pipeline_entry_date: "${normalizedRow.pipeline_entry_date}"`);
+      console.log(`  created_date: "${normalizedRow.created_date}"`);
+      console.log(`  Final enteredPipeline value: "${enteredPipeline}"`);
+    }
 
     const lossReason = normalizedRow.loss_reason || 
                        normalizedRow.reason_lost || 
