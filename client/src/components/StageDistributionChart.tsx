@@ -34,28 +34,8 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     'Negotiation/Review'
   ], []);
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Stage Distribution</CardTitle>
-            <div className="flex space-x-2">
-              <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
-              <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
-            </div>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
-        </CardContent>
-      </Card>
-    );
-  }
-
+  // Memoize expensive data processing (must also be before early return)
   const stageData = analytics?.stageDistribution || [];
-
-  // Memoize expensive data processing
   const chartData = useMemo(() => {
     // Filter out closed stages only
     const activeStageData = stageData.filter((item: any) => 
@@ -91,7 +71,7 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     }));
   }, [stageData, viewMode, stageOrder]);
 
-  // Memoize tooltip formatting function
+  // Memoize tooltip formatting function (must be before early return)
   const formatTooltipValue = useCallback((value: number, name: string) => {
     if (viewMode === 'count') {
       return [`${value} opportunities`, 'Count'];
@@ -105,6 +85,25 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
       }
     }
   }, [viewMode]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle>Stage Distribution</CardTitle>
+            <div className="flex space-x-2">
+              <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
