@@ -164,15 +164,21 @@ export default function FilterPanel({ filters, onFiltersChange, onUploadClick }:
     }
   };
 
-  // Get unique owners, stages, and clients for filter options
-  const uniqueOwners = opportunities ? 
-    Array.from(new Set((opportunities as any[]).map((opp: any) => opp.owner).filter(Boolean))) : [];
+  // Get unique owners, stages, and clients for filter options (memoized for performance)
+  const uniqueOwners = useMemo(() => 
+    opportunities ? 
+      Array.from(new Set((opportunities as any[]).map((opp: any) => opp.owner).filter(Boolean))) : []
+  , [opportunities]);
   
-  const uniqueStages = opportunities ? 
-    Array.from(new Set((opportunities as any[]).map((opp: any) => opp.latestSnapshot?.stage).filter(Boolean))) : [];
+  const uniqueStages = useMemo(() => 
+    opportunities ? 
+      Array.from(new Set((opportunities as any[]).map((opp: any) => opp.latestSnapshot?.stage).filter(Boolean))) : []
+  , [opportunities]);
 
-  const uniqueClients = opportunities ? 
-    Array.from(new Set((opportunities as any[]).map((opp: any) => opp.clientName).filter(Boolean))) : [];
+  const uniqueClients = useMemo(() => 
+    opportunities ? 
+      Array.from(new Set((opportunities as any[]).map((opp: any) => opp.clientName).filter(Boolean))) : []
+  , [opportunities]);
 
   useEffect(() => {
     setLocalFilters(filters);

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,10 +82,12 @@ export default function OpportunitiesTable({ filters }: OpportunitiesTableProps)
     return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
   };
 
-  // Sort opportunities
-  let sortedOpportunities = opportunities || [];
-  if (sortField) {
-    sortedOpportunities = [...sortedOpportunities].sort((a, b) => {
+  // Sort opportunities (memoized for performance)
+  const sortedOpportunities = useMemo(() => {
+    const baseOpportunities = opportunities || [];
+    if (!sortField) return baseOpportunities;
+    
+    return [...baseOpportunities].sort((a, b) => {
       let aValue, bValue;
       
       switch (sortField) {
@@ -109,7 +111,7 @@ export default function OpportunitiesTable({ filters }: OpportunitiesTableProps)
       if (aValue > bValue) return sortDirection === "asc" ? 1 : -1;
       return 0;
     });
-  }
+  }, [opportunities, sortField, sortDirection]);
 
   const SortButton = ({ field, children }: { field: string; children: React.ReactNode }) => (
     <button
