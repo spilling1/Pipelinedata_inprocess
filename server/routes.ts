@@ -2724,7 +2724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Settings endpoints
   app.get("/api/settings/stage-mappings", async (_req, res) => {
     try {
-      const mappings = await storage.getStageMappings();
+      const mappings = await storage.settingsStorage.getStageMappings();
       res.json({ mappings });
     } catch (error) {
       console.error("Error fetching stage mappings:", error);
@@ -2747,7 +2747,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
-      await storage.setStageMappings(mappings);
+      await storage.settingsStorage.setStageMappings(mappings);
       res.json({ success: true });
     } catch (error) {
       console.error("Error saving stage mappings:", error);
