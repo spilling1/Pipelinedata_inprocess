@@ -21,8 +21,8 @@ const COLORS = [
 export default function StageDistributionChart({ filters }: StageDistributionChartProps) {
   const [viewMode, setViewMode] = useState<'count' | 'value'>('count');
   
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/analytics', filters],
+  const { data: stageData, isLoading } = useQuery({
+    queryKey: ['/api/analytics/stage-distribution'],
   });
 
   // Memoize stage order for consistent sorting (must be before early return)
@@ -33,15 +33,11 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     'ROI Analysis/Pricing',
     'Negotiation/Review'
   ], []);
-
-  // Memoize expensive data processing (must also be before early return)
-  const stageData = analytics?.stageDistribution || [];
   const chartData = useMemo(() => {
-    // Filter out closed stages only
-    const activeStageData = stageData.filter((item: any) => 
-      !item.stage.includes('Closed Won') && 
-      !item.stage.includes('Closed Lost')
-    );
+    if (!stageData || !Array.isArray(stageData)) return [];
+    
+    // Data is already filtered on the backend, no need to filter closed stages
+    const activeStageData = stageData;
 
     // Sort stages according to the defined order
     const sortedStageData = activeStageData.sort((a: any, b: any) => {

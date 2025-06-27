@@ -1278,6 +1278,110 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lightweight pipeline value endpoint (protected)
+  app.get("/api/analytics/pipeline-value", isAuthenticated, requirePermission('sales'), async (req, res) => {
+    try {
+      const { startDate, endDate, period } = req.query;
+      
+      // Get the most recent snapshot date
+      const latestDateResult = await storage.getAllSnapshots();
+      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
+        const snapshotDate = new Date(snapshot.snapshotDate);
+        return snapshotDate > latest ? snapshotDate : latest;
+      }, new Date(0));
+      
+      // Query only latest snapshots
+      const latestSnapshots = await db.select().from(snapshots)
+        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
+      
+      // Filter active pipeline stages (exclude closed and validation)
+      let activeSnapshots = latestSnapshots.filter(s => 
+        !s.stage?.includes('Closed Won') && 
+        !s.stage?.includes('Closed Lost') && 
+        s.stage !== 'Validation/Introduction'
+      );
+      
+      // Apply date range filtering if provided
+      if (startDate || endDate) {
+        const start = startDate ? new Date(startDate as string) : new Date(0);
+        const end = endDate ? new Date(endDate as string) : new Date();
+        
+        activeSnapshots = activeSnapshots.filter(s => {
+          const createdDate = s.createdDate ? new Date(s.createdDate) : new Date(0);
+          return createdDate >= start && createdDate <= end;
+        });
+      }
+      
+      // Calculate pipeline value by date
+      const pipelineData = activeSnapshots.reduce((acc, snapshot) => {
+        const date = snapshot.snapshotDate.toISOString().split('T')[0];
+        if (!acc[date]) {
+          acc[date] = 0;
+        }
+        acc[date] += snapshot.amount || 0;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Convert to array format expected by chart
+      const chartData = Object.entries(pipelineData).map(([date, value]) => ({
+        date: new Date(date),
+        value,
+        timestamp: new Date(date).getTime()
+      })).sort((a, b) => a.timestamp - b.timestamp);
+      
+      res.json(chartData);
+    } catch (error) {
+      console.error('❌ Error calculating pipeline value:', error);
+      res.status(500).json({ error: 'Failed to calculate pipeline value' });
+    }
+  });
+
+  // Lightweight stage distribution endpoint (protected)
+  app.get("/api/analytics/stage-distribution", isAuthenticated, requirePermission('sales'), async (req, res) => {
+    try {
+      // Get the most recent snapshot date
+      const latestDateResult = await storage.getAllSnapshots();
+      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
+        const snapshotDate = new Date(snapshot.snapshotDate);
+        return snapshotDate > latest ? snapshotDate : latest;
+      }, new Date(0));
+      
+      // Query only latest snapshots
+      const latestSnapshots = await db.select().from(snapshots)
+        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
+      
+      // Filter active pipeline stages (exclude closed and validation)
+      const activeSnapshots = latestSnapshots.filter(s => 
+        !s.stage?.includes('Closed Won') && 
+        !s.stage?.includes('Closed Lost') && 
+        s.stage !== 'Validation/Introduction'
+      );
+      
+      // Group by stage
+      const stageGroups = activeSnapshots.reduce((acc, snapshot) => {
+        const stage = snapshot.stage || 'Unknown';
+        if (!acc[stage]) {
+          acc[stage] = { count: 0, value: 0 };
+        }
+        acc[stage].count++;
+        acc[stage].value += snapshot.amount || 0;
+        return acc;
+      }, {} as Record<string, { count: number; value: number }>);
+      
+      // Convert to array format
+      const stageDistribution = Object.entries(stageGroups).map(([stage, data]) => ({
+        stage,
+        count: data.count,
+        value: data.value
+      }));
+      
+      res.json(stageDistribution);
+    } catch (error) {
+      console.error('❌ Error calculating stage distribution:', error);
+      res.status(500).json({ error: 'Failed to calculate stage distribution' });
+    }
+  });
+
   // Lightweight close rate endpoint (protected)  
   app.get("/api/analytics/close-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
