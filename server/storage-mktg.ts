@@ -666,27 +666,46 @@ export class MarketingStorage {
       criteria: 'Entered Pipeline + Close Date After Campaign Start'
     });
 
-    // Now calculate Win Rate using your formula: Closed Won / (Total Pipeline - Active Customers)
-    const totalPipelineCustomers = totalCampaignPipelineSnapshots.length;
-    const activeCustomers = activeSnapshots.length;
-    const nonActiveCustomers = totalPipelineCustomers - activeCustomers;
+    // Calculate Win Rate using standard formula: Closed Won / (Closed Won + Closed Lost)
+    // Only count customers who entered pipeline and exclude pre-existing closed won
+    const closedLostSnapshots = pipelineSnapshots.filter(s => {
+      const campaignCustomer = uniqueCustomers.find(c => c.opportunityId === s.opportunityId);
+      
+      // Exclude if originally "Closed Won" when added to campaign
+      if (campaignCustomer?.stage === 'Closed Won') {
+        return false;
+      }
+      
+      // Exclude if current close date is before campaign start date
+      if (s.closeDate && campaign.startDate) {
+        const closeDate = new Date(s.closeDate);
+        const campaignStartDate = new Date(campaign.startDate);
+        if (closeDate < campaignStartDate) {
+          return false;
+        }
+      }
+      
+      return s.stage === 'Closed Lost';
+    });
+
+    const totalClosedDeals = closedWonSnapshots.length + closedLostSnapshots.length;
     
-    currentWinRate = nonActiveCustomers > 0 
-      ? currentClosedWon.count / nonActiveCustomers
+    currentWinRate = totalClosedDeals > 0 
+      ? closedWonSnapshots.length / totalClosedDeals
       : 0;
 
     // Debug logging for Win Rate
-    console.log('Win Rate Calculation (Updated Formula):', {
-      closedWonCount: currentClosedWon.count,
-      totalPipelineCustomers: totalPipelineCustomers,
-      activeCustomers: activeCustomers,
-      nonActiveCustomers: nonActiveCustomers,
+    console.log('Win Rate Calculation (Standard Formula):', {
+      closedWonCount: closedWonSnapshots.length,
+      closedLostCount: closedLostSnapshots.length,
+      totalClosedDeals: totalClosedDeals,
       winRate: currentWinRate,
       winRatePercent: currentWinRate * 100,
-      formula: `${currentClosedWon.count} / (${totalPipelineCustomers} - ${activeCustomers})`
+      formula: `${closedWonSnapshots.length} / (${closedWonSnapshots.length} + ${closedLostSnapshots.length})`
     });
 
-    // Close Rate using your formula: Closed Won / Total Pipeline
+    // Close Rate using formula: Closed Won / Total Pipeline
+    const totalPipelineCustomers = totalCampaignPipelineSnapshots.length;
     const closeRate = totalPipelineCustomers > 0 
       ? currentClosedWon.count / totalPipelineCustomers
       : 0;

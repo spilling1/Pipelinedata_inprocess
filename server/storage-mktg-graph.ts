@@ -97,6 +97,24 @@ export class MarketingGraphStorage {
         const hasEnteredPipeline = !!mostRecentSnapshot?.enteredPipeline;
         const enteredDate = mostRecentSnapshot?.enteredPipeline ? new Date(mostRecentSnapshot.enteredPipeline) : null;
         
+        // Debug logging for Vantage specifically
+        if (customer.opportunityName === 'Vantage Homes') {
+          console.log('🔍 VANTAGE DEBUG - Customer Info:', {
+            opportunityId: customer.opportunityId,
+            opportunityName: customer.opportunityName,
+            startingStage: customer.startingStage,
+            startingValue: customer.startingYear1Arr,
+            snapshotsFound: allCustomerSnapshots.length,
+            hasEnteredPipeline,
+            enteredDate: enteredDate?.toISOString(),
+            mostRecentSnapshot: mostRecentSnapshot ? {
+              stage: mostRecentSnapshot.stage,
+              value: mostRecentSnapshot.year1Arr,
+              snapshotDate: mostRecentSnapshot.snapshotDate
+            } : null
+          });
+        }
+        
         customersPipelineInfo.set(customer.opportunityId, { hasEnteredPipeline, enteredDate });
       });
 
@@ -124,6 +142,27 @@ export class MarketingGraphStorage {
               const mostRecentSnapshot = relevantSnapshots[0];
               const currentStage = mostRecentSnapshot?.stage || customer.startingStage;
               const currentValue = mostRecentSnapshot?.year1Arr || customer.startingYear1Arr || 0;
+              
+              // Debug logging for Vantage on specific dates
+              if (customer.opportunityName === 'Vantage Homes' && 
+                  (dateStr === '2025-06-23' || dateStr === '2025-06-24' || dateStr === '2025-06-26' || dateStr === '2025-06-27')) {
+                console.log(`🔍 VANTAGE DEBUG - Date ${dateStr}:`, {
+                  currentDate: currentDate.toISOString(),
+                  enteredPipelineDate: pipelineInfo.enteredDate?.toISOString(),
+                  relevantSnapshotsCount: relevantSnapshots.length,
+                  mostRecentSnapshot: mostRecentSnapshot ? {
+                    stage: mostRecentSnapshot.stage,
+                    value: mostRecentSnapshot.year1Arr,
+                    snapshotDate: mostRecentSnapshot.snapshotDate
+                  } : null,
+                  currentStage,
+                  currentValue,
+                  startingStage: customer.startingStage,
+                  willInclude: customer.startingStage !== 'Closed Won',
+                  stageCategory: currentStage?.includes('Closed Won') ? 'closedWon' : 
+                                currentStage?.includes('Closed Lost') ? 'closedLost' : 'pipeline'
+                });
+              }
               
               // Exclude pre-existing "Closed Won" customers for accurate attribution
               if (customer.startingStage !== 'Closed Won') {
