@@ -459,8 +459,12 @@ export class MarketingStorage {
     // Get current snapshots for unique customers only
     const currentSnapshots = await this.getCurrentSnapshotsForCampaign(campaignId);
     
-    // Filter snapshots to only include customers with entered pipeline field populated
-    const pipelineSnapshots = currentSnapshots.filter(s => s.enteredPipeline !== null);
+    // Filter snapshots to include customers who are in pipeline stages (not just based on enteredPipeline field)
+    const pipelineSnapshots = currentSnapshots.filter(s => {
+      // Include if they have enteredPipeline populated OR if they're in active pipeline stages
+      return s.enteredPipeline !== null || 
+             (s.stage !== 'Closed Won' && s.stage !== 'Closed Lost' && s.stage !== null);
+    });
     
     // Calculate current metrics - EXCLUDE customers who were already "Closed Won" when added to campaign
     // ALSO EXCLUDE customers whose current close date is before campaign start date
