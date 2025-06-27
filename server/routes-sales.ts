@@ -6,7 +6,7 @@ export function registerSalesRoutes(app: Express) {
   // Get sales representatives list
   app.get('/api/sales/reps', isAuthenticated, async (req, res) => {
     try {
-      const salesReps = await storage.getSalesRepsList();
+      const salesReps = await storage.salesStorage.getSalesRepsList();
       res.json(salesReps);
     } catch (error) {
       console.error('Error fetching sales reps:', error);
