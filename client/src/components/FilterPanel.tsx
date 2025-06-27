@@ -101,7 +101,8 @@ export default function FilterPanel({ filters, onFiltersChange, onUploadClick }:
 
   const { data: uploadedFiles } = useQuery({
     queryKey: ['/api/files'],
-    refetchInterval: 5000, // Refresh every 5 seconds
+    // Removed aggressive polling - files are uploaded periodically, not continuously
+    refetchOnWindowFocus: true, // Refresh when user returns to the tab
   });
 
   const { data: opportunities } = useQuery({

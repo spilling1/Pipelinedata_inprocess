@@ -246,6 +246,13 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ✓ Marketing analytics system fully operational with authentic pipeline data filtering, real-time current data display, comprehensive campaign attribution logic, dynamic pipeline progression visualization, enhanced new deals creation tracking, and pipeline performance breakdown by opportunity owner
 
+✓ Performance Optimization Complete (June 27, 2025)
+- Eliminated unnecessary file polling that was checking every 5 seconds
+- Reduced API calls from 720 per hour to only when needed
+- Changed to refresh on window focus instead of constant polling
+- Improved application performance and reduced server load
+- Files now refresh when returning to browser tab or during actual uploads
+
 ✓ Sales Analytics System Rewrite Complete (June 25, 2025)
 - Completely rewrote sales analytics to use same foundation as original pipeline analysis code
 - Fixed Total Pipeline Value to use only most recent uploaded file data (like original)
