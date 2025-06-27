@@ -457,9 +457,10 @@ async function parseExcelData(buffer: Buffer, filename: string) {
       continue;
     }
 
-    // Validate opportunity ID length - Salesforce IDs are exactly 15 characters
+    // Truncate opportunity ID to 15 characters if longer
     if (normalizedRow.opportunity_id.length > 15) {
-      throw new Error(`Invalid opportunity ID found: "${normalizedRow.opportunity_id}". Salesforce opportunity IDs must be exactly 15 characters, but this ID has ${normalizedRow.opportunity_id.length} characters. The system should never create or accept opportunity IDs longer than 15 characters.`);
+      console.log(`⚠️ Truncating opportunity ID from ${normalizedRow.opportunity_id.length} to 15 characters: "${normalizedRow.opportunity_id}" -> "${normalizedRow.opportunity_id.substring(0, 15)}"`);
+      normalizedRow.opportunity_id = normalizedRow.opportunity_id.substring(0, 15);
     }
 
     // For rows with opportunity data, inherit stage/confidence from above if empty
