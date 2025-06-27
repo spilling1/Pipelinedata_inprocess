@@ -34,12 +34,11 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
     return fyValid && rollingValid;
   });
 
-  // Format date for display
+  // Format date for display - Monthly format Mon-YY
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
     return date.toLocaleDateString('en-US', { 
       month: 'short', 
-      day: 'numeric',
       year: '2-digit'
     });
   };

@@ -1,22 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Trophy, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
-import { dateRangeOptions, getDateRangeByValue } from "@/utils/dateRanges";
+import { useMemo } from "react";
+import { getDateRangeByValue } from "@/utils/dateRanges";
 
 interface WinRateCardProps {
   filters?: any;
 }
 
 export default function WinRateCard({ filters }: WinRateCardProps) {
-  const [selectedDateRange, setSelectedDateRange] = useState("fy-to-date");
-  
-  // Calculate date range based on selection
+  // Use fixed fiscal year to date range (no dropdown needed)
   const dateRange = useMemo(() => {
-    return getDateRangeByValue(selectedDateRange);
-  }, [selectedDateRange]);
+    return getDateRangeByValue("fy-to-date");
+  }, []);
 
   const { data: winRateData, isLoading } = useQuery({
     queryKey: ['/api/analytics/win-rate', dateRange.startDate?.toISOString(), dateRange.endDate?.toISOString()],
@@ -46,23 +43,9 @@ export default function WinRateCard({ filters }: WinRateCardProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Trophy className="h-4 w-4 text-green-600" />
-            <CardTitle className="font-semibold tracking-tight text-[24px]">Win Rate</CardTitle>
-          </div>
-          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {dateRangeOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <Trophy className="h-4 w-4 text-green-600" />
+          <CardTitle className="font-semibold tracking-tight text-[24px]">Win Rate</CardTitle>
         </div>
         <p className="text-sm text-gray-600">Percentage of closed deals that were won</p>
       </CardHeader>

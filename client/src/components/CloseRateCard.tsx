@@ -1,22 +1,19 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Target, TrendingUp } from "lucide-react";
-import { useMemo, useState } from "react";
-import { dateRangeOptions, getDateRangeByValue } from "@/utils/dateRanges";
+import { useMemo } from "react";
+import { getDateRangeByValue } from "@/utils/dateRanges";
 
 interface CloseRateCardProps {
   filters?: any;
 }
 
 export default function CloseRateCard({ filters }: CloseRateCardProps) {
-  const [selectedDateRange, setSelectedDateRange] = useState("last-12-months");
-  
-  // Calculate date range based on selection
+  // Use fixed last 12 months range (no dropdown needed)
   const dateRange = useMemo(() => {
-    return getDateRangeByValue(selectedDateRange);
-  }, [selectedDateRange]);
+    return getDateRangeByValue("last-12-months");
+  }, []);
 
   const { data: closeRateData, isLoading } = useQuery({
     queryKey: ['/api/analytics/close-rate', dateRange.startDate?.toISOString(), dateRange.endDate?.toISOString()],
@@ -46,23 +43,9 @@ export default function CloseRateCard({ filters }: CloseRateCardProps) {
   return (
     <Card className="h-full">
       <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Target className="h-4 w-4 text-blue-600" />
-            <CardTitle className="font-semibold tracking-tight text-[24px]">Close Rate</CardTitle>
-          </div>
-          <Select value={selectedDateRange} onValueChange={setSelectedDateRange}>
-            <SelectTrigger className="w-[140px]">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              {dateRangeOptions.map((option) => (
-                <SelectItem key={option.id} value={option.id}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        <div className="flex items-center gap-2">
+          <Target className="h-4 w-4 text-blue-600" />
+          <CardTitle className="font-semibold tracking-tight text-[24px]">Close Rate</CardTitle>
         </div>
         <p className="text-sm text-gray-600">Percentage of pipeline entries that closed won</p>
       </CardHeader>
