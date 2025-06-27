@@ -1232,6 +1232,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lightweight pipeline metrics endpoint (protected)
+  app.get("/api/analytics/pipeline-metrics", isAuthenticated, requirePermission('sales'), async (req, res) => {
+    try {
+      // Get the most recent snapshot date
+      const latestDateResult = await storage.getAllSnapshots();
+      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
+        const snapshotDate = new Date(snapshot.snapshotDate);
+        return snapshotDate > latest ? snapshotDate : latest;
+      }, new Date(0));
+      
+      // Query only latest snapshots for pipeline metrics
+      const latestSnapshots = await db.select().from(snapshots)
+        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
+      
+      // Filter active pipeline stages (exclude closed and validation)
+      const activeSnapshots = latestSnapshots.filter(s => 
+        !s.stage?.includes('Closed Won') && 
+        !s.stage?.includes('Closed Lost') && 
+        s.stage !== 'Validation/Introduction'
+      );
+      
+      const totalValue = activeSnapshots.reduce((sum, s) => sum + (s.tcv || 0), 0);
+      const totalYear1Arr = activeSnapshots.reduce((sum, s) => sum + (s.amount || 0), 0);
+      const activeCount = activeSnapshots.length;
+      const avgDealSize = activeCount > 0 ? totalYear1Arr / activeCount : 0;
+      
+      // Get closed won deals for avgDealSizeClosedWon
+      const closedWonSnapshots = latestSnapshots.filter(s => s.stage === 'Closed Won');
+      const closedWonYear1Arr = closedWonSnapshots.reduce((sum, s) => sum + (s.amount || 0), 0);
+      const avgDealSizeClosedWon = closedWonSnapshots.length > 0 ? closedWonYear1Arr / closedWonSnapshots.length : 0;
+      
+      res.json({
+        totalValue,
+        totalYear1Arr,
+        totalContractValue: totalValue,
+        activeCount,
+        avgDealSize,
+        avgDealSizeClosedWon,
+        avgDealSizePipeline: avgDealSize
+      });
+    } catch (error) {
+      console.error('❌ Error calculating pipeline metrics:', error);
+      res.status(500).json({ error: 'Failed to calculate pipeline metrics' });
+    }
+  });
+
   // Lightweight close rate endpoint (protected)  
   app.get("/api/analytics/close-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {

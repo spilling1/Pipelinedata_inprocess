@@ -19,9 +19,9 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     return getDateRangeByValue("last-12-months");
   }, []);
 
-  // Main analytics query for general metrics (without date filter)
+  // Main pipeline metrics query using lightweight endpoint
   const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/analytics', filters],
+    queryKey: ['/api/analytics/pipeline-metrics'],
   });
 
   // Win Rate query with FY to Date range using lightweight endpoint
@@ -78,7 +78,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     );
   }
 
-  const metrics = (analytics as any)?.metrics || {
+  const metrics = analytics || {
     totalValue: 0,
     activeCount: 0,
     avgDealSize: 0,
