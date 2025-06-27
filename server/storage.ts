@@ -1,5 +1,5 @@
 import { db } from './db';
-import { eq, desc, asc, and, sql, gte, lte, isNull, isNotNull, or, inArray } from 'drizzle-orm';
+import { eq, desc, asc, and, sql, gte, lte, isNull, isNotNull, or, inArray, like } from 'drizzle-orm';
 import { 
   opportunities, 
   snapshots, 
@@ -1041,12 +1041,12 @@ export class PostgreSQLStorage implements IStorage {
       }
 
       // For each stage the deal visited, record the outcome
-      stagesVisited.forEach(stage => {
-        const analysis = stageAnalysis.get(stage);
+      stagesVisited.forEach(visitedStage => {
+        const analysis = stageAnalysis.get(visitedStage);
         if (analysis) {
           analysis.deals.add(opportunityId);
-          const stage = finalOutcome.stage.toLowerCase();
-          if (stage.includes('closed won') || stage.includes('won')) {
+          const finalStage = finalOutcome.stage.toLowerCase();
+          if (finalStage.includes('closed won') || finalStage.includes('won')) {
             analysis.won.add(opportunityId);
           } else {
             analysis.lost.add(opportunityId);

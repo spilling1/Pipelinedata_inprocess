@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
+import { User } from "@shared/schema";
 
 export function useAuth() {
-  const { data: user, isLoading, error } = useQuery({
+  const { data: user, isLoading, error } = useQuery<User>({
     queryKey: ["/api/auth/user"],
     retry: (failureCount, error: any) => {
       // Retry up to 3 times for 401 errors

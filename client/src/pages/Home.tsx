@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { BarChart3, TrendingUp, Users, LogOut, Target, Database, UserCheck, Settings } from "lucide-react";
 import { Link } from "wouter";
+import { User } from "@shared/schema";
 
 export default function Home() {
   const { user } = useAuth();
