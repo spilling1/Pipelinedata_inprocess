@@ -1,0 +1,100 @@
+-- Update opportunity IDs from 15-character to 18-character format
+-- Based on mapping provided in attached_assets/mapping_1751061472555.csv
+
+-- Before update: Check current state
+SELECT 
+  COUNT(*) as total_opportunities,
+  COUNT(CASE WHEN LENGTH(opportunity_id) = 15 THEN 1 END) as fifteen_char_count,
+  COUNT(CASE WHEN LENGTH(opportunity_id) = 18 THEN 1 END) as eighteen_char_count,
+  MIN(LENGTH(opportunity_id)) as min_length,
+  MAX(LENGTH(opportunity_id)) as max_length
+FROM opportunities;
+
+-- Execute the updates based on mapping file
+UPDATE opportunities SET opportunity_id = '006Rj00000NiNjyIAF' WHERE opportunity_id = '006Rj00000NiNjy';
+UPDATE opportunities SET opportunity_id = '006Rj00000N9xObIAJ' WHERE opportunity_id = '006Rj00000N9xOb';
+UPDATE opportunities SET opportunity_id = '006Rj00000N659WIAR' WHERE opportunity_id = '006Rj00000N659W';
+UPDATE opportunities SET opportunity_id = '006Rj00000MIYrOIAX' WHERE opportunity_id = '006Rj00000MIYrO';
+UPDATE opportunities SET opportunity_id = '006Rj00000Lm149IAB' WHERE opportunity_id = '006Rj00000Lm149';
+UPDATE opportunities SET opportunity_id = '006Rj00000LEfDmIAL' WHERE opportunity_id = '006Rj00000LEfDm';
+UPDATE opportunities SET opportunity_id = '006Rj00000KBurPIAT' WHERE opportunity_id = '006Rj00000KBurP';
+UPDATE opportunities SET opportunity_id = '006Rj00000KBtvPIAT' WHERE opportunity_id = '006Rj00000KBtvP';
+UPDATE opportunities SET opportunity_id = '006Rj00000KAMmvIAH' WHERE opportunity_id = '006Rj00000KAMmv';
+UPDATE opportunities SET opportunity_id = '006Rj00000JcZjNIAV' WHERE opportunity_id = '006Rj00000JcZjN';
+UPDATE opportunities SET opportunity_id = '006Rj00000IuPcWIAV' WHERE opportunity_id = '006Rj00000IuPcW';
+UPDATE opportunities SET opportunity_id = '006Rj00000IrWp2IAF' WHERE opportunity_id = '006Rj00000IrWp2';
+UPDATE opportunities SET opportunity_id = '006Rj00000EEPUjIAP' WHERE opportunity_id = '006Rj00000EEPUj';
+UPDATE opportunities SET opportunity_id = '006Rj00000DUfRFIA1' WHERE opportunity_id = '006Rj00000DUfRF';
+UPDATE opportunities SET opportunity_id = '006Rj00000BoFvBIAV' WHERE opportunity_id = '006Rj00000BoFvB';
+UPDATE opportunities SET opportunity_id = '006Rj00000BJoVpIAL' WHERE opportunity_id = '006Rj00000BJoVp';
+UPDATE opportunities SET opportunity_id = '0068c00000uIKAKAA4' WHERE opportunity_id = '0068c00000uIKAK';
+UPDATE opportunities SET opportunity_id = '006Rj00000NQKZKIA5' WHERE opportunity_id = '006Rj00000NQKZK';
+UPDATE opportunities SET opportunity_id = '006Rj00000NQKZGIA5' WHERE opportunity_id = '006Rj00000NQKZG';
+UPDATE opportunities SET opportunity_id = '006Rj00000MgU6gIAF' WHERE opportunity_id = '006Rj00000MgU6g';
+UPDATE opportunities SET opportunity_id = '006Rj00000MV7IHIA1' WHERE opportunity_id = '006Rj00000MV7IH';
+UPDATE opportunities SET opportunity_id = '006Rj00000MB5ZCIA1' WHERE opportunity_id = '006Rj00000MB5ZC';
+UPDATE opportunities SET opportunity_id = '006Rj00000LlShVIAV' WHERE opportunity_id = '006Rj00000LlShV';
+UPDATE opportunities SET opportunity_id = '006Rj00000LHJRzIAP' WHERE opportunity_id = '006Rj00000LHJRz';
+UPDATE opportunities SET opportunity_id = '006Rj00000LH1ZvIAL' WHERE opportunity_id = '006Rj00000LH1Zv';
+UPDATE opportunities SET opportunity_id = '006Rj00000LGr7WIAT' WHERE opportunity_id = '006Rj00000LGr7W';
+UPDATE opportunities SET opportunity_id = '006Rj00000LGp2TIAT' WHERE opportunity_id = '006Rj00000LGp2T';
+UPDATE opportunities SET opportunity_id = '006Rj00000KqWxNIAV' WHERE opportunity_id = '006Rj00000KqWxN';
+UPDATE opportunities SET opportunity_id = '006Rj00000Kp70jIAB' WHERE opportunity_id = '006Rj00000Kp70j';
+UPDATE opportunities SET opportunity_id = '006Rj00000KhUfGIAV' WHERE opportunity_id = '006Rj00000KhUfG';
+UPDATE opportunities SET opportunity_id = '006Rj00000Jd3HdIAJ' WHERE opportunity_id = '006Rj00000Jd3Hd';
+UPDATE opportunities SET opportunity_id = '006Rj00000JcxQlIAJ' WHERE opportunity_id = '006Rj00000JcxQl';
+UPDATE opportunities SET opportunity_id = '006Rj00000JWQUIIA5' WHERE opportunity_id = '006Rj00000JWQUI';
+UPDATE opportunities SET opportunity_id = '006Rj00000JAQ7yIAH' WHERE opportunity_id = '006Rj00000JAQ7y';
+UPDATE opportunities SET opportunity_id = '006Rj00000IuZLhIAN' WHERE opportunity_id = '006Rj00000IuZLh';
+UPDATE opportunities SET opportunity_id = '006Rj00000IXzqRIAT' WHERE opportunity_id = '006Rj00000IXzqR';
+UPDATE opportunities SET opportunity_id = '006Rj00000HlBJBIA3' WHERE opportunity_id = '006Rj00000HlBJB';
+UPDATE opportunities SET opportunity_id = '006Rj00000GWIQPIA5' WHERE opportunity_id = '006Rj00000GWIQP';
+UPDATE opportunities SET opportunity_id = '006Rj00000FdXd2IAF' WHERE opportunity_id = '006Rj00000FdXd2';
+UPDATE opportunities SET opportunity_id = '006Rj00000F2f4rIAB' WHERE opportunity_id = '006Rj00000F2f4r';
+UPDATE opportunities SET opportunity_id = '006Rj00000Ev7JFIAZ' WHERE opportunity_id = '006Rj00000Ev7JF';
+UPDATE opportunities SET opportunity_id = '006Rj00000Ei81qIAB' WHERE opportunity_id = '006Rj00000Ei81q';
+UPDATE opportunities SET opportunity_id = '006Rj00000DkrgBIAR' WHERE opportunity_id = '006Rj00000DkrgB';
+UPDATE opportunities SET opportunity_id = '006Rj00000AttiuIAB' WHERE opportunity_id = '006Rj00000Attiu';
+UPDATE opportunities SET opportunity_id = '006Rj00000AU7spIAD' WHERE opportunity_id = '006Rj00000AU7sp';
+UPDATE opportunities SET opportunity_id = '006Rj00000AORPVIA5' WHERE opportunity_id = '006Rj00000AORPV';
+UPDATE opportunities SET opportunity_id = '006Rj000009lqHJIAY' WHERE opportunity_id = '006Rj000009lqHJ';
+UPDATE opportunities SET opportunity_id = '006Rj0000098a9BIAQ' WHERE opportunity_id = '006Rj0000098a9B';
+UPDATE opportunities SET opportunity_id = '006Rj000008gILiIAM' WHERE opportunity_id = '006Rj000008gILi';
+UPDATE opportunities SET opportunity_id = '006Rj000007nH6yIAE' WHERE opportunity_id = '006Rj000007nH6y';
+UPDATE opportunities SET opportunity_id = '006Rj000006dA5hIAE' WHERE opportunity_id = '006Rj000006dA5h';
+UPDATE opportunities SET opportunity_id = '006Rj000005WOAqIAO' WHERE opportunity_id = '006Rj000005WOAq';
+UPDATE opportunities SET opportunity_id = '006Rj000005FsusIAC' WHERE opportunity_id = '006Rj000005Fsus';
+UPDATE opportunities SET opportunity_id = '0068c00000ym62LAAQ' WHERE opportunity_id = '0068c00000ym62L';
+UPDATE opportunities SET opportunity_id = '0068c00000yloPRAAY' WHERE opportunity_id = '0068c00000yloPR';
+UPDATE opportunities SET opportunity_id = '0068c00000ylmv9AAA' WHERE opportunity_id = '0068c00000ylmv9';
+UPDATE opportunities SET opportunity_id = '0068c00000yliQhAAI' WHERE opportunity_id = '0068c00000yliQh';
+UPDATE opportunities SET opportunity_id = '0068c00000yks6UAAQ' WHERE opportunity_id = '0068c00000yks6U';
+UPDATE opportunities SET opportunity_id = '0068c00000xMxetAAC' WHERE opportunity_id = '0068c00000xMxet';
+UPDATE opportunities SET opportunity_id = '0068c00000xMx3RAAS' WHERE opportunity_id = '0068c00000xMx3R';
+UPDATE opportunities SET opportunity_id = '0068c00000wTAy6AAG' WHERE opportunity_id = '0068c00000wTAy6';
+UPDATE opportunities SET opportunity_id = '0068c00000wSp5oAAC' WHERE opportunity_id = '0068c00000wSp5o';
+UPDATE opportunities SET opportunity_id = '0068c00000wSnZzAAK' WHERE opportunity_id = '0068c00000wSnZz';
+UPDATE opportunities SET opportunity_id = '0068c00000wSnZpAAK' WHERE opportunity_id = '0068c00000wSnZp';
+UPDATE opportunities SET opportunity_id = '0068c00000wSnQdAAK' WHERE opportunity_id = '0068c00000wSnQd';
+UPDATE opportunities SET opportunity_id = '0068c00000wSkYjAAK' WHERE opportunity_id = '0068c00000wSkYj';
+UPDATE opportunities SET opportunity_id = '0068c00000wSd8KAAS' WHERE opportunity_id = '0068c00000wSd8K';
+UPDATE opportunities SET opportunity_id = '0068c00000vTuHUAA0' WHERE opportunity_id = '0068c00000vTuHU';
+UPDATE opportunities SET opportunity_id = '0068c00000vTIC9AAO' WHERE opportunity_id = '0068c00000vTIC9';
+UPDATE opportunities SET opportunity_id = '0068c00000uiuAPAAY' WHERE opportunity_id = '0068c00000uiuAP';
+UPDATE opportunities SET opportunity_id = '0068c00000uXbAHAA0' WHERE opportunity_id = '0068c00000uXbAH';
+UPDATE opportunities SET opportunity_id = '0068c00000t5WEeAAM' WHERE opportunity_id = '0068c00000t5WEe';
+UPDATE opportunities SET opportunity_id = '0068c00000rTzE5AAK' WHERE opportunity_id = '0068c00000rTzE5';
+UPDATE opportunities SET opportunity_id = '0068c00000rTAPWAA4' WHERE opportunity_id = '0068c00000rTAPW';
+UPDATE opportunities SET opportunity_id = '0068c00000rSmSKAA0' WHERE opportunity_id = '0068c00000rSmSK';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSGYAA2' WHERE opportunity_id = '0068c00000ovSGY';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSGXAA2' WHERE opportunity_id = '0068c00000ovSGX';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSGBAA2' WHERE opportunity_id = '0068c00000ovSGB';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSG5AAM' WHERE opportunity_id = '0068c00000ovSG5';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSFrAAM' WHERE opportunity_id = '0068c00000ovSFr';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSEOAA2' WHERE opportunity_id = '0068c00000ovSEO';
+UPDATE opportunities SET opportunity_id = '0068c00000ovSECAA2' WHERE opportunity_id = '0068c00000ovSEC';
+UPDATE opportunities SET opportunity_id = '0068c00000ovQ3yAAE' WHERE opportunity_id = '0068c00000ovQ3y';
+UPDATE opportunities SET opportunity_id = '0068c00000ovQ3PAAU' WHERE opportunity_id = '0068c00000ovQ3P';
+UPDATE opportunities SET opportunity_id = '0068c00000ovQ39AAE' WHERE opportunity_id = '0068c00000ovQ39';
+
+-- Continue with remaining updates...
