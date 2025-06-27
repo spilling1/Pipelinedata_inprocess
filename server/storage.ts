@@ -15,33 +15,18 @@ import {
 } from '../shared/schema';
 import { authStorage, type IAuthStorage } from './storage-auth';
 import { settingsStorage, type ISettingsStorage } from './storage-settings';
+import { opportunitiesStorage, type IOpportunitiesStorage } from './storage-opportunities';
+import { snapshotsStorage, type ISnapshotsStorage } from './storage-snapshots';
+import { filesStorage, type IFilesStorage } from './storage-files';
 
 export interface IStorage {
   // User operations for Replit Auth (delegated to authStorage)
   authStorage: IAuthStorage;
 
-  // Opportunities
-  getOpportunity(id: number): Promise<Opportunity | undefined>;
-  getOpportunityByName(name: string): Promise<Opportunity | undefined>;
-  getOpportunityById(opportunityId: string): Promise<Opportunity | undefined>;
-  createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity>;
-  getAllOpportunities(): Promise<Opportunity[]>;
-
-  // Snapshots
-  getSnapshot(id: number): Promise<Snapshot | undefined>;
-  getSnapshotsByOpportunity(opportunityId: number): Promise<Snapshot[]>;
-  getSnapshotsByDateRange(startDate: Date, endDate: Date): Promise<Snapshot[]>;
-  createSnapshot(snapshot: InsertSnapshot): Promise<Snapshot>;
-  getAllSnapshots(): Promise<Snapshot[]>;
-  getLatestSnapshotByOpportunity(opportunityId: number): Promise<Snapshot | undefined>;
-
-  // Uploaded Files
-  getUploadedFile(id: number): Promise<UploadedFile | undefined>;
-  createUploadedFile(file: InsertUploadedFile): Promise<UploadedFile>;
-  getAllUploadedFiles(): Promise<UploadedFile[]>;
-  getUploadedFilesByDateRange(startDate: Date, endDate: Date): Promise<UploadedFile[]>;
-  deleteUploadedFile(id: number): Promise<void>;
-  deleteSnapshotsByUploadedFile(uploadedFileId: number): Promise<void>;
+  // Basic CRUD operations (delegated to specialized storage modules)
+  opportunitiesStorage: IOpportunitiesStorage;
+  snapshotsStorage: ISnapshotsStorage;
+  filesStorage: IFilesStorage;
 
   // Analytics
   getPipelineValueByDate(startDate?: string, endDate?: string): Promise<Array<{ date: Date; value: number }>>;
@@ -235,69 +220,15 @@ export class PostgreSQLStorage implements IStorage {
   
   // Settings (delegated to settingsStorage)
   settingsStorage = settingsStorage;
+  
+  // Basic CRUD operations (delegated to specialized storage modules)
+  opportunitiesStorage = opportunitiesStorage;
+  snapshotsStorage = snapshotsStorage;
+  filesStorage = filesStorage;
 
-  // Opportunity methods
-  async getOpportunity(id: number): Promise<Opportunity | undefined> {
-    const result = await db.select().from(opportunities).where(eq(opportunities.id, id)).limit(1);
-    return result[0];
-  }
 
-  async getOpportunityByName(name: string): Promise<Opportunity | undefined> {
-    const result = await db.select().from(opportunities).where(eq(opportunities.name, name)).limit(1);
-    return result[0];
-  }
 
-  async getOpportunityById(opportunityId: string): Promise<Opportunity | undefined> {
-    const result = await db.select().from(opportunities).where(eq(opportunities.opportunityId, opportunityId)).limit(1);
-    return result[0];
-  }
 
-  async createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
-    const result = await db.insert(opportunities).values(opportunity).returning();
-    return result[0];
-  }
-
-  async getAllOpportunities(): Promise<Opportunity[]> {
-    return await db.select().from(opportunities);
-  }
-
-  // Snapshot methods
-  async getSnapshot(id: number): Promise<Snapshot | undefined> {
-    const result = await db.select().from(snapshots).where(eq(snapshots.id, id)).limit(1);
-    return result[0];
-  }
-
-  async getSnapshotsByOpportunity(opportunityId: number): Promise<Snapshot[]> {
-    return await db.select().from(snapshots)
-      .where(eq(snapshots.opportunityId, opportunityId))
-      .orderBy(desc(snapshots.snapshotDate));
-  }
-
-  async getSnapshotsByDateRange(startDate: Date, endDate: Date): Promise<Snapshot[]> {
-    return await db.select().from(snapshots)
-      .where(and(
-        gte(snapshots.snapshotDate, startDate),
-        lte(snapshots.snapshotDate, endDate)
-      ))
-      .orderBy(desc(snapshots.snapshotDate));
-  }
-
-  async createSnapshot(snapshot: InsertSnapshot): Promise<Snapshot> {
-    const result = await db.insert(snapshots).values(snapshot).returning();
-    return result[0];
-  }
-
-  async getAllSnapshots(): Promise<Snapshot[]> {
-    return await db.select().from(snapshots).orderBy(desc(snapshots.snapshotDate));
-  }
-
-  async getLatestSnapshotByOpportunity(opportunityId: number): Promise<Snapshot | undefined> {
-    const result = await db.select().from(snapshots)
-      .where(eq(snapshots.opportunityId, opportunityId))
-      .orderBy(desc(snapshots.snapshotDate))
-      .limit(1);
-    return result[0];
-  }
 
   // Uploaded Files methods
   async getUploadedFile(id: number): Promise<UploadedFile | undefined> {
