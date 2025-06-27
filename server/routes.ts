@@ -9,7 +9,6 @@ import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./localAuthBypass";
 import { requirePermission } from "./middleware/permissions";
 import { parseFileData } from "./utils/fileParser";
-import { extractDateFromFilename } from "./utils/fileUtils";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -19,13 +18,669 @@ const upload = multer({
   }
 });
 
+// Helper function to extract date from filename
+function extractDateFromFilename(filename: string): Date | null {
+  // Pattern: Open Pipeline - Finance-2025-05-06-14-49-48.xlsx
+  const datePattern = /(\d{4}-\d{2}-\d{2}-\d{2}-\d{2}-\d{2})/;
+  const match = filename.match(datePattern);
+  
+  if (match) {
+    const dateStr = match[1];
+    // Parse format: 2025-05-06-14-49-48
+    const [year, month, day, hour, minute, second] = dateStr.split('-');
+    // Create UTC date using Date.UTC to ensure timezone agnostic handling
+    return new Date(Date.UTC(
+      parseInt(year), 
+      parseInt(month) - 1, // months are 0-indexed
+      parseInt(day), 
+      parseInt(hour), 
+      parseInt(minute), 
+      parseInt(second)
+    ));
+  }
+  
+  return null;
+}
 
+// Helper function to normalize column headers
+function normalizeHeader(header: string): string {
+  return header
+    .toLowerCase()
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
 
+// Helper function to normalize stage names using dynamic mappings
+async function normalizeStage(stage: string): Promise<string> {
+  const trimmedStage = stage.trim();
+  const mappings = await storage.settingsStorage.getStageMappings();
+  
+  // Check for dynamic mappings (case-insensitive)
+  const mapping = mappings.find(m => m.from.toLowerCase() === trimmedStage.toLowerCase());
+  if (mapping) {
+    return mapping.to;
+  }
+  
+  return trimmedStage;
+}
 
+// Helper function to find header row
+function findHeaderRow(worksheet: XLSX.WorkSheet): number {
+  const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:A1');
+  
+  // Look for rows that contain typical pipeline headers
+  const headerKeywords = ['opportunity', 'name', 'client', 'stage', 'amount', 'value', 'owner', 'deal', 'pipeline'];
+  
+  for (let row = 0; row <= Math.min(20, range.e.r); row++) {
+    let foundHeaders = 0;
+    let nonEmptyCells = 0;
+    
+    for (let col = 0; col <= Math.min(15, range.e.c); col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      if (cell && cell.v !== null && cell.v !== undefined && cell.v !== '') {
+        nonEmptyCells++;
+        if (typeof cell.v === 'string') {
+          const cellValue = cell.v.toLowerCase();
+          if (headerKeywords.some(keyword => cellValue.includes(keyword))) {
+            foundHeaders++;
+          }
+        }
+      }
+    }
+    
+    console.log(`Row ${row}: ${nonEmptyCells} non-empty cells, ${foundHeaders} header matches`);
+    
+    // If we find a row with multiple non-empty cells and at least one header keyword
+    if (nonEmptyCells >= 3 && foundHeaders >= 1) {
+      return row;
+    }
+  }
+  
+  // If no clear header row found, look for the first row with multiple non-empty cells
+  for (let row = 0; row <= Math.min(10, range.e.r); row++) {
+    let nonEmptyCells = 0;
+    for (let col = 0; col <= Math.min(15, range.e.c); col++) {
+      const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+      const cell = worksheet[cellAddress];
+      if (cell && cell.v !== null && cell.v !== undefined && cell.v !== '') {
+        nonEmptyCells++;
+      }
+    }
+    if (nonEmptyCells >= 5) {
+      console.log(`Using row ${row} as header (${nonEmptyCells} non-empty cells)`);
+      return row;
+    }
+  }
+  
+  return 0; // Default to first row if nothing else works
+}
 
+// Helper function to parse a CSV line with proper quote handling
+function parseCSVLine(line: string): string[] {
+  const result: string[] = [];
+  let currentField = '';
+  let inQuotes = false;
+  let i = 0;
+  
+  while (i < line.length) {
+    const char = line[i];
+    
+    if (char === '"') {
+      if (inQuotes && i + 1 < line.length && line[i + 1] === '"') {
+        // Escaped quote - add one quote to field
+        currentField += '"';
+        i += 2;
+      } else {
+        // Toggle quote state
+        inQuotes = !inQuotes;
+        i++;
+      }
+    } else if (char === ',' && !inQuotes) {
+      // End of field
+      result.push(currentField.trim());
+      currentField = '';
+      i++;
+    } else {
+      // Regular character
+      currentField += char;
+      i++;
+    }
+  }
+  
+  // Add the last field
+  result.push(currentField.trim());
+  
+  return result;
+}
 
+// Helper function to parse CSV data
+async function parseCSVData(buffer: Buffer, filename: string) {
+  console.log(`🗂️ Parsing CSV file: ${filename}`);
+  const csvText = buffer.toString('utf-8');
+  const lines = csvText.split('\n').filter(line => line.trim().length > 0);
+  
+  if (lines.length === 0) {
+    throw new Error('CSV file is empty');
+  }
 
+  const snapshotDate = extractDateFromFilename(filename);
+  console.log(`📅 Extracted snapshot date: ${snapshotDate}`);
+  
+  if (!snapshotDate) {
+    throw new Error('Could not extract date from filename. Expected format with timestamp: Open Pipeline - Finance-YYYY-MM-DD-HH-MM-SS.csv');
+  }
 
+  // Parse CSV header
+  const headerLine = lines[0];
+  const headers = parseCSVLine(headerLine);
+  console.log(`📊 CSV Headers found: ${headers.slice(0, 10).join(', ')}... (${headers.length} total)`);
+  console.log(`📊 All CSV Headers:`, headers);
+  
+  // Parse CSV data
+  const rawData: any[] = [];
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i];
+    const values = parseCSVLine(line);
+    
+    // Create row object
+    const row: any = {};
+    headers.forEach((header, index) => {
+      row[header] = values[index] || null;
+    });
+    rawData.push(row);
+  }
+  
+  console.log(`📊 Parsed ${rawData.length} rows from CSV`);
+  if (rawData.length > 0) {
+    console.log(`📋 Sample first row keys: ${Object.keys(rawData[0]).slice(0, 5).join(', ')}...`);
+    console.log(`📋 Sample first row values:`, Object.values(rawData[0]).slice(0, 5));
+  }
+
+  if (rawData.length === 0) {
+    throw new Error('No data found in CSV file');
+  }
+
+  const processedData = [];
+  
+  for (let i = 0; i < rawData.length; i++) {
+    const row = rawData[i];
+    const normalizedRow: any = {};
+    
+    // Normalize all headers
+    for (const [key, value] of Object.entries(row)) {
+      const normalizedKey = normalizeHeader(key);
+      normalizedRow[normalizedKey] = value;
+    }
+
+    // Debug logging for first few rows
+    if (i < 3) {
+      console.log(`🔍 Row ${i + 1} original keys:`, Object.keys(row).slice(0, 5));
+      console.log(`🔍 Row ${i + 1} normalized keys:`, Object.keys(normalizedRow).slice(0, 5));
+      console.log(`🔍 Row ${i + 1} name fields:`, {
+        opportunity_name: normalizedRow.opportunity_name,
+        deal_name: normalizedRow.deal_name, 
+        name: normalizedRow.name
+      });
+    }
+
+    // Skip empty rows
+    if (!normalizedRow.opportunity_name && !normalizedRow.deal_name && !normalizedRow.name) {
+      if (i < 5) console.log(`⏭️ Skipping row ${i + 1} (no opportunity name found)`);
+      continue;
+    }
+
+    // Map common field variations (same logic as Excel parsing)
+    const opportunityId = normalizedRow.opportunity_id || 
+                          normalizedRow.id || 
+                          normalizedRow.opp_id ||
+                          normalizedRow.deal_id ||
+                          'Unknown ID';
+    
+    const opportunityName = normalizedRow.opportunity_name || 
+                            normalizedRow.deal_name || 
+                            normalizedRow.name ||
+                            normalizedRow.account_name ||
+                            'Unknown Opportunity';
+    
+    const tcv = normalizedRow.tcv ||
+                normalizedRow.total_contract_value ||
+                0;
+
+    const expectedRevenue = normalizedRow.expected_revenue ||
+                            normalizedRow.revenue ||
+                            normalizedRow.amount ||
+                            normalizedRow.value ||
+                            normalizedRow.deal_value ||
+                            normalizedRow.opportunity_value ||
+                            tcv ||
+                            0;
+
+    const stage = await normalizeStage(normalizedRow.stage || 
+                                       normalizedRow.sales_stage || 
+                                       normalizedRow.deal_stage || 
+                                       normalizedRow.pipeline_stage || 
+                                       'Unknown');
+
+    const owner = normalizedRow.owner || 
+                  normalizedRow.account_owner || 
+                  normalizedRow.sales_rep || 
+                  normalizedRow.assigned_to ||
+                  'Unknown';
+
+    const clientName = normalizedRow.client_name || 
+                       normalizedRow.account_name || 
+                       normalizedRow.company || 
+                       normalizedRow.customer ||
+                       'Unknown Client';
+
+    const closeDate = normalizedRow.close_date || 
+                      normalizedRow.expected_close_date || 
+                      normalizedRow.target_close_date ||
+                      null;
+
+    const enteredPipeline = normalizedRow.entered_pipeline || 
+                            normalizedRow.created_date || 
+                            normalizedRow.pipeline_entry_date ||
+                            null;
+
+    const lossReason = normalizedRow.loss_reason || 
+                       normalizedRow.reason_lost || 
+                       normalizedRow.lost_reason ||
+                       null;
+
+    const probability = normalizedRow.probability || 
+                        normalizedRow.win_probability || 
+                        normalizedRow.close_probability ||
+                        null;
+
+    // Parse date function for CSV
+    const parseDate = (dateStr: any): Date | null => {
+      if (!dateStr) return null;
+      const date = new Date(dateStr);
+      return isNaN(date.getTime()) ? null : date;
+    };
+
+    processedData.push({
+      opportunityId: String(opportunityId),
+      opportunityName: String(opportunityName),
+      clientName: String(clientName),
+      owner: String(owner),
+      createdDate: parseDate(normalizedRow.created_date || normalizedRow.date_created),
+      stage,
+      confidence: normalizedRow.confidence || '',
+      opportunityType: normalizedRow.opportunity_type || normalizedRow.type || null,
+      amount: parseFloat(String(expectedRevenue).replace(/[,$]/g, '')) || 0,
+      tcv: parseFloat(String(tcv).replace(/[,$]/g, '')) || 0,
+      expectedCloseDate: parseDate(closeDate),
+      closeDate: parseDate(closeDate),
+      billingStartDate: parseDate(normalizedRow.billing_start_date || normalizedRow.billing_start),
+      solutionsOffered: normalizedRow.solutions_offered || normalizedRow.solutions || null,
+      icp: normalizedRow.icp || normalizedRow.ideal_customer_profile || null,
+      numberOfContacts: normalizedRow.number_of_contacts ? parseInt(normalizedRow.number_of_contacts) || null : null,
+      blendedwAverageTitle: normalizedRow.blended_average_title || normalizedRow.avg_title || null,
+      year1Value: parseFloat(String(expectedRevenue).replace(/[,$]/g, '')) || 0,
+      year2Value: parseFloat(String(normalizedRow.year2_value || 0).replace(/[,$]/g, '')) || 0,
+      year3Value: parseFloat(String(normalizedRow.year3_value || 0).replace(/[,$]/g, '')) || 0,
+      erpSystemInUse: normalizedRow.erp_system_in_use || normalizedRow.erp_system || null,
+      age: normalizedRow.age ? parseInt(normalizedRow.age) || null : null,
+      stageDuration: normalizedRow.stage_duration ? parseInt(normalizedRow.stage_duration) || null : null,
+      stageBefore: normalizedRow.stage_before || normalizedRow.previous_stage || null,
+      lossReason: lossReason ? String(lossReason) : null,
+      lastModified: parseDate(normalizedRow.last_modified || normalizedRow.modified_date),
+      enteredPipeline: parseDate(enteredPipeline),
+      homesBuilt: normalizedRow.homes_built ? parseInt(normalizedRow.homes_built) || null : null,
+      snapshotDate
+    });
+  }
+
+  console.log(`📊 Parsed ${processedData.length} opportunities from CSV file: ${filename}`);
+  if (processedData.length === 0) {
+    console.log(`❌ No valid opportunities found in CSV file - all rows were skipped`);
+    console.log(`🔍 Raw data sample:`, rawData.slice(0, 3));
+  } else {
+    console.log(`✅ Successfully parsed ${processedData.length} opportunities`);
+    console.log(`📋 Sample processed data:`, processedData.slice(0, 2));
+  }
+  return processedData;
+}
+
+// Helper function to parse Excel data
+async function parseExcelData(buffer: Buffer, filename: string) {
+  const workbook = XLSX.read(buffer, { type: 'buffer' });
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  
+  if (!worksheet || !worksheet['!ref']) {
+    throw new Error('Invalid or empty Excel file');
+  }
+
+  const headerRowIndex = findHeaderRow(worksheet);
+
+  const snapshotDate = extractDateFromFilename(filename);
+  
+  if (!snapshotDate) {
+    throw new Error('Could not extract date from filename. Expected format: Open Pipeline - Finance-YYYY-MM-DD-HH-MM-SS.xlsx');
+  }
+
+  // Convert to JSON starting from header row
+  const rawData = XLSX.utils.sheet_to_json(worksheet, { 
+    range: headerRowIndex,
+    defval: null 
+  });
+
+  if (rawData.length === 0) {
+    throw new Error('No data found in Excel file');
+  }
+
+  const processedData = [];
+  
+  // Track values for pivot table format (inherit from rows above)
+  let currentStage = '';
+  let currentConfidence = '';
+  
+  // Enhanced column header debugging
+  if (rawData.length > 0) {
+    const headers = Object.keys(rawData[0] as Record<string, any>);
+    console.log('📋 Excel column headers found:', headers);
+    console.log('📋 Normalized headers:', headers.map(h => normalizeHeader(h)));
+    
+    // Check specifically for entered pipeline date column
+    const pipelineHeaders = headers.filter(h => 
+      h.toLowerCase().includes('pipeline') || h.toLowerCase().includes('entered')
+    );
+    console.log('🔍 Pipeline/Entered headers found:', pipelineHeaders);
+    pipelineHeaders.forEach(h => {
+      console.log(`  Original: "${h}" → Normalized: "${normalizeHeader(h)}"`);
+    });
+    
+    // Check if entered pipeline date column exists in any form
+    const enteredPipelineColumn = headers.find(h => 
+      normalizeHeader(h) === 'entered_pipeline_date'
+    );
+    if (enteredPipelineColumn) {
+      console.log('🎯 FOUND ENTERED PIPELINE DATE COLUMN:', enteredPipelineColumn);
+      // Check first few values
+      for (let i = 0; i < Math.min(10, rawData.length); i++) {
+        const row = rawData[i] as any;
+        const value = row[enteredPipelineColumn];
+        console.log(`  Row ${i + 1} Entered Pipeline value: "${value}" (type: ${typeof value})`);
+      }
+    } else {
+      console.log('❌ Entered Pipeline Date column not found in headers');
+    }
+  }
+
+  for (const row of rawData) {
+    const normalizedRow: any = {};
+    
+    // Normalize all headers and log them for debugging
+    for (const [key, value] of Object.entries(row as Record<string, any>)) {
+      const normalizedKey = normalizeHeader(key);
+      normalizedRow[normalizedKey] = value;
+    }
+    
+    // Debug: Log the first row's headers to see what we have
+    if (processedData.length === 0) {
+      console.log('📋 Available headers:', Object.keys(normalizedRow));
+      console.log('📋 Sample TCV value:', normalizedRow.tcv);
+      console.log('📋 Sample total_contract_value:', normalizedRow.total_contract_value);
+      
+      // Check for entered pipeline date specifically
+      const pipelineKeys = Object.keys(normalizedRow).filter(key => 
+        key.includes('pipeline') || key.includes('entered')
+      );
+      console.log('🔍 Pipeline-related keys found:', pipelineKeys);
+      pipelineKeys.forEach(key => {
+        console.log(`  ${key}: ${normalizedRow[key]} (type: ${typeof normalizedRow[key]})`);
+      });
+      
+      console.log('📋 All values for first row:', normalizedRow);
+    }
+
+    // Handle pivot table format - update current stage/confidence when they have values
+    if (normalizedRow.stage && normalizedRow.stage.trim() !== '') {
+      currentStage = await normalizeStage(normalizedRow.stage.trim());
+    }
+    if (normalizedRow.confidence && normalizedRow.confidence.trim() !== '') {
+      currentConfidence = normalizedRow.confidence.trim();
+    }
+
+    // Only process rows with actual opportunity data (Opportunity ID starting with "006")
+    const hasOpportunityId = normalizedRow.opportunity_id && 
+                             typeof normalizedRow.opportunity_id === 'string' && 
+                             normalizedRow.opportunity_id.startsWith('006');
+    
+    if (!hasOpportunityId) {
+      continue;
+    }
+
+    // For rows with opportunity data, inherit stage/confidence from above if empty
+    if (!normalizedRow.stage || normalizedRow.stage.trim() === '') {
+      normalizedRow.stage = currentStage;
+    } else {
+      normalizedRow.stage = await normalizeStage(normalizedRow.stage.trim());
+    }
+    if (!normalizedRow.confidence || normalizedRow.confidence.trim() === '') {
+      normalizedRow.confidence = currentConfidence;
+    }
+
+    // Skip if we still don't have required data
+    if (!normalizedRow.account_name && !normalizedRow.opportunity_name) {
+      continue;
+    }
+
+    // Map common field variations
+    const opportunityName = normalizedRow.opportunity_name || 
+                            normalizedRow.deal_name || 
+                            normalizedRow.name ||
+                            normalizedRow.account_name ||
+                            'Unknown Opportunity';
+    
+    // Extract TCV from various possible column names - TCV column normalizes to lowercase 'tcv'
+    const tcv = normalizedRow.tcv || 
+                normalizedRow.total_contract_value ||
+                normalizedRow.total_contract_val ||
+                normalizedRow.contract_value ||
+                normalizedRow.lifetime_value ||
+                0;
+    
+    const amount = normalizedRow.year1_value || 
+                   normalizedRow.y1_value ||
+                   normalizedRow.first_year_value ||
+                   normalizedRow.year_1_platform_fee ||
+                   0;
+
+    const lossReason = normalizedRow.loss_dq_reason || 
+                       normalizedRow.lossdq_reason || 
+                       normalizedRow.loss_reason || 
+                       normalizedRow.dq_reason || 
+                       normalizedRow.disqualification_reason || 
+                       null;
+
+    // Enhanced debugging for first few rows
+    if (processedData.length < 5) {
+      console.log(`🔍 Data Debug - Row ${processedData.length + 1} (${opportunityName}):`);
+      console.log('  TCV value:', tcv, typeof tcv);
+      console.log('  Year1 value:', normalizedRow.year1_value || normalizedRow.year_1_platform_fee);
+      console.log('  Amount field:', amount);
+      console.log('  Loss/DQ Reason:', lossReason);
+      
+      // Show loss reason related keys
+      const allKeys = Object.keys(normalizedRow);
+      const lossKeys = allKeys.filter(key => 
+        key.includes('loss') || key.includes('dq') || key.includes('reason')
+      );
+      
+      if (lossKeys.length > 0) {
+        console.log('  Loss-related keys found:', lossKeys);
+        lossKeys.forEach(key => {
+          console.log(`    ${key}: ${normalizedRow[key]}`);
+        });
+      }
+    }
+
+    const year1Value = normalizedRow.year1_value || 
+                       normalizedRow.y1_value ||
+                       normalizedRow.first_year_value ||
+                       normalizedRow.year_1_platform_fee ||
+                       0;
+
+    const year2Value = normalizedRow.year2_value || 
+                       normalizedRow.y2_value ||
+                       normalizedRow.second_year_value ||
+                       normalizedRow.year_2_platform_fee ||
+                       0;
+
+    const year3Value = normalizedRow.year3_value || 
+                       normalizedRow.y3_value ||
+                       normalizedRow.third_year_value ||
+                       normalizedRow.year_3_platform_fee ||
+                       0;
+
+    const barrValue = normalizedRow.barr_value || 
+                      normalizedRow.barr ||
+                      normalizedRow.annual_recurring_revenue ||
+                      normalizedRow.blended_arr ||
+                      0;
+
+    const stage = normalizedRow.stage || 
+                  normalizedRow.pipeline_stage || 
+                  normalizedRow.sales_stage ||
+                  normalizedRow.stage_ ||  // Handle "Stage  ↑" -> "stage_"
+                  'Unknown';
+
+    const owner = normalizedRow.owner || 
+                  normalizedRow.deal_owner || 
+                  normalizedRow.account_owner ||
+                  normalizedRow.opportunity_owner ||
+                  null;
+
+    const clientName = normalizedRow.client_name || 
+                       normalizedRow.account_name || 
+                       normalizedRow.company ||
+                       null;
+
+    // Parse dates - timezone agnostic using UTC
+    const parseDate = (dateValue: any) => {
+      if (!dateValue) return null;
+      if (dateValue instanceof Date) return dateValue;
+      if (typeof dateValue === 'number') {
+        // Excel date serial number - convert to UTC
+        const utcTime = (dateValue - 25569) * 86400 * 1000;
+        return new Date(utcTime);
+      }
+      if (typeof dateValue === 'string') {
+        // Parse string dates and normalize to UTC
+        const parsed = new Date(dateValue);
+        if (isNaN(parsed.getTime())) return null;
+        
+        // If the date string doesn't include timezone info, treat it as UTC
+        if (!dateValue.includes('T') && !dateValue.includes('Z') && !dateValue.includes('+') && !dateValue.includes('-', 10)) {
+          // Date-only string like "2025-06-12" - create as UTC date
+          const dateParts = dateValue.split(/[-\/]/);
+          if (dateParts.length >= 3) {
+            const year = parseInt(dateParts[0]);
+            const month = parseInt(dateParts[1]) - 1; // months are 0-indexed
+            const day = parseInt(dateParts[2]);
+            return new Date(Date.UTC(year, month, day, 0, 0, 0, 0));
+          }
+        }
+        return parsed;
+      }
+      return null;
+    };
+
+    const expectedCloseDate = parseDate(normalizedRow.expected_close_date || 
+                                       normalizedRow.close_date ||
+                                       normalizedRow.projected_close);
+    
+    const createdDate = parseDate(normalizedRow.created_date ||
+                                  normalizedRow.date_created);
+    
+    const lastModified = parseDate(normalizedRow.last_modified ||
+                                   normalizedRow.modified_date);
+    
+    const enteredPipelineRaw = normalizedRow.entered_pipeline_date ||
+                              normalizedRow.entered_pipeline ||
+                              normalizedRow.date_entered_pipeline;
+    
+    const enteredPipeline = parseDate(enteredPipelineRaw);
+    
+    // Debug entered pipeline date processing for first few rows
+    if (processedData.length < 5) {
+      console.log(`🔍 Row ${processedData.length + 1} entered pipeline debug:`);
+      console.log(`  Raw value: ${enteredPipelineRaw} (type: ${typeof enteredPipelineRaw})`);
+      console.log(`  Parsed value: ${enteredPipeline}`);
+    }
+
+    // Additional fields from your data file
+    const confidence = normalizedRow.confidence || '';
+    const opportunityType = normalizedRow.opportunity_type || normalizedRow.type || null;
+    const closeDate = parseDate(normalizedRow.close_date);
+    const billingStartDate = parseDate(normalizedRow.billing_start_date || normalizedRow.billing_start);
+    const solutionsOffered = normalizedRow.solutions_offered || normalizedRow.solutions || null;
+    const icp = normalizedRow.icp || normalizedRow.ideal_customer_profile || null;
+    const numberOfContacts = normalizedRow.number_of_contacts || normalizedRow.num_contacts || normalizedRow.contact_count || null;
+    const blendedwAverageTitle = normalizedRow.blended_average_title || normalizedRow.avg_title || null;
+    const erpSystemInUse = normalizedRow.erp_system_in_use || normalizedRow.erp_system || null;
+    const age = normalizedRow.age || null;
+    const stageDuration = normalizedRow.stage_duration || normalizedRow.duration || null;
+    const stageBefore = normalizedRow.stage_before || normalizedRow.previous_stage || null;
+    const homesBuilt = normalizedRow.homes_built || normalizedRow.homes || null;
+
+    processedData.push({
+      opportunityId: normalizedRow.opportunity_id,
+      opportunityName,
+      clientName,
+      owner,
+      createdDate,
+      stage,
+      confidence,
+      opportunityType,
+      amount: typeof year1Value === 'number' ? year1Value : parseFloat(year1Value) || 0,
+      tcv: typeof tcv === 'number' ? tcv : parseFloat(tcv) || 0,
+      expectedCloseDate,
+      closeDate,
+      billingStartDate,
+      solutionsOffered,
+      icp,
+      numberOfContacts: numberOfContacts ? parseInt(numberOfContacts) || null : null,
+      blendedwAverageTitle,
+      year1Value: typeof year1Value === 'number' ? year1Value : parseFloat(year1Value) || 0,
+      year2Value: typeof year2Value === 'number' ? year2Value : parseFloat(year2Value) || 0,
+      year3Value: typeof year3Value === 'number' ? year3Value : parseFloat(year3Value) || 0,
+
+      erpSystemInUse,
+      age: age ? parseInt(age) || null : null,
+      stageDuration: stageDuration ? parseInt(stageDuration) || null : null,
+      stageBefore,
+      lossReason,
+      lastModified,
+      enteredPipeline,
+      homesBuilt: homesBuilt ? parseInt(homesBuilt) || null : null,
+      snapshotDate
+    });
+  }
+
+  return processedData;
+}
+
+// Generic file parser that handles both Excel and CSV
+async function parseFileData(buffer: Buffer, filename: string) {
+  console.log(`🔍 parseFileData called with filename: ${filename}, buffer size: ${buffer.length}`);
+  
+  if (filename.endsWith('.csv')) {
+    console.log(`📋 Routing to CSV parser for: ${filename}`);
+    return await parseCSVData(buffer, filename);
+  } else if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
+    console.log(`📊 Routing to Excel parser for: ${filename}`);
+    return await parseExcelData(buffer, filename);
+  } else {
+    throw new Error('Unsupported file format');
+  }
+}
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication is already set up in index.ts
