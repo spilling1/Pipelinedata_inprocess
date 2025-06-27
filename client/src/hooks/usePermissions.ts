@@ -23,6 +23,7 @@ export const PERMISSIONS = {
   pipeline: 'Pipeline Analytics',
   marketing: 'Marketing Analytics', 
   sales: 'Sales Analytics',
+  people_ops: 'People Ops Analytics',
   database: 'Database Management',
   settings: 'System Settings',
   user_management: 'User Management',
@@ -57,6 +58,8 @@ export function usePermissions() {
         return hasPermission('marketing');
       case 'sales':
         return hasPermission('sales');
+      case 'people-ops':
+        return hasPermission('people_ops');
       case 'database':
         return hasPermission('database');
       case 'settings':

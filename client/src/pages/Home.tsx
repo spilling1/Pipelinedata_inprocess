@@ -113,21 +113,23 @@ export default function Home() {
               </Link>
             )}
 
-            <a 
-              href="https://lookerstudio.google.com/u/0/reporting/91488dc2-357c-4702-a465-1494756e8dac" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <UserCheck className="h-8 w-8 text-purple-600 mb-2" />
-                  <CardTitle>People Ops Analytics</CardTitle>
-                  <CardDescription>
-                    Access comprehensive HR and people operations insights
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </a>
+            {canAccessPage('people-ops') && (
+              <a 
+                href="https://lookerstudio.google.com/u/0/reporting/91488dc2-357c-4702-a465-1494756e8dac" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <UserCheck className="h-8 w-8 text-purple-600 mb-2" />
+                    <CardTitle>People Ops Analytics</CardTitle>
+                    <CardDescription>
+                      Access comprehensive HR and people operations insights
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </a>
+            )}
           </div>
         </div>
 

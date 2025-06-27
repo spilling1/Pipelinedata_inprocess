@@ -49,6 +49,7 @@ const AVAILABLE_PERMISSIONS = [
   { key: 'pipeline', label: 'Pipeline Analytics' },
   { key: 'marketing', label: 'Marketing Analytics' },
   { key: 'sales', label: 'Sales Analytics' },
+  { key: 'people_ops', label: 'People Ops Analytics' },
   { key: 'database', label: 'Database Management' },
   { key: 'settings', label: 'System Settings' },
   { key: 'user_management', label: 'User Management' },
