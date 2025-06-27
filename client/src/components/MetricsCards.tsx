@@ -34,7 +34,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     queryKey: ['/api/analytics/pipeline-metrics'],
   });
 
-  // Note: Using pipeline-metrics avgDealSizeClosedWon for consistency with performance requirements
+  // Note: Using win rate data which already has correct closed won count and calculation
 
   // Win Rate query with FY to Date range using lightweight endpoint
   const { data: winRateData, isLoading: winRateLoading } = useQuery({
@@ -72,7 +72,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     }
   });
 
-  if (isLoading || winRateLoading || closeRateLoading) {
+  if (isLoading || winRateLoading || closeRateLoading || closedWonLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {[...Array(5)].map((_, i) => (
@@ -95,7 +95,6 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     activeCount: 0,
     avgDealSize: 0,
     avgDealSizePipeline: 0,
-    avgDealSizeClosedWon: 0,
     conversionRate: 0,
     closeRate: 0,
     totalContractValue: 0,
@@ -106,8 +105,10 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
   const winRate = winRateData?.conversionRate || 0;
   const closeRate = closeRateData?.closeRate || 0;
   
-  // Use fiscal year closed won average deal size from pipeline metrics 
-  const fyAvgDealSizeClosedWon = pipelineMetrics?.avgDealSizeClosedWon || 0;
+  // Calculate fiscal year closed won average deal size from FY data
+  const fyAvgDealSizeClosedWon = (closedWonFYData as any)?.totalCount > 0 
+    ? (closedWonFYData as any).totalValue / (closedWonFYData as any).totalCount 
+    : 0;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
