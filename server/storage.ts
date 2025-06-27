@@ -19,6 +19,7 @@ import { opportunitiesStorage, type IOpportunitiesStorage } from './storage-oppo
 import { snapshotsStorage, type ISnapshotsStorage } from './storage-snapshots';
 import { filesStorage, type IFilesStorage } from './storage-files';
 import { salesStorage, type ISalesStorage } from './storage-sales';
+import { analyticsStorage, type IAnalyticsStorage } from './storage-analytics';
 
 export interface IStorage {
   // User operations for Replit Auth (delegated to authStorage)
@@ -31,6 +32,9 @@ export interface IStorage {
 
   // Sales analytics (delegated to salesStorage)
   salesStorage: ISalesStorage;
+
+  // Core analytics (delegated to analyticsStorage)
+  analyticsStorage: IAnalyticsStorage;
 
   // Analytics
   getPipelineValueByDate(startDate?: string, endDate?: string): Promise<Array<{ date: Date; value: number }>>;
@@ -213,76 +217,22 @@ export class PostgreSQLStorage implements IStorage {
   // Sales analytics (delegated to salesStorage)
   salesStorage = salesStorage;
 
+  // Core analytics (delegated to analyticsStorage)
+  analyticsStorage = analyticsStorage;
 
 
 
 
 
 
-  // Analytics methods
+
+  // Analytics methods (delegated to analyticsStorage)
   async getPipelineValueByDate(startDate?: string, endDate?: string): Promise<Array<{ date: Date; value: number }>> {
-    let whereConditions = [
-      sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-      sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-      sql`${snapshots.year1Value} > 0`
-    ];
-
-    // Add date range filters if provided
-    if (startDate) {
-      whereConditions.push(sql`${snapshots.snapshotDate} >= ${startDate}::date`);
-    }
-    if (endDate) {
-      whereConditions.push(sql`${snapshots.snapshotDate} < (${endDate}::date + interval '1 day')`);
-    }
-
-    const result = await db
-      .select({
-        date: snapshots.snapshotDate,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(...whereConditions))
-      .groupBy(snapshots.snapshotDate)
-      .orderBy(snapshots.snapshotDate);
-    
-    return result.map(r => ({ date: r.date, value: Number(r.value) || 0 }));
+    return this.analyticsStorage.getPipelineValueByDate(startDate, endDate);
   }
 
   async getStageDistribution(): Promise<Array<{ stage: string; count: number; value: number }>> {
-    // Get the most recent snapshot date
-    const latestDateResult = await db
-      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
-      .from(snapshots);
-    
-    const latestDateStr = latestDateResult[0]?.maxDate;
-    
-    if (!latestDateStr) {
-      return [];
-    }
-    
-    console.log(`🗓️ Using latest snapshot date for stage distribution: ${latestDateStr}`);
-    
-    // Only count opportunities from the most recent snapshot date
-    const result = await db
-      .select({
-        stage: snapshots.stage,
-        count: sql<number>`COUNT(DISTINCT ${snapshots.opportunityId})`,
-        value: sql<number>`SUM(COALESCE(${snapshots.tcv}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} IS NOT NULL`,
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`
-      ))
-      .groupBy(snapshots.stage);
-    
-    return result.map(r => ({
-      stage: r.stage || 'Unknown',
-      count: Number(r.count) || 0,
-      value: Number(r.value) || 0
-    }));
+    return this.analyticsStorage.getStageDistribution();
   }
 
   async getYear1ArrDistribution(): Promise<Array<{ stage: string; count: number; value: number }>> {
