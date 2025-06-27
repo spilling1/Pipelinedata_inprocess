@@ -34,7 +34,10 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     queryKey: ['/api/analytics/pipeline-metrics'],
   });
 
-  // Note: Using win rate data which already has correct closed won count and calculation
+  // Get correct closed won FY data using dedicated endpoint (for accuracy)
+  const { data: closedWonFYData, isLoading: closedWonLoading } = useQuery({
+    queryKey: ['/api/closed-won-fy'],
+  });
 
   // Win Rate query with FY to Date range using lightweight endpoint
   const { data: winRateData, isLoading: winRateLoading } = useQuery({
