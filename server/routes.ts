@@ -668,20 +668,7 @@ async function parseExcelData(buffer: Buffer, filename: string) {
   return processedData;
 }
 
-// Generic file parser that handles both Excel and CSV
-async function parseFileData(buffer: Buffer, filename: string) {
-  console.log(`🔍 parseFileData called with filename: ${filename}, buffer size: ${buffer.length}`);
-  
-  if (filename.endsWith('.csv')) {
-    console.log(`📋 Routing to CSV parser for: ${filename}`);
-    return await parseCSVData(buffer, filename);
-  } else if (filename.endsWith('.xlsx') || filename.endsWith('.xls')) {
-    console.log(`📊 Routing to Excel parser for: ${filename}`);
-    return await parseExcelData(buffer, filename);
-  } else {
-    throw new Error('Unsupported file format');
-  }
-}
+
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Authentication is already set up in index.ts

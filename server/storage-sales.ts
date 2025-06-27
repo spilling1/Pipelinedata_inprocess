@@ -191,7 +191,6 @@ export class PostgreSQLSalesStorage implements ISalesStorage {
       .innerJoin(opportunities, eq(snapshots.opportunityId, opportunities.id))
       .where(and(...whereConditions))
       .groupBy(sql`
-        'FY' || 
         CASE 
           WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
           ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
