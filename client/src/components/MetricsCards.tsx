@@ -24,9 +24,9 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     queryKey: ['/api/analytics', filters],
   });
 
-  // Win Rate query with FY to Date range
+  // Win Rate query with FY to Date range using lightweight endpoint
   const { data: winRateData, isLoading: winRateLoading } = useQuery({
-    queryKey: ['/api/analytics', winRateDateRange.startDate?.toISOString(), winRateDateRange.endDate?.toISOString()],
+    queryKey: ['/api/analytics/win-rate', winRateDateRange.startDate?.toISOString(), winRateDateRange.endDate?.toISOString()],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (winRateDateRange.startDate) {
@@ -36,15 +36,15 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
         params.append('endDate', winRateDateRange.endDate.toISOString().split('T')[0]);
       }
       
-      const response = await fetch(`/api/analytics?${params}`);
+      const response = await fetch(`/api/analytics/win-rate?${params}`);
       if (!response.ok) throw new Error('Failed to fetch win rate data');
       return response.json();
     }
   });
 
-  // Close Rate query with Last 12 months range
+  // Close Rate query with Last 12 months range using lightweight endpoint
   const { data: closeRateData, isLoading: closeRateLoading } = useQuery({
-    queryKey: ['/api/analytics', closeRateDateRange.startDate?.toISOString(), closeRateDateRange.endDate?.toISOString()],
+    queryKey: ['/api/analytics/close-rate', closeRateDateRange.startDate?.toISOString(), closeRateDateRange.endDate?.toISOString()],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (closeRateDateRange.startDate) {
@@ -54,7 +54,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
         params.append('endDate', closeRateDateRange.endDate.toISOString().split('T')[0]);
       }
       
-      const response = await fetch(`/api/analytics?${params}`);
+      const response = await fetch(`/api/analytics/close-rate?${params}`);
       if (!response.ok) throw new Error('Failed to fetch close rate data');
       return response.json();
     }
@@ -90,12 +90,12 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     totalYear1Arr: 0
   };
 
-  // Get Win Rate and Close Rate from their respective queries
-  const winRate = (winRateData as any)?.metrics?.conversionRate || 0;
-  const closeRate = (closeRateData as any)?.metrics?.closeRate || 0;
+  // Get Win Rate and Close Rate from their respective lightweight queries
+  const winRate = winRateData?.conversionRate || 0;
+  const closeRate = closeRateData?.closeRate || 0;
   
-  // Get fiscal year average deal size for closed won from winRateData (matches ClosedWonFYCard)
-  const fyAvgDealSizeClosedWon = (winRateData as any)?.metrics?.avgDealSizeClosedWon || 0;
+  // Use main analytics avgDealSizeClosedWon since lightweight endpoints don't include this
+  const fyAvgDealSizeClosedWon = metrics.avgDealSizeClosedWon || 0;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
