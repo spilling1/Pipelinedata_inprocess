@@ -1489,47 +1489,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lightweight close rate endpoint (protected)  
   app.get("/api/analytics/close-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
-      const startDate = req.query.startDate as string;
-      const endDate = req.query.endDate as string;
+      // Use exact same logic as Close Rate Over Time chart for latest date
+      const allSnapshots = await storage.snapshotsStorage.getAllSnapshots();
+      const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
       
-      // Get the most recent snapshot date efficiently
+      // Create opportunity lookup for faster access (same as Over Time chart)
+      const opportunityMap = new Map();
+      allOpportunities.forEach(opp => {
+        opportunityMap.set(opp.id, opp);
+      });
+      
+      // Get the latest snapshot date
       const latestSnapshotResult = await db.select({ 
         maxDate: sql<string>`MAX(DATE(${snapshots.snapshotDate}))` 
       }).from(snapshots);
       
       const latestSnapshotDate = latestSnapshotResult[0]?.maxDate 
         ? new Date(latestSnapshotResult[0].maxDate + 'T00:00:00.000Z')
-        : new Date(0);
+        : new Date();
       
-      // Query only latest snapshots for close rate calculation
-      const latestSnapshots = await db.select().from(snapshots)
-        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
-
-      // Filter opportunities that entered pipeline in date range
-      let eligibleOpportunities = latestSnapshots.filter(snapshot => {
-        if (!snapshot.enteredPipeline) return false;
-        
-        if (startDate && endDate) {
-          const enteredDate = new Date(snapshot.enteredPipeline);
-          return enteredDate >= new Date(startDate) && enteredDate <= new Date(endDate);
-        }
-        return true;
-      });
+      const dateStr = latestSnapshotDate.toISOString().split('T')[0];
       
-      // Exclude validation stage
-      eligibleOpportunities = eligibleOpportunities.filter(s => 
-        s.stage !== 'Validation/Introduction'
+      // Get snapshots for latest date only (same as Over Time chart)
+      const dateSnapshots = allSnapshots.filter(s => 
+        new Date(s.snapshotDate).toISOString().split('T')[0] === dateStr
       );
+
+      // Calculate rolling 12 months date range for "entered pipeline" filter (same as Over Time chart)
+      const rolling12EnteredStart = new Date(latestSnapshotDate);
+      rolling12EnteredStart.setFullYear(rolling12EnteredStart.getFullYear() - 1);
+
+      // Get opportunities that entered pipeline in rolling 12 months (exact same logic as Over Time chart)
+      const pipelineEnteredInPeriod = dateSnapshots.filter(s => {
+        if (!s.stage) return false;
+        
+        const stage = s.stage.toLowerCase();
+        const isValidStage = !stage.includes('validation') && !stage.includes('introduction');
+        if (!isValidStage) return false;
+        
+        // Use entered_pipeline if available, otherwise fall back to created date from opportunity
+        const opp = opportunityMap.get(s.opportunityId);
+        if (!opp) return false;
+        
+        let entryDate: Date | null = null;
+        if (s.enteredPipeline) {
+          entryDate = new Date(s.enteredPipeline);
+        } else if (opp.createdDate) {
+          entryDate = new Date(opp.createdDate);
+        }
+        
+        if (!entryDate) return false;
+        
+        const isInPeriod = entryDate >= rolling12EnteredStart && entryDate <= latestSnapshotDate;
+        return isInPeriod;
+      });
+
+      // Calculate close rate using same methodology as Over Time chart:
+      // Closed Won / (All opportunities that entered pipeline in period)
+      const closedWon = pipelineEnteredInPeriod.filter(s => s.stage?.toLowerCase().includes('won')).length;
+      const totalInPeriod = pipelineEnteredInPeriod.length;
       
-      const closedWon = eligibleOpportunities.filter(s => s.stage === 'Closed Won').length;
-      const totalEligible = eligibleOpportunities.length;
-      
-      const closeRate = totalEligible > 0 ? (closedWon / totalEligible) * 100 : 0;
+      const closeRate = totalInPeriod > 0 ? (closedWon / totalInPeriod) * 100 : 0;
       
       res.json({ 
         closeRate: parseFloat(closeRate.toFixed(1)),
         closedWon,
-        totalEligible
+        totalEligible: totalInPeriod
       });
     } catch (error) {
       console.error('❌ Error calculating close rate:', error);
