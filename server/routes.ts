@@ -8,6 +8,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./localAuthBypass";
+import { requirePermission, attachUserInfo, requireAnyAnalytics } from "./middleware/permissions";
 
 // Configure multer for file uploads
 const upload = multer({
