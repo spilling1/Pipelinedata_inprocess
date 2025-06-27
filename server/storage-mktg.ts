@@ -906,7 +906,7 @@ export class MarketingStorage {
       const isOutdated = latestSnapshot.snapshotDate < cutoffDate;
       
       result.push({
-        opportunityId: latestSnapshot.opportunityId!,
+        opportunityId: customer.opportunityId, // Use original customer's opportunity ID for frontend matching
         stage: latestSnapshot.stage || 'Unknown', // Preserve original stage data for marketing analytics
         year1Arr: latestSnapshot.year1Arr,
         tcv: latestSnapshot.tcv,
