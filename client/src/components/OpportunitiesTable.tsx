@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,23 +14,38 @@ interface OpportunitiesTableProps {
 
 export default function OpportunitiesTable({ filters }: OpportunitiesTableProps) {
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [sortField, setSortField] = useState<string>("");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
-  const queryParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value && (Array.isArray(value) ? value.length > 0 : true)) {
-      if (Array.isArray(value)) {
-        queryParams.append(key, value.join(','));
-      } else {
-        queryParams.append(key, value.toString());
+  // Debounce search input to prevent excessive API calls
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [search]);
+
+  // Memoize query params to avoid recreating on every render
+  const queryParams = useMemo(() => {
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+        if (Array.isArray(value)) {
+          params.append(key, value.join(','));
+        } else {
+          params.append(key, value.toString());
+        }
       }
+    });
+    
+    if (debouncedSearch) {
+      params.append('search', debouncedSearch);
     }
-  });
-  
-  if (search) {
-    queryParams.append('search', search);
-  }
+    
+    return params;
+  }, [filters, search]);
 
   const { data: opportunities, isLoading } = useQuery({
     queryKey: ['/api/opportunities', queryParams.toString()],
@@ -45,14 +60,16 @@ export default function OpportunitiesTable({ filters }: OpportunitiesTableProps)
     }
   };
 
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
+  // Memoize currency formatter for better performance
+  const formatCurrency = useMemo(() => {
+    const formatter = new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
       minimumFractionDigits: 0,
       maximumFractionDigits: 0,
-    }).format(value);
-  };
+    });
+    return (value: number) => formatter.format(value);
+  }, []);
 
   const formatDate = (dateStr: string | null) => {
     if (!dateStr) return 'N/A';
@@ -63,7 +80,8 @@ export default function OpportunitiesTable({ filters }: OpportunitiesTableProps)
     });
   };
 
-  const getStageColor = (stage: string) => {
+  // Memoize stage color mapping for performance
+  const getStageColor = useMemo(() => {
     const stageColors: { [key: string]: string } = {
       'Prospecting': 'bg-gray-100 text-gray-800',
       'Qualification': 'bg-yellow-100 text-yellow-800',
@@ -72,8 +90,8 @@ export default function OpportunitiesTable({ filters }: OpportunitiesTableProps)
       'Closed Won': 'bg-emerald-100 text-emerald-800',
       'Closed Lost': 'bg-red-100 text-red-800',
     };
-    return stageColors[stage] || 'bg-gray-100 text-gray-800';
-  };
+    return (stage: string) => stageColors[stage] || 'bg-gray-100 text-gray-800';
+  }, []);
 
   const calculateDaysInStage = (snapshotDate: string) => {
     const now = new Date();
