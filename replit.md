@@ -300,8 +300,9 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Set up role hierarchy: Default, Admin, Leadership, Marketing, Ops, Finance, Sales, Post-Sales, Engineering
 - Added user management page accessible to any role with user_management permission
 - Updated Home dashboard to display user role badges and conditional page access
-- Configured sampilling@higharc.com and michaelbergin@higharc.com as Admin users
+- Configured sampilling@higharc.com as Admin user with full permissions
 - Created Default role with no permissions for new users
+- Important: Admin users get permissions based on their role, not automatic full access
 
 ✓ Stage Movement Overview Card Removed (June 19, 2025)
 - Completely removed Stage Movement Overview card from marketing analytics page
