@@ -310,61 +310,111 @@ export default function UserManagement() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Users ({users?.length || 0})
+                Users ({filteredUsers.length} of {users?.length || 0})
               </CardTitle>
               <CardDescription>
                 Manage user accounts, roles, and access permissions
               </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {usersLoading ? (
-                <div className="text-center py-8">Loading users...</div>
-              ) : (
-                <div className="space-y-4">
-                  {users?.map((user) => (
-                    <div
-                      key={user.id}
-                      className="flex items-center justify-between p-4 border rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-3">
-                          <div>
-                            <h3 className="font-semibold">
-                              {user.firstName && user.lastName 
-                                ? `${user.firstName} ${user.lastName}` 
-                                : user.email}
-                            </h3>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {user.email}
-                            </p>
-                          </div>
-                          <Badge variant={user.isActive ? "default" : "secondary"}>
-                            {user.isActive ? "Active" : "Inactive"}
-                          </Badge>
-                          <Badge variant="outline">
-                            {user.roleInfo?.displayName || user.role}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          Edit
-                        </Button>
-                        <Button
-                          variant={user.isActive ? "destructive" : "default"}
-                          size="sm"
-                          onClick={() => handleToggleUserStatus(user.id, user.isActive === 1)}
-                        >
-                          {user.isActive ? "Deactivate" : "Activate"}
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
+              
+              {/* Search and Filter Controls */}
+              <div className="flex gap-4 mt-4">
+                <div className="flex-1">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                    <Input
+                      placeholder="Search by name or email..."
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      className="pl-10"
+                    />
+                  </div>
                 </div>
+                <div className="w-48">
+                  <Select value={roleFilter} onValueChange={setRoleFilter}>
+                    <SelectTrigger>
+                      <div className="flex items-center gap-2">
+                        <Filter className="h-4 w-4" />
+                        <SelectValue placeholder="Filter by role" />
+                      </div>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Roles</SelectItem>
+                      {ROLE_OPTIONS.map(role => (
+                        <SelectItem key={role} value={role}>{role}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {usersLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-sm text-gray-500">Loading users...</div>
+                </div>
+              ) : (
+                <ScrollArea className="h-96">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredUsers.map((user) => (
+                        <TableRow key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800">
+                          <TableCell className="font-medium">
+                            {user.firstName && user.lastName 
+                              ? `${user.firstName} ${user.lastName}` 
+                              : user.email}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-600">
+                            {user.email}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="text-xs">
+                              {user.roleInfo?.displayName || user.role}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={user.isActive ? "default" : "destructive"} className="text-xs">
+                              {user.isActive ? "Active" : "Inactive"}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-1">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleEditUser(user)}
+                                className="h-8 w-8 p-0"
+                              >
+                                <Edit className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant={user.isActive ? "destructive" : "default"}
+                                onClick={() => handleToggleUserStatus(user.id, user.isActive === 1)}
+                                className="text-xs px-2 h-8"
+                              >
+                                {user.isActive ? "Deactivate" : "Activate"}
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                  {filteredUsers.length === 0 && (
+                    <div className="flex items-center justify-center py-8 text-sm text-gray-500">
+                      {searchTerm || roleFilter !== 'all' ? 'No users match your search criteria' : 'No users found'}
+                    </div>
+                  )}
+                </ScrollArea>
               )}
             </CardContent>
           </Card>
