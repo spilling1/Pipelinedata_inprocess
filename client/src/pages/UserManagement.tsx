@@ -35,6 +35,7 @@ interface Role {
 }
 
 const ROLE_OPTIONS = [
+  'Default',
   'Admin',
   'Leadership', 
   'Marketing',

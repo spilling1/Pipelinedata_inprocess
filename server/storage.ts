@@ -240,14 +240,23 @@ export class PostgreSQLStorage implements IStorage {
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
+    // Check if user already exists
+    const existingUser = await this.getUser(userData.id);
+    
     const [user] = await db
       .insert(users)
-      .values(userData)
+      .values({
+        ...userData,
+        // Only set Default role for new users, preserve existing users' roles
+        role: existingUser ? existingUser.role : 'Default'
+      })
       .onConflictDoUpdate({
         target: users.id,
         set: {
           ...userData,
           updatedAt: new Date(),
+          // Don't update role for existing users
+          role: sql`${users.role}`
         },
       })
       .returning();
