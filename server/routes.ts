@@ -1186,12 +1186,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
       
-      // Get the most recent snapshot date
-      const latestDateResult = await storage.getAllSnapshots();
-      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
-        const snapshotDate = new Date(snapshot.snapshotDate);
-        return snapshotDate > latest ? snapshotDate : latest;
-      }, new Date(0));
+      // Get the most recent snapshot date efficiently
+      const latestSnapshotResult = await db.select({ 
+        maxDate: sql<string>`MAX(DATE(${snapshots.snapshotDate}))` 
+      }).from(snapshots);
+      
+      const latestSnapshotDate = latestSnapshotResult[0]?.maxDate 
+        ? new Date(latestSnapshotResult[0].maxDate + 'T00:00:00.000Z')
+        : new Date(0);
       
       // Query only latest snapshots for win rate calculation
       const latestSnapshots = await db.select().from(snapshots)
@@ -1235,12 +1237,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Lightweight pipeline metrics endpoint (protected)
   app.get("/api/analytics/pipeline-metrics", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
-      // Get the most recent snapshot date
-      const latestDateResult = await storage.getAllSnapshots();
-      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
-        const snapshotDate = new Date(snapshot.snapshotDate);
-        return snapshotDate > latest ? snapshotDate : latest;
-      }, new Date(0));
+      // Get the most recent snapshot date efficiently
+      const latestSnapshotResult = await db.select({ 
+        maxDate: sql<string>`MAX(DATE(${snapshots.snapshotDate}))` 
+      }).from(snapshots);
+      
+      const latestSnapshotDate = latestSnapshotResult[0]?.maxDate 
+        ? new Date(latestSnapshotResult[0].maxDate + 'T00:00:00.000Z')
+        : new Date(0);
       
       // Query only latest snapshots for pipeline metrics
       const latestSnapshots = await db.select().from(snapshots)
@@ -1488,12 +1492,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
       
-      // Get the most recent snapshot date
-      const latestDateResult = await storage.getAllSnapshots();
-      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
-        const snapshotDate = new Date(snapshot.snapshotDate);
-        return snapshotDate > latest ? snapshotDate : latest;
-      }, new Date(0));
+      // Get the most recent snapshot date efficiently
+      const latestSnapshotResult = await db.select({ 
+        maxDate: sql<string>`MAX(DATE(${snapshots.snapshotDate}))` 
+      }).from(snapshots);
+      
+      const latestSnapshotDate = latestSnapshotResult[0]?.maxDate 
+        ? new Date(latestSnapshotResult[0].maxDate + 'T00:00:00.000Z')
+        : new Date(0);
       
       // Query only latest snapshots for close rate calculation
       const latestSnapshots = await db.select().from(snapshots)
