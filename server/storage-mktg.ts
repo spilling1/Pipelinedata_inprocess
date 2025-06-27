@@ -498,6 +498,11 @@ export class MarketingStorage {
         return false;
       }
       
+      // Must have entered pipeline - this is the key filter we were missing!
+      if (!s.enteredPipeline) {
+        return false;
+      }
+      
       // Include all non-closed stages (active pipeline)
       // Note: We don't filter by close date here since that would exclude legitimate open opportunities
       return s.stage !== 'Closed Won' && s.stage !== 'Closed Lost';

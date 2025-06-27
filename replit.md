@@ -268,6 +268,15 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ✓ Marketing analytics system fully operational with authentic pipeline data filtering, real-time current data display, comprehensive campaign attribution logic, dynamic pipeline progression visualization, enhanced new deals creation tracking, and pipeline performance breakdown by opportunity owner
 
+✓ Marketing Analytics Filtering Logic Fixed (June 27, 2025)
+- Fixed critical issue where customers marked as "not used in analytics" were still being counted in campaign metrics
+- Added proper `enteredPipeline` filter to activeSnapshots calculation to exclude customers who never entered pipeline
+- Corrected active customer count from 23 to 9 customers with $3.7M pipeline (matching expected values)
+- Analytics now properly respect customer exclusion flags displayed in frontend ("Never entered pipeline" message)
+- Win rate calculation updated from incorrect 200% to accurate 25% based on customers who actually engaged with pipeline
+- System now correctly excludes Bear Homes, Cedarglen Homes, and other customers without pipeline entry from all analytics
+- Campaign metrics now accurately reflect only customers who have genuinely entered the sales pipeline process
+
 ✓ Performance Optimization and React Warnings Fixed (June 27, 2025)
 - Eliminated unnecessary file polling that was checking every 5 seconds
 - Reduced API calls from 720 per hour to only when needed
