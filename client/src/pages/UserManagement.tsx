@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { usePermissions } from "@/hooks/usePermissions";
-import { Users, UserPlus, Settings, Shield, ChevronLeft } from "lucide-react";
+import { Users, UserPlus, Settings, Shield, ChevronLeft, RefreshCw } from "lucide-react";
 import { Link } from "wouter";
 
 interface User {
@@ -137,7 +137,11 @@ export default function UserManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users/roles'] });
       queryClient.invalidateQueries({ queryKey: ['/api/users/users'] });
-      toast({ title: "Role updated successfully" });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/me'] }); // Refresh current user permissions
+      toast({ 
+        title: "Role updated successfully",
+        description: "Please refresh the page to see permission changes on the dashboard"
+      });
       setIsRoleEditDialogOpen(false);
       setEditingRole(null);
     },
@@ -176,6 +180,11 @@ export default function UserManagement() {
   const handleEditRole = (role: Role) => {
     setEditingRole({ ...role });
     setIsRoleEditDialogOpen(true);
+  };
+
+  const handleRefreshPermissions = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/users/me'] });
+    toast({ title: "Permissions refreshed" });
   };
 
   const handleUpdateRole = () => {
@@ -257,7 +266,17 @@ export default function UserManagement() {
                 </p>
               </div>
             </div>
-            <Users className="h-8 w-8 text-blue-600" />
+            <div className="flex items-center gap-3">
+              <Button 
+                variant="outline" 
+                onClick={handleRefreshPermissions}
+                className="flex items-center gap-2"
+              >
+                <RefreshCw className="h-4 w-4" />
+                Refresh Permissions
+              </Button>
+              <Users className="h-8 w-8 text-blue-600" />
+            </div>
           </div>
         </div>
       </header>
