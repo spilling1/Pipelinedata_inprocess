@@ -10,7 +10,6 @@ interface MetricsCardsProps {
 }
 
 export default function MetricsCards({ filters }: MetricsCardsProps) {
-  console.log('MetricsCards component rendering with filters:', filters);
   // Calculate date ranges for Win Rate (FY to Date) and Close Rate (Last 12 months)
   const winRateDateRange = useMemo(() => {
     try {
@@ -30,14 +29,13 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     }
   }, []);
 
-  // Main pipeline metrics query using main analytics endpoint for accurate closed won metrics
+  // Main pipeline metrics query using main analytics endpoint for accurate closed won metrics  
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['/api/analytics'],
   });
 
-  console.log('Analytics data:', analytics);
-  console.log('Analytics metrics:', analytics?.metrics);
-  console.log('avgDealSizeClosedWon value:', analytics?.metrics?.avgDealSizeClosedWon);
+  // Type the analytics response properly
+  const analyticsData = analytics as any;
 
   // Win Rate query with FY to Date range using lightweight endpoint
   const { data: winRateData, isLoading: winRateLoading } = useQuery({
@@ -93,7 +91,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     );
   }
 
-  const metrics = analytics?.metrics || {
+  const metrics = analyticsData?.metrics || {
     totalValue: 0,
     activeCount: 0,
     avgDealSize: 0,
