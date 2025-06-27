@@ -45,7 +45,7 @@ export default function OpportunitiesTable({ filters }: OpportunitiesTableProps)
     }
     
     return params;
-  }, [filters, search]);
+  }, [filters, debouncedSearch]);
 
   const { data: opportunities, isLoading } = useQuery({
     queryKey: ['/api/opportunities', queryParams.toString()],

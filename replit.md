@@ -252,6 +252,9 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Changed to refresh on window focus instead of constant polling
 - Fixed React key warnings in WinRateCard and CloseRateCard by correcting property name mismatch
 - Updated SelectItem components to use correct `id` property from dateRangeOptions array instead of undefined `value`
+- Added memoization optimizations: currency formatter, query parameters, and stage color mapping
+- Implemented debounced search input (300ms delay) to prevent excessive API calls during typing
+- Optimized React rendering performance with proper memoization in OpportunitiesTable component
 - Improved application performance and reduced server load
 - Files now refresh when returning to browser tab or during actual uploads
 
