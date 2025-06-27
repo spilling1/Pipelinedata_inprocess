@@ -70,21 +70,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const fileRecord = await storage.createUploadedFile({
         filename,
-        uploadedAt: new Date(),
-        fileDate,
-        processed: false,
-        size: req.file.size,
-        mimetype: req.file.mimetype
+        snapshotDate: fileDate,
+        recordCount: 0,
+        status: 'processed'
       });
 
-      const { opportunities: newOpportunities, snapshots: newSnapshots } = await parseFileData(req.file.buffer, filename);
+      const parsedData = await parseFileData(req.file.buffer, filename);
       
       res.json({
         success: true,
         file: fileRecord,
         stats: {
-          opportunities: newOpportunities.length,
-          snapshots: newSnapshots.length
+          opportunities: parsedData.length,
+          snapshots: parsedData.length
         }
       });
     } catch (error) {
@@ -102,7 +100,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const opportunitiesWithLatest = opportunities.map(opp => {
         const oppSnapshots = snapshots.filter(s => s.opportunityId === opp.id);
         const latestSnapshot = oppSnapshots.reduce((latest, snapshot) => {
-          return snapshot.date > latest.date ? snapshot : latest;
+          return snapshot.snapshotDate > latest.snapshotDate ? snapshot : latest;
         }, oppSnapshots[0]);
         
         return {
