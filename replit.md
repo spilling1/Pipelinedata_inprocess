@@ -351,6 +351,14 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Table format provides clear, scannable overview of owner performance metrics
 - Removed Closed Won column and updated terminology: "New Deals" → "New Pipeline"
 
+✓ Critical Data Integrity Fix - Entered Pipeline Date Logic (June 27, 2025)
+- Fixed critical data integrity issue where "Entered Pipeline" dates were incorrectly falling back to creation dates during file imports
+- Removed improper fallback logic from both excelParser.ts and csvParser.ts that was automatically populating blank pipeline entry fields
+- Maintained legitimate fallback logic only in analytics endpoints (Close Rate Over Time, Close Rate card, main analytics) where it's intended for analysis
+- Manually corrected database records to remove incorrect pipeline entry dates (e.g., Front Light Building Company now properly shows NULL instead of created_date)
+- System now maintains strict data integrity: "Entered Pipeline" field only populated when explicitly provided in source data
+- Analytics endpoints continue to use created_date as fallback for analysis purposes while maintaining clean source data
+
 ✓ User Management and Permissions System Complete (June 27, 2025)
 - Implemented comprehensive role-based access control with 9 predefined roles
 - Created user management interface for users with user_management permission
