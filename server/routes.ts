@@ -1847,6 +1847,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log(`💰 Found ${wonOpportunityValues.size} unique closed won deals in fiscal year`);
         console.log(`💰 Calculated Avg Deal Size (Closed Won): $${avgDealSizeClosedWon.toLocaleString()}`);
+        console.log(`💰 DEBUG: avgDealSizeClosedWon value being returned: ${avgDealSizeClosedWon}`);
       }
       
       console.log(`💰 Calculated TCV from active stages: $${totalContractValue.toLocaleString()}`);
@@ -1974,6 +1975,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      console.log(`🔍 FINAL DEBUG: avgDealSizeClosedWon in response: ${avgDealSizeClosedWon}`);
+      
       res.json({
         metrics: {
           totalValue,
