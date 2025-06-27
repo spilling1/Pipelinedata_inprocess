@@ -58,16 +58,21 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     }
   });
 
-  // Close Rate query using same rolling 12-month calculation as the chart
+  // Close Rate query with Last 12 months range using lightweight endpoint
   const { data: closeRateData, isLoading: closeRateLoading } = useQuery({
-    queryKey: ['/api/analytics/close-rate-over-time'],
+    queryKey: ['/api/analytics/close-rate', closeRateDateRange.startDate?.toISOString() || null, closeRateDateRange.endDate?.toISOString() || null],
     queryFn: async () => {
-      const response = await fetch('/api/analytics/close-rate-over-time');
+      const params = new URLSearchParams();
+      if (closeRateDateRange.startDate) {
+        params.append('startDate', closeRateDateRange.startDate.toISOString().split('T')[0]);
+      }
+      if (closeRateDateRange.endDate) {
+        params.append('endDate', closeRateDateRange.endDate.toISOString().split('T')[0]);
+      }
+      
+      const response = await fetch(`/api/analytics/close-rate?${params}`);
       if (!response.ok) throw new Error('Failed to fetch close rate data');
-      const result = await response.json();
-      // Extract the latest close rate from the time series data
-      const latestData = result.closeRateData?.[result.closeRateData.length - 1];
-      return { closeRate: latestData?.closeRate || 0 };
+      return response.json();
     }
   });
 
