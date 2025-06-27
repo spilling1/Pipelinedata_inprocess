@@ -457,8 +457,8 @@ async function parseExcelData(buffer: Buffer, filename: string) {
       continue;
     }
 
-    // Salesforce IDs should be exactly 15 characters - log any anomalies
-    if (normalizedRow.opportunity_id.length !== 15) {
+    // Salesforce IDs should be 15 or 18 characters - log any anomalies
+    if (normalizedRow.opportunity_id.length !== 15 && normalizedRow.opportunity_id.length !== 18) {
       console.log(`⚠️ Unexpected opportunity ID length: "${normalizedRow.opportunity_id}" (${normalizedRow.opportunity_id.length} characters)`);
     }
 

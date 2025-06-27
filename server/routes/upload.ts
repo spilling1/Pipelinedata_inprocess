@@ -56,7 +56,7 @@ async function normalizeStage(stage: string): Promise<string> {
   const mappings = await storage.getStageMappings();
   
   // Check for dynamic mappings (case-insensitive)
-  const mapping = mappings.find(m => m.from.toLowerCase() === trimmedStage.toLowerCase());
+  const mapping = mappings.find((m: any) => m.from.toLowerCase() === trimmedStage.toLowerCase());
   if (mapping) {
     return mapping.to;
   }
@@ -266,7 +266,7 @@ export function registerUploadRoutes(app: Express) {
           console.log(`Found ${data.length} rows with headers:`, headers);
           
           // Save uploaded file record
-          const uploadedFile = await storage.createUploadedFile({
+          const uploadedFile = await storage.filesStorage.createUploadedFile({
             filename: file.originalname,
             snapshotDate,
             recordCount: data.length
@@ -281,6 +281,7 @@ export function registerUploadRoutes(app: Express) {
           for (const row of data) {
             try {
               // Extract opportunity data with flexible column mapping
+              const opportunityId = row['Opportunity ID'] || row['OpportunityId'] || row['ID'] || '';
               const opportunityName = row['Opportunity Name'] || row['Name'] || row['Deal Name'] || row['Opportunity'] || '';
               const clientName = row['Account Name'] || row['Client'] || row['Account'] || row['Client Name'] || '';
               const stage = row['Stage'] || row['Sales Stage'] || row['Pipeline Stage'] || '';
@@ -289,8 +290,15 @@ export function registerUploadRoutes(app: Express) {
               const closeDate = row['Close Date'] || row['Expected Close'] || row['Target Close'] || '';
               const probability = parseFloat(String(row['Probability'] || row['Win Probability'] || '0').replace(/%/g, '')) || 0;
               
-              // Skip rows without essential data
-              if (!opportunityName || !stage) {
+              // Skip rows without essential data (including opportunity ID)
+              if (!opportunityId || !opportunityName || !stage) {
+                skippedCount++;
+                continue;
+              }
+              
+              // Validate opportunity ID format (should start with '006' for Salesforce)
+              if (!opportunityId.startsWith('006')) {
+                console.warn(`Skipping row with invalid opportunity ID format: ${opportunityId}`);
                 skippedCount++;
                 continue;
               }
@@ -308,13 +316,13 @@ export function registerUploadRoutes(app: Express) {
               }
               
               // Create or update opportunity
-              let opportunity = await storage.getOpportunityByName(opportunityName);
+              let opportunity = await storage.getOpportunityById(opportunityId);
               
               if (!opportunity) {
                 opportunity = await storage.createOpportunity({
                   name: opportunityName,
                   clientName: clientName || null,
-                  opportunityId: `${opportunityName}-${Date.now()}` // Generate unique ID
+                  opportunityId: opportunityId
                 });
               }
               

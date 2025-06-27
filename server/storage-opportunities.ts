@@ -33,12 +33,6 @@ export class PostgreSQLOpportunitiesStorage implements IOpportunitiesStorage {
   }
 
   async createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
-    // Truncate opportunity ID to 15 characters if longer
-    if (opportunity.opportunityId && opportunity.opportunityId.length > 15) {
-      console.log(`⚠️ Truncating opportunity ID during creation from ${opportunity.opportunityId.length} to 15 characters: "${opportunity.opportunityId}" -> "${opportunity.opportunityId.substring(0, 15)}"`);
-      opportunity.opportunityId = opportunity.opportunityId.substring(0, 15);
-    }
-    
     const result = await db.insert(opportunities).values(opportunity).returning();
     return result[0];
   }
