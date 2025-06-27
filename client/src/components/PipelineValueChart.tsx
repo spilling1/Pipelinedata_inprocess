@@ -168,6 +168,25 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
     }));
   }, [pipelineData]);
 
+  // Generate monthly ticks for time-based axis
+  const generateMonthlyTicks = useMemo(() => {
+    if (pipelineData.length === 0) return [];
+    
+    const dates = pipelineData.map((d: any) => new Date(d.date)).sort((a: Date, b: Date) => a.getTime() - b.getTime());
+    const startDate = dates[0];
+    const endDate = dates[dates.length - 1];
+    
+    const ticks = [];
+    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    
+    while (current <= endDate) {
+      ticks.push(current.getTime());
+      current.setMonth(current.getMonth() + 1);
+    }
+    
+    return ticks;
+  }, [pipelineData]);
+
   // Memoize tooltip formatting function (must be before early return)
   const formatTooltipValue = useCallback((value: number) => {
     if (value >= 1000000) {
@@ -179,25 +198,13 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
     }
   }, []);
 
-  // Memoize expensive custom ticks calculation (must be before early return)
-  const customTicks = useMemo(() => {
-    if (chartData.length === 0) return [];
-    
-    const firstTimestamp = chartData[0].dateTimestamp;
-    const lastTimestamp = chartData[chartData.length - 1].dateTimestamp;
-    const timeSpan = lastTimestamp - firstTimestamp;
-    
-    // Always aim for 6-8 ticks
-    const targetTicks = 7;
-    const interval = timeSpan / (targetTicks - 1);
-    
-    const ticks = [];
-    for (let i = 0; i < targetTicks; i++) {
-      ticks.push(firstTimestamp + (interval * i));
-    }
-    
-    return ticks;
-  }, [chartData]);
+  // Format date for Mon-YY display
+  const formatDate = useCallback((dateStr: string) => {
+    const date = new Date(dateStr);
+    const month = date.toLocaleDateString('en-US', { month: 'short' });
+    const year = date.getFullYear().toString().slice(-2);
+    return `${month}-${year}`;
+  }, []);
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(value);
@@ -300,10 +307,8 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
                   type="number"
                   scale="time"
                   domain={['dataMin', 'dataMax']}
-                  ticks={customTicks}
-                  tickFormatter={(timestamp) => {
-                    return new Date(timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
-                  }}
+                  ticks={generateMonthlyTicks}
+                  tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
                   stroke="#666"
                   fontSize={12}
                 />
