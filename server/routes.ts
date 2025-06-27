@@ -6,6 +6,7 @@ import { db } from "./db";
 import { sql } from "drizzle-orm";
 import multer from "multer";
 import { z } from "zod";
+import * as XLSX from "xlsx";
 import { setupAuth, isAuthenticated } from "./localAuthBypass";
 import { requirePermission } from "./middleware/permissions";
 import { parseFileData } from "./utils/fileParser";
