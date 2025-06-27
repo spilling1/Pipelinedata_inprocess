@@ -423,10 +423,7 @@ export class PostgreSQLAnalyticsStorage implements IAnalyticsStorage {
   }
 
   // Placeholder implementations for complex methods - these would need full implementations
-  async getDealMovements(days: number): Promise<Array<{ opportunityName: string; from: string; to: string; date: Date; value: number }>> {
-    // This would require complex implementation to track stage transitions
-    return [];
-  }
+
 
   async getStageTimingData(startDate?: string, endDate?: string): Promise<Array<{ stage: string; avgDays: number; dealCount: number }>> {
     // Complex implementation would be needed to calculate timing between stages
