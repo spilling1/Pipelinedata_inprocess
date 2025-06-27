@@ -39,17 +39,21 @@ export function usePermissions() {
     retry: false,
   });
 
+  // Check if user is inactive
+  const isInactive = data?.user && !data.user.isActive;
+
   const hasPermission = (permission: Permission): boolean => {
-    if (!data) return false;
+    if (!data || isInactive) return false;
     return data.permissions.includes(permission);
   };
 
   const hasAnyPermission = (permissions: Permission[]): boolean => {
-    if (!data) return false;
+    if (!data || isInactive) return false;
     return permissions.some(p => data.permissions.includes(p));
   };
 
   const canAccessPage = (page: string): boolean => {
+    if (isInactive) return false;
     switch (page) {
       case 'dashboard':
       case 'pipeline':
@@ -77,6 +81,7 @@ export function usePermissions() {
     isAdmin: data?.isAdmin || false,
     isLoading,
     error,
+    isInactive,
     hasPermission,
     hasAnyPermission,
     canAccessPage,

@@ -26,6 +26,20 @@ export function requirePermission(permission: string) {
 
       // Use the same logic as /api/users/me endpoint to check permissions
       const { userManagementStorage } = await import('../storage-users');
+      
+      // First check if user is active
+      const user = await userManagementStorage.getUserById(userId);
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      if (!user.isActive) {
+        return res.status(403).json({ 
+          error: 'Account deactivated',
+          message: 'Your account has been deactivated. Please contact an administrator.'
+        });
+      }
+      
       const userPermissions = await userManagementStorage.getUserPermissions(userId);
       
       if (!userPermissions.includes(permission)) {

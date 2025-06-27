@@ -8,7 +8,7 @@ import { Link } from "wouter";
 
 export default function Home() {
   const { user } = useAuth();
-  const { canAccessPage, user: userWithPermissions, isAdmin, isLoading } = usePermissions();
+  const { canAccessPage, user: userWithPermissions, isAdmin, isLoading, isInactive } = usePermissions();
 
   if (isLoading) {
     return (
@@ -17,6 +17,28 @@ export default function Home() {
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p>Loading your dashboard...</p>
         </div>
+      </div>
+    );
+  }
+
+  // Show inactive user message
+  if (isInactive) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-red-600">Account Deactivated</CardTitle>
+            <CardDescription>
+              Your account has been deactivated. Please contact an administrator to regain access.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <Button variant="outline" onClick={() => window.location.href = '/api/auth/logout'}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Logout
+            </Button>
+          </CardContent>
+        </Card>
       </div>
     );
   }

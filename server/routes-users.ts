@@ -26,10 +26,22 @@ const requirePermission = (permission: string) => {
         return res.status(401).json({ error: 'User not authenticated' });
       }
 
-      const hasPermission = await userManagementStorage.hasPermission(userId, permission);
-      const isAdmin = await userManagementStorage.isAdmin(userId);
+      // Check if user is active
+      const user = await userManagementStorage.getUserById(userId);
+      if (!user) {
+        return res.status(401).json({ error: 'User not found' });
+      }
       
-      if (!hasPermission && !isAdmin) {
+      if (!user.isActive) {
+        return res.status(403).json({ 
+          error: 'Account deactivated',
+          message: 'Your account has been deactivated. Please contact an administrator.'
+        });
+      }
+
+      const hasPermission = await userManagementStorage.hasPermission(userId, permission);
+      
+      if (!hasPermission) {
         return res.status(403).json({ error: 'Insufficient permissions' });
       }
 
@@ -72,6 +84,17 @@ export function registerUserManagementRoutes(app: Express) {
       }
 
       const userWithRole = await userManagementStorage.getUserById(userId);
+      if (!userWithRole) {
+        return res.status(401).json({ error: 'User not found' });
+      }
+      
+      if (!userWithRole.isActive) {
+        return res.status(403).json({ 
+          error: 'Account deactivated',
+          message: 'Your account has been deactivated. Please contact an administrator.'
+        });
+      }
+      
       const permissions = await userManagementStorage.getUserPermissions(userId);
       
       res.json({
