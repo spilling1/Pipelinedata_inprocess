@@ -189,6 +189,61 @@ export class MarketingGraphStorage {
         currentDate.setDate(currentDate.getDate() + 7);
       }
 
+      // Add one final data point for "today" if it's not already included
+      const lastDataPoint = pipelineData[pipelineData.length - 1];
+      const lastDataDate = new Date(lastDataPoint.date);
+      const daysDifference = Math.ceil((today.getTime() - lastDataDate.getTime()) / (1000 * 60 * 60 * 24));
+      
+      console.log('📊 Final data point check:', {
+        lastDataDate: lastDataDate.toISOString().split('T')[0],
+        today: today.toISOString().split('T')[0],
+        daysDifference,
+        willAddFinalPoint: daysDifference > 1
+      });
+      
+      if (daysDifference > 1) { // If more than 1 day since last data point, add current state
+        const todayStr = today.toISOString().split('T')[0];
+        let pipelineValue = 0;
+        let closedWonValue = 0;
+        let customerCount = 0;
+
+        campaignCustomerData.forEach(customer => {
+          const pipelineInfo = customersPipelineInfo.get(customer.opportunityId);
+          
+          if (pipelineInfo?.hasEnteredPipeline && pipelineInfo.enteredDate) {
+            if (today >= pipelineInfo.enteredDate) {
+              const relevantSnapshots = snapshotData
+                .filter(s => s.opportunityId === customer.opportunityId && 
+                            s.snapshotDate && s.snapshotDate <= today)
+                .sort((a, b) => new Date(b.snapshotDate!).getTime() - new Date(a.snapshotDate!).getTime());
+
+              const mostRecentSnapshot = relevantSnapshots[0];
+              const currentStage = mostRecentSnapshot?.stage || customer.startingStage;
+              const currentValue = mostRecentSnapshot?.year1Arr || customer.startingYear1Arr || 0;
+              
+              if (customer.startingStage !== 'Closed Won') {
+                customerCount++;
+                
+                if (currentStage && currentStage.includes('Closed Won')) {
+                  closedWonValue += currentValue;
+                } else if (currentStage && !currentStage.includes('Closed Lost')) {
+                  pipelineValue += currentValue;
+                }
+              }
+            }
+          }
+        });
+
+        pipelineData.push({
+          date: todayStr,
+          pipelineValue,
+          closedWonValue,
+          customerCount
+        });
+        
+        console.log('📊 Added final data point for today:', todayStr, { pipelineValue, closedWonValue, customerCount });
+      }
+
       console.log('📊 Generated pipeline walk data points:', pipelineData.length);
       return pipelineData;
 
