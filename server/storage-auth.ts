@@ -6,13 +6,13 @@ import {
   type UpsertUser
 } from '../shared/schema';
 
-export interface IUserStorage {
+export interface IAuthStorage {
   // User operations for Replit Auth
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
 }
 
-export class PostgreSQLUserStorage implements IUserStorage {
+export class PostgreSQLAuthStorage implements IAuthStorage {
   // User operations for Replit Auth
   async getUser(id: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.id, id));
@@ -44,4 +44,4 @@ export class PostgreSQLUserStorage implements IUserStorage {
   }
 }
 
-export const userStorage = new PostgreSQLUserStorage();
+export const authStorage = new PostgreSQLAuthStorage();

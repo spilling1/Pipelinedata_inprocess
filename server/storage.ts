@@ -13,11 +13,11 @@ import {
   type InsertUploadedFile,
   type UpsertUser
 } from '../shared/schema';
-import { userStorage, type IUserStorage } from './storage-user';
+import { authStorage, type IAuthStorage } from './storage-auth';
 
 export interface IStorage {
-  // User operations for Replit Auth (delegated to userStorage)
-  userStorage: IUserStorage;
+  // User operations for Replit Auth (delegated to authStorage)
+  authStorage: IAuthStorage;
 
   // Opportunities
   getOpportunity(id: number): Promise<Opportunity | undefined>;
@@ -232,8 +232,8 @@ export interface IStorage {
 }
 
 export class PostgreSQLStorage implements IStorage {
-  // User operations for Replit Auth (delegated to userStorage)
-  userStorage = userStorage;
+  // User operations for Replit Auth (delegated to authStorage)
+  authStorage = authStorage;
 
   private stageMappings: Array<{ from: string; to: string }> = [
     { from: 'develop', to: 'Developing Champions' },
