@@ -33,6 +33,11 @@ export class PostgreSQLOpportunitiesStorage implements IOpportunitiesStorage {
   }
 
   async createOpportunity(opportunity: InsertOpportunity): Promise<Opportunity> {
+    // Validate opportunity ID length - Salesforce IDs are exactly 15 characters
+    if (opportunity.opportunityId && opportunity.opportunityId.length > 15) {
+      throw new Error(`Invalid opportunity ID: "${opportunity.opportunityId}". Salesforce opportunity IDs must be exactly 15 characters, but this ID has ${opportunity.opportunityId.length} characters. The system should never create or accept opportunity IDs longer than 15 characters.`);
+    }
+    
     const result = await db.insert(opportunities).values(opportunity).returning();
     return result[0];
   }
