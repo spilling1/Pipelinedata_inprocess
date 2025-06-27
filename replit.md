@@ -123,6 +123,15 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
+✓ Storage Layer Refactoring Complete (June 27, 2025)
+- Successfully refactored monolithic storage.ts (2,762 lines) into modular, specialized storage classes
+- Extracted Basic CRUD Operations: opportunities, snapshots, and files into separate modules
+- Maintained backward compatibility using composition pattern with storage properties
+- Updated all 50+ route method calls to use new storage properties (storage.opportunitiesStorage, etc.)
+- Reduced main storage.ts from 2,762 to 2,569 lines (193 lines total reduction)
+- All type checking errors resolved and application functionality verified
+- Follows risk-assessed approach prioritizing lowest risk, highest reward extractions
+
 ✓ Dedicated Marketing Storage Architecture (June 18, 2025)
 - Created separate storage-mktg.ts file for all marketing functionality 
 - Migrated all marketing routes to use dedicated marketingStorage instance

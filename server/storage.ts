@@ -18,6 +18,7 @@ import { settingsStorage, type ISettingsStorage } from './storage-settings';
 import { opportunitiesStorage, type IOpportunitiesStorage } from './storage-opportunities';
 import { snapshotsStorage, type ISnapshotsStorage } from './storage-snapshots';
 import { filesStorage, type IFilesStorage } from './storage-files';
+import { salesStorage, type ISalesStorage } from './storage-sales';
 
 export interface IStorage {
   // User operations for Replit Auth (delegated to authStorage)
