@@ -898,14 +898,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Process each row
           for (const row of parsedData as any[]) {
             // Find or create opportunity by ID, not name
-            let opportunity = await storage.getOpportunityById(row.opportunityId);
+            let opportunity = await storage.opportunitiesStorage.getOpportunityById(row.opportunityId);
             if (!opportunity) {
               console.log(`📝 Creating NEW opportunity: ${row.opportunityId} - ${row.opportunityName}`);
             } else {
               console.log(`📋 Found EXISTING opportunity: ${row.opportunityId} - ${opportunity.name}`);
             }
             if (!opportunity) {
-              opportunity = await storage.createOpportunity({
+              opportunity = await storage.opportunitiesStorage.createOpportunity({
                 opportunityId: row.opportunityId,
                 name: row.opportunityName,
                 clientName: row.clientName,
@@ -915,7 +915,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
 
             // Create snapshot with all fields
-            await storage.createSnapshot({
+            await storage.snapshotsStorage.createSnapshot({
               opportunityId: opportunity.id,
               snapshotDate: row.snapshotDate,
               stage: row.stage,
@@ -991,7 +991,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         search 
       } = req.query;
 
-      let opportunities = await storage.getAllOpportunities();
+      let opportunities = await storage.opportunitiesStorage.getAllOpportunities();
       
       // Apply search filter
       if (search && typeof search === 'string') {
@@ -1019,7 +1019,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!stageList.includes(latestSnapshot.stage || '')) continue;
         }
         if (owner && owner !== 'all' && latestSnapshot.opportunityId) {
-          const opp = await storage.getOpportunity(latestSnapshot.opportunityId);
+          const opp = await storage.opportunitiesStorage.getOpportunity(latestSnapshot.opportunityId);
           if (opp?.owner !== owner) continue;
         }
         if (minValue && (latestSnapshot.year1Value || 0) < parseFloat(minValue as string)) continue;
@@ -1046,7 +1046,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log('📋 Starting CSV export for opportunity stage history');
       
       // Get all opportunities and their snapshots
-      const allOpportunities = await storage.getAllOpportunities();
+      const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
       const allSnapshots = await storage.getAllSnapshots();
       
       console.log(`📋 Found ${allOpportunities.length} opportunities and ${allSnapshots.length} snapshots`);
@@ -1881,7 +1881,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         for (const snapshot of currentSnapshotForCloseRate) {
           if (snapshot.opportunityId && !processedOpportunityIds.has(snapshot.opportunityId)) {
-            const opportunity = await storage.getOpportunity(snapshot.opportunityId);
+            const opportunity = await storage.opportunitiesStorage.getOpportunity(snapshot.opportunityId);
             
             if (opportunity) {
               // Use entered_pipeline if available, otherwise fall back to created date
@@ -2044,7 +2044,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get all snapshots and opportunities for historical analysis
       const allSnapshots = await storage.getAllSnapshots();
-      const allOpportunities = await storage.getAllOpportunities();
+      const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
       
       // Create opportunity lookup for faster access
       const opportunityMap = new Map();
@@ -2225,7 +2225,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Get all snapshots and opportunities for historical analysis
       const allSnapshots = await storage.getAllSnapshots();
-      const allOpportunities = await storage.getAllOpportunities();
+      const allOpportunities = await storage.opportunitiesStorage.getAllOpportunities();
       
       // Create opportunity lookup for faster access
       const opportunityMap = new Map();
