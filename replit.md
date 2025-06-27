@@ -136,6 +136,15 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - All type checking errors resolved and application functionality verified
 - Follows risk-assessed approach prioritizing lowest risk, highest reward extractions
 
+✓ Salesforce Opportunity ID Suffix Matching Fixed (June 27, 2025)
+- Resolved critical issue where campaign customer data stopped updating after June 18th
+- Problem: Salesforce appends random suffixes (IAT, IAB, AAK, IAF, etc.) to opportunity IDs in newer exports
+- Solution: Implemented 15-character base ID matching instead of exact ID matching
+- Updated getCurrentSnapshotsForCampaign to find newer opportunities using first 15 characters of opportunity ID
+- Successfully restored current data access for campaign customers with $5.3M active pipeline value
+- System now automatically links older campaign customers to their newer suffixed opportunity records
+- Campaign analytics now display accurate June 27th snapshot data instead of outdated June 18th data
+
 ✓ Dedicated Marketing Storage Architecture (June 18, 2025)
 - Created separate storage-mktg.ts file for all marketing functionality 
 - Migrated all marketing routes to use dedicated marketingStorage instance

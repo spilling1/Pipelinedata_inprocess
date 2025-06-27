@@ -851,13 +851,12 @@ export class MarketingStorage {
         console.log(`   Has snapshots: ${opportunitySnapshots.length > 0}, Latest date: ${opportunitySnapshots[0]?.snapshotDate}`);
         console.log(`   Cutoff date: ${cutoffDate.toISOString()}`);
         
-        // Extract base ID from the original opportunity
-        const baseOpportunityId = customer.opportunity.opportunityId
-          .replace(/IAT$|IAB$|IAC$|IAM$|IAN$|IAJ$/g, '');
+        // Extract first 15 characters as base ID for matching
+        const baseOpportunityId = customer.opportunity.opportunityId.substring(0, 15);
         
-        console.log(`   Base opportunityId: ${baseOpportunityId}`);
+        console.log(`   Base opportunityId (first 15): ${baseOpportunityId}`);
         
-        // Look for opportunities that start with the base ID and have common suffixes
+        // Look for opportunities that start with the same 15 characters but are different records
         const newerOpportunities = await db
           .select({
             id: opportunities.id,
@@ -866,13 +865,9 @@ export class MarketingStorage {
           })
           .from(opportunities)
           .where(
-            or(
-              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAT'}`,
-              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAB'}`,
-              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAC'}`,
-              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAM'}`,
-              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAN'}`,
-              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAJ'}`
+            and(
+              sql`LEFT(${opportunities.opportunityId}, 15) = ${baseOpportunityId}`,
+              ne(opportunities.id, customer.opportunityId) // Exclude the original opportunity
             )
           );
 
