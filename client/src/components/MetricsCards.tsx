@@ -78,7 +78,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     );
   }
 
-  const metrics = analytics || {
+  const metrics = analytics?.metrics || {
     totalValue: 0,
     activeCount: 0,
     avgDealSize: 0,
