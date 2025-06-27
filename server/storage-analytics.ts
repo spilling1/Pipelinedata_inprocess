@@ -15,14 +15,7 @@ export interface IAnalyticsStorage {
   getFiscalQuarterPipeline(): Promise<Array<{ fiscalQuarter: string; value: number }>>;
   getMonthlyPipeline(): Promise<Array<{ month: string; value: number }>>;
 
-  // Deal movement and timing analytics
-  getDealMovements(days: number): Promise<Array<{ 
-    opportunityName: string; 
-    from: string; 
-    to: string; 
-    date: Date; 
-    value: number 
-  }>>;
+  // Timing analytics
   getStageTimingData(startDate?: string, endDate?: string): Promise<Array<{ stage: string; avgDays: number; dealCount: number }>>;
 
   // Advanced analytics
@@ -295,7 +288,6 @@ export class PostgreSQLAnalyticsStorage implements IAnalyticsStorage {
         sql`${snapshots.expectedCloseDate} IS NOT NULL`
       ))
       .groupBy(sql`
-        'FY' || 
         CASE 
           WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
           ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
