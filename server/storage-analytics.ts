@@ -268,40 +268,34 @@ export class PostgreSQLAnalyticsStorage implements IAnalyticsStorage {
     
     console.log(`🗓️ Using latest snapshot date for fiscal year pipeline: ${latestDateStr}`);
     
-    const result = await db
-      .select({
-        fiscalYear: sql<string>`
+    // Use a raw SQL query to avoid GROUP BY issues with complex CASE expressions
+    const result = await db.execute(sql`
+      WITH fiscal_year_data AS (
+        SELECT 
           'FY' || 
           CASE 
-            WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-            ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
-          END
-        `,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} IS NOT NULL`,
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
-        sql`${snapshots.expectedCloseDate} IS NOT NULL`
-      ))
-      .groupBy(sql`
-        CASE 
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
-        END
-      `)
-      .orderBy(sql`
-        CASE 
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
-        END
-      `);
+            WHEN EXTRACT(MONTH FROM expected_close_date) IN (2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12) 
+            THEN EXTRACT(YEAR FROM expected_close_date + INTERVAL '1 year')
+            ELSE EXTRACT(YEAR FROM expected_close_date)
+          END as fiscal_year,
+          COALESCE(year1_value, 0) as year1_value
+        FROM snapshots
+        WHERE stage IS NOT NULL
+          AND stage NOT LIKE '%Closed%'
+          AND stage NOT LIKE '%Validation%'
+          AND snapshot_date::date = ${latestDateStr}::date
+          AND expected_close_date IS NOT NULL
+      )
+      SELECT 
+        fiscal_year,
+        SUM(year1_value) as value
+      FROM fiscal_year_data
+      GROUP BY fiscal_year
+      ORDER BY fiscal_year
+    `);
     
-    return result.map(r => ({
-      fiscalYear: r.fiscalYear || 'Unknown',
+    return (result.rows || []).map((r: any) => ({
+      fiscalYear: r.fiscal_year || 'Unknown',
       value: Number(r.value) || 0
     }));
   }
@@ -320,60 +314,39 @@ export class PostgreSQLAnalyticsStorage implements IAnalyticsStorage {
     
     console.log(`🗓️ Using latest snapshot date for fiscal quarter pipeline: ${latestDateStr}`);
     
-    const result = await db
-      .select({
-        fiscalQuarter: sql<string>`
+    // Use a raw SQL query to avoid GROUP BY issues with complex CASE expressions
+    const result = await db.execute(sql`
+      WITH fiscal_quarter_data AS (
+        SELECT 
           CASE 
-            WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4) THEN 'Q1 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-            WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (5, 6, 7) THEN 'Q2 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-            WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (8, 9, 10) THEN 'Q3 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-            WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (11, 12, 1) THEN 'Q4 FY' || 
+            WHEN EXTRACT(MONTH FROM expected_close_date) IN (2, 3, 4) THEN 'Q1 FY' || EXTRACT(YEAR FROM expected_close_date + INTERVAL '1 year')
+            WHEN EXTRACT(MONTH FROM expected_close_date) IN (5, 6, 7) THEN 'Q2 FY' || EXTRACT(YEAR FROM expected_close_date + INTERVAL '1 year')
+            WHEN EXTRACT(MONTH FROM expected_close_date) IN (8, 9, 10) THEN 'Q3 FY' || EXTRACT(YEAR FROM expected_close_date + INTERVAL '1 year')
+            WHEN EXTRACT(MONTH FROM expected_close_date) IN (11, 12, 1) THEN 'Q4 FY' || 
               CASE 
-                WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-                ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
+                WHEN EXTRACT(MONTH FROM expected_close_date) IN (11, 12) THEN EXTRACT(YEAR FROM expected_close_date + INTERVAL '1 year')
+                ELSE EXTRACT(YEAR FROM expected_close_date)
               END
             ELSE 'Unknown'
-          END
-        `,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} IS NOT NULL`,
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
-        sql`${snapshots.expectedCloseDate} IS NOT NULL`
-      ))
-      .groupBy(sql`
-        CASE 
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4) THEN 'Q1 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (5, 6, 7) THEN 'Q2 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (8, 9, 10) THEN 'Q3 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (11, 12, 1) THEN 'Q4 FY' || 
-            CASE 
-              WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-              ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
-            END
-          ELSE 'Unknown'
-        END
-      `)
-      .orderBy(sql`
-        CASE 
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (2, 3, 4) THEN 'Q1 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (5, 6, 7) THEN 'Q2 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (8, 9, 10) THEN 'Q3 FY' || EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-          WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (11, 12, 1) THEN 'Q4 FY' || 
-            CASE 
-              WHEN EXTRACT(MONTH FROM ${snapshots.expectedCloseDate}) IN (11, 12) THEN EXTRACT(YEAR FROM ${snapshots.expectedCloseDate} + INTERVAL '1 year')
-              ELSE EXTRACT(YEAR FROM ${snapshots.expectedCloseDate})
-            END
-          ELSE 'Unknown'
-        END
-      `);
+          END as fiscal_quarter,
+          COALESCE(year1_value, 0) as year1_value
+        FROM snapshots
+        WHERE stage IS NOT NULL
+          AND stage NOT LIKE '%Closed%'
+          AND stage NOT LIKE '%Validation%'
+          AND snapshot_date::date = ${latestDateStr}::date
+          AND expected_close_date IS NOT NULL
+      )
+      SELECT 
+        fiscal_quarter,
+        SUM(year1_value) as value
+      FROM fiscal_quarter_data
+      GROUP BY fiscal_quarter
+      ORDER BY fiscal_quarter
+    `);
     
-    return result.map(r => ({
-      fiscalQuarter: r.fiscalQuarter || 'Unknown',
+    return (result.rows || []).map((r: any) => ({
+      fiscalQuarter: r.fiscal_quarter || 'Unknown',
       value: Number(r.value) || 0
     }));
   }
