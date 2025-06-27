@@ -27,15 +27,38 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
     }
   });
 
-  // Filter out data points over 40% to avoid artificial spikes and prepare chart data with timestamp conversion
-  const chartData = (winRateData?.winRateData || []).filter((point: WinRateDataPoint) => {
+  // Filter out data points over 40% to avoid artificial spikes and prepare chart data
+  const filteredData = (winRateData?.winRateData || []).filter((point: WinRateDataPoint) => {
     const fyValid = !point.fyWinRate || point.fyWinRate <= 40;
     const rollingValid = !point.rolling12WinRate || point.rolling12WinRate <= 40;
     return fyValid && rollingValid;
-  }).map((point: WinRateDataPoint) => ({
+  });
+
+  // Generate monthly ticks for time-based axis
+  const generateMonthlyTicks = (data: WinRateDataPoint[]) => {
+    if (data.length === 0) return [];
+    
+    const dates = data.map(d => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
+    const startDate = dates[0];
+    const endDate = dates[dates.length - 1];
+    
+    const ticks = [];
+    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    
+    while (current <= endDate) {
+      ticks.push(current.getTime());
+      current.setMonth(current.getMonth() + 1);
+    }
+    
+    return ticks;
+  };
+
+  const chartData = filteredData.map((point: WinRateDataPoint) => ({
     ...point,
     timestamp: new Date(point.date).getTime()
   }));
+
+  const monthlyTicks = generateMonthlyTicks(filteredData);
 
   // Format date for display - Monthly format Mon-YY
   const formatDate = (dateStr: string) => {
@@ -196,6 +219,7 @@ export default function WinRateOverTimeCard({ filters }: WinRateOverTimeCardProp
                   type="number"
                   scale="time"
                   domain={['dataMin', 'dataMax']}
+                  ticks={monthlyTicks}
                   tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
                   stroke="#666"
                   fontSize={12}

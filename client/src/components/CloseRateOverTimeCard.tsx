@@ -194,7 +194,29 @@ export function CloseRateOverTimeCard() {
     );
   }
 
-  const chartData = (data?.closeRateData || []).map((point: any) => ({
+  // Generate monthly ticks for time-based axis
+  const generateMonthlyTicks = (data: any[]) => {
+    if (data.length === 0) return [];
+    
+    const dates = data.map(d => new Date(d.date)).sort((a, b) => a.getTime() - b.getTime());
+    const startDate = dates[0];
+    const endDate = dates[dates.length - 1];
+    
+    const ticks = [];
+    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
+    
+    while (current <= endDate) {
+      ticks.push(current.getTime());
+      current.setMonth(current.getMonth() + 1);
+    }
+    
+    return ticks;
+  };
+
+  const rawData = data?.closeRateData || [];
+  const monthlyTicks = generateMonthlyTicks(rawData);
+  
+  const chartData = rawData.map((point: any) => ({
     ...point,
     timestamp: new Date(point.date).getTime()
   }));
@@ -222,6 +244,7 @@ export function CloseRateOverTimeCard() {
                   type="number"
                   scale="time"
                   domain={['dataMin', 'dataMax']}
+                  ticks={monthlyTicks}
                   tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
                   stroke="#666"
                   fontSize={12}
