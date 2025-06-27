@@ -871,12 +871,7 @@ export class MarketingStorage {
             )
           );
 
-        console.log(`   Found ${newerOpportunities.length} newer opportunities with suffixed IDs`);
-        newerOpportunities.forEach(opp => console.log(`     - ${opp.opportunityId} (ID: ${opp.id})`));
-
         if (newerOpportunities.length > 0) {
-          console.log(`📋 Found ${newerOpportunities.length} newer opportunities with suffixed IDs`);
-          
           // Get snapshots from the newer opportunity records
           const newerSnapshots = await db
             .select({
@@ -892,10 +887,7 @@ export class MarketingStorage {
             .where(inArray(snapshots.opportunityId, newerOpportunities.map(o => o.id)))
             .orderBy(desc(snapshots.snapshotDate), desc(snapshots.expectedCloseDate));
 
-          console.log(`   Found ${newerSnapshots.length} newer snapshots`);
           if (newerSnapshots.length > 0) {
-            console.log(`     Latest snapshot: ${newerSnapshots[0].snapshotDate}, Stage: ${newerSnapshots[0].stage}`);
-            console.log(`📊 Found ${newerSnapshots.length} newer snapshots for ${customer.opportunity.name}`);
             opportunitySnapshots = newerSnapshots;
           }
         }
