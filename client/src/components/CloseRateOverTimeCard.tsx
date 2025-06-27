@@ -21,7 +21,7 @@ export function CloseRateOverTimeCard() {
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'MMM d, yy');
+      return format(new Date(dateString), 'MMM-yy');
     } catch {
       return dateString;
     }
@@ -219,9 +219,7 @@ export function CloseRateOverTimeCard() {
                   tickFormatter={formatDate}
                   stroke="#666"
                   fontSize={12}
-                  angle={-45}
-                  textAnchor="end"
-                  height={80}
+                  height={60}
                   interval="preserveStartEnd"
                 />
                 <YAxis 
