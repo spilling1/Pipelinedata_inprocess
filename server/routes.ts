@@ -5,10 +5,10 @@ import { insertUploadedFileSchema, opportunities, snapshots, uploadedFiles, type
 import { db } from "./db";
 import { sql } from "drizzle-orm";
 import multer from "multer";
-import * as XLSX from "xlsx";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./localAuthBypass";
 import { requirePermission } from "./middleware/permissions";
+import { parseFileData } from "./utils/fileParser";
 
 // Configure multer for file uploads
 const upload = multer({
