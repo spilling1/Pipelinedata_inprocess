@@ -707,8 +707,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Database management routes
-  app.get("/api/database/tables", async (req, res) => {
+  // Database management routes (protected)
+  app.get("/api/database/tables", isAuthenticated, requirePermission('database'), async (req, res) => {
     try {
       // First get all table names
       const tablesResult = await db.execute(sql`
@@ -1864,7 +1864,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Win rate over time endpoint (protected)
-  app.get("/api/analytics/win-rate-over-time", isAuthenticated, async (req, res) => {
+  app.get("/api/analytics/win-rate-over-time", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       // Get all snapshots and opportunities for historical analysis
       const allSnapshots = await storage.getAllSnapshots();
@@ -2058,7 +2058,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Loss reason analytics endpoint (protected)
-  app.get("/api/analytics/loss-reasons", isAuthenticated, async (req, res) => {
+  app.get("/api/analytics/loss-reasons", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       console.log("🎯 LOSS REASON OVERVIEW API CALLED ===== startDate:", req.query.startDate, "endDate:", req.query.endDate);
       const startDate = req.query.startDate as string;
@@ -2073,7 +2073,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Loss reason by previous stage endpoint (protected)
-  app.get("/api/analytics/loss-reasons-by-previous-stage", isAuthenticated, async (req, res) => {
+  app.get("/api/analytics/loss-reasons-by-previous-stage", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       console.log("🎯 LOSS REASON BY STAGE API CALLED ===== startDate:", req.query.startDate, "endDate:", req.query.endDate);
       const startDate = req.query.startDate as string;
