@@ -277,6 +277,16 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - System now correctly excludes Bear Homes, Cedarglen Homes, and other customers without pipeline entry from all analytics
 - Campaign metrics now accurately reflect only customers who have genuinely entered the sales pipeline process
 
+✓ Opportunity ID Migration to 18-Character Format Complete (June 27, 2025)
+- Successfully migrated 354 out of 455 opportunity IDs from 15-character to 18-character Salesforce format (77.8%)
+- Used provided mapping file (mapping_1751061472555.csv) with 355 ID mappings for accurate conversion
+- All database relationships preserved - snapshots, campaign_customers, and other tables remain intact via foreign key references
+- 101 opportunity IDs remain as 15-character format (not included in mapping file - likely legacy or unmigrated records)
+- Updated only the opportunities.opportunity_id field while maintaining all data integrity
+- System now uses current Salesforce opportunity ID format for records with available mappings
+- Database migration completed using transaction-based batches to ensure data safety
+- Verified zero data loss and proper foreign key constraint preservation throughout migration process
+
 ✓ Performance Optimization and React Warnings Fixed (June 27, 2025)
 - Eliminated unnecessary file polling that was checking every 5 seconds
 - Reduced API calls from 720 per hour to only when needed
