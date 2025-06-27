@@ -17,20 +17,7 @@ export default function FiscalYearPipelineChart({ filters }: FiscalYearPipelineC
     queryKey: ['/api/analytics', filters],
   });
 
-  if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Pipeline Value Over Time</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Memoize expensive data processing based on time view
+  // Memoize expensive data processing based on time view (must be before early return)
   const chartData = useMemo(() => {
     switch (timeView) {
       case 'year':
@@ -49,6 +36,19 @@ export default function FiscalYearPipelineChart({ filters }: FiscalYearPipelineC
         return [];
     }
   }, [analytics, timeView]);
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Pipeline Value Over Time</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-64 bg-gray-100 rounded animate-pulse"></div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const getTitle = () => {
     return 'Pipeline Value';

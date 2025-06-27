@@ -261,6 +261,7 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
   * StageDistributionChart: Memoized stage ordering, data transformation, and tooltip functions
   * WinRateCard & CloseRateCard: Memoized color calculations and styling logic
   * FiscalYearPipelineChart: Memoized time-based data processing and transformations
+- Fixed React hooks ordering errors to ensure proper component rendering and stability
 - Improved application performance and reduced server load
 - Files now refresh when returning to browser tab or during actual uploads
 
