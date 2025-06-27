@@ -236,194 +236,19 @@ export class PostgreSQLStorage implements IStorage {
   }
 
   async getYear1ArrDistribution(): Promise<Array<{ stage: string; count: number; value: number }>> {
-    // Get the most recent snapshot date
-    const latestDateResult = await db
-      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
-      .from(snapshots);
-    
-    const latestDateStr = latestDateResult[0]?.maxDate;
-    
-    if (!latestDateStr) {
-      return [];
-    }
-    
-    console.log(`💰 Using latest snapshot date for Year 1 ARR distribution: ${latestDateStr}`);
-    
-    // Only count opportunities from the most recent snapshot date using year1_arr field
-    const result = await db
-      .select({
-        stage: snapshots.stage,
-        count: sql<number>`COUNT(DISTINCT ${snapshots.opportunityId})`,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} IS NOT NULL`,
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`
-      ))
-      .groupBy(snapshots.stage);
-    
-    return result.map(r => ({
-      stage: r.stage || 'Unknown',
-      count: Number(r.count) || 0,
-      value: Number(r.value) || 0
-    }));
+    return this.analyticsStorage.getYear1ArrDistribution();
   }
 
   async getFiscalYearPipeline(): Promise<Array<{ fiscalYear: string; value: number }>> {
-    // Get the most recent snapshot date
-    const latestDateResult = await db
-      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
-      .from(snapshots);
-    
-    const latestDateStr = latestDateResult[0]?.maxDate;
-    
-    if (!latestDateStr) {
-      return [];
-    }
-    
-    console.log(`🗓️ Using latest snapshot date for fiscal year pipeline: ${latestDateStr}`);
-    
-    // Only use data from the most recent snapshot date
-    // Calculate fiscal year: if month is Jan (1), use current year, otherwise use next year
-    const result = await db
-      .select({
-        fiscalYear: sql<string>`CASE 
-          WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) = 1 
-          THEN EXTRACT(YEAR FROM ${snapshots.closeDate})::text
-          ELSE (EXTRACT(YEAR FROM ${snapshots.closeDate}) + 1)::text
-        END`,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
-        sql`${snapshots.closeDate} IS NOT NULL`
-      ))
-      .groupBy(sql`CASE 
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) = 1 
-        THEN EXTRACT(YEAR FROM ${snapshots.closeDate})::text
-        ELSE (EXTRACT(YEAR FROM ${snapshots.closeDate}) + 1)::text
-      END`)
-      .orderBy(sql`CASE 
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) = 1 
-        THEN EXTRACT(YEAR FROM ${snapshots.closeDate})::text
-        ELSE (EXTRACT(YEAR FROM ${snapshots.closeDate}) + 1)::text
-      END`);
-    
-    return result.map(r => ({
-      fiscalYear: r.fiscalYear || '',
-      value: Number(r.value) || 0
-    }));
+    return this.analyticsStorage.getFiscalYearPipeline();
   }
 
   async getFiscalQuarterPipeline(): Promise<Array<{ fiscalQuarter: string; value: number }>> {
-    // Get the most recent snapshot date
-    const latestDateResult = await db
-      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
-      .from(snapshots);
-    
-    const latestDateStr = latestDateResult[0]?.maxDate;
-    
-    if (!latestDateStr) {
-      return [];
-    }
-    
-    console.log(`🗓️ Using latest snapshot date for fiscal quarter pipeline: ${latestDateStr}`);
-    
-    // Only use data from the most recent snapshot date, group by close date fiscal quarters
-    // Fiscal quarters: Q1(Feb-Apr), Q2(May-Jul), Q3(Aug-Oct), Q4(Nov-Jan)
-    const result = await db
-      .select({
-        fiscalQuarter: sql<string>`CONCAT(
-          CASE 
-            WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) = 1 
-            THEN EXTRACT(YEAR FROM ${snapshots.closeDate})::text
-            ELSE (EXTRACT(YEAR FROM ${snapshots.closeDate}) + 1)::text
-          END, 
-          ' Q', 
-          CASE 
-            WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (2,3,4) THEN '1'
-            WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (5,6,7) THEN '2'
-            WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (8,9,10) THEN '3'
-            WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (11,12,1) THEN '4'
-          END)`,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
-        sql`${snapshots.closeDate} IS NOT NULL`
-      ))
-      .groupBy(sql`CASE 
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) = 1 
-        THEN EXTRACT(YEAR FROM ${snapshots.closeDate})::text
-        ELSE (EXTRACT(YEAR FROM ${snapshots.closeDate}) + 1)::text
-      END, CASE 
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (2,3,4) THEN '1'
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (5,6,7) THEN '2'
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (8,9,10) THEN '3'
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (11,12,1) THEN '4'
-      END`)
-      .orderBy(sql`CASE 
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) = 1 
-        THEN EXTRACT(YEAR FROM ${snapshots.closeDate})::text
-        ELSE (EXTRACT(YEAR FROM ${snapshots.closeDate}) + 1)::text
-      END, CASE 
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (2,3,4) THEN '1'
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (5,6,7) THEN '2'
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (8,9,10) THEN '3'
-        WHEN EXTRACT(MONTH FROM ${snapshots.closeDate}) IN (11,12,1) THEN '4'
-      END`);
-    
-    return result.map(r => ({
-      fiscalQuarter: r.fiscalQuarter || '',
-      value: Number(r.value) || 0
-    }));
+    return this.analyticsStorage.getFiscalQuarterPipeline();
   }
-
   async getMonthlyPipeline(): Promise<Array<{ month: string; value: number }>> {
-    // Get the most recent snapshot date
-    const latestDateResult = await db
-      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
-      .from(snapshots);
-    
-    const latestDateStr = latestDateResult[0]?.maxDate;
-    
-    if (!latestDateStr) {
-      return [];
-    }
-    
-    console.log(`🗓️ Using latest snapshot date for monthly pipeline: ${latestDateStr}`);
-    
-    // Only use data from the most recent snapshot date, group by close date months
-    const result = await db
-      .select({
-        month: sql<string>`TO_CHAR(${snapshots.closeDate}, 'YYYY-MM')`,
-        value: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
-      })
-      .from(snapshots)
-      .where(and(
-        sql`${snapshots.stage} NOT LIKE '%Closed%'`,
-        sql`${snapshots.stage} NOT LIKE '%Validation%'`,
-        sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
-        sql`${snapshots.closeDate} IS NOT NULL`
-      ))
-      .groupBy(sql`TO_CHAR(${snapshots.closeDate}, 'YYYY-MM')`)
-      .orderBy(sql`TO_CHAR(${snapshots.closeDate}, 'YYYY-MM')`);
-    
-    return result.map(r => ({
-      month: r.month || '',
-      value: Number(r.value) || 0
-    }));
+    return this.analyticsStorage.getMonthlyPipeline();
   }
-
   async getDealMovements(days: number): Promise<Array<{ 
     opportunityName: string; 
     from: string; 
