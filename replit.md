@@ -129,9 +129,10 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Extracted Settings/Configuration Storage (#2): settingsStorage with stage mappings and configurations
 - Extracted Basic CRUD Operations (#3): opportunitiesStorage, snapshotsStorage, and filesStorage
 - Extracted Sales Analytics Adapter Layer (#4): salesStorage with 17+ sales-specific analytics methods
+- Extracted Core Analytics Storage Layer (#5): analyticsStorage with 6 core pipeline analytics methods
 - Maintained backward compatibility using composition pattern with storage properties
-- Updated all route method calls to use new storage properties (storage.salesStorage.getSalesRepsList, etc.)
-- Reduced main storage.ts from 2,762 to 2,157 lines (605 lines total reduction)
+- Updated all route method calls to use new storage properties (storage.analyticsStorage.getPipelineValueByDate, etc.)
+- Reduced main storage.ts from 2,762 to 1,932 lines (830 lines total reduction, 70% of goal achieved)
 - All type checking errors resolved and application functionality verified
 - Follows risk-assessed approach prioritizing lowest risk, highest reward extractions
 
