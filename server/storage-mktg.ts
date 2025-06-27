@@ -494,16 +494,8 @@ export class MarketingStorage {
         return false;
       }
       
-      // Exclude if current close date is before campaign start date
-      if (s.closeDate && campaign.startDate) {
-        const closeDate = new Date(s.closeDate);
-        const campaignStartDate = new Date(campaign.startDate);
-        if (closeDate < campaignStartDate) {
-          return false;
-        }
-      }
-      
       // Include all non-closed stages (active pipeline)
+      // Note: We don't filter by close date here since that would exclude legitimate open opportunities
       return s.stage !== 'Closed Won' && s.stage !== 'Closed Lost';
     });
 
