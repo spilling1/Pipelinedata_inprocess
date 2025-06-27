@@ -36,8 +36,12 @@ export default function WinRateCard({ filters }: WinRateCardProps) {
   });
 
   const winRate = analyticsData?.metrics?.conversionRate || 0;
-  const winRateColor = winRate >= 30 ? 'bg-green-500' : winRate >= 20 ? 'bg-yellow-500' : 'bg-red-500';
-  const winRateTextColor = winRate >= 30 ? 'text-green-600' : winRate >= 20 ? 'text-yellow-600' : 'text-red-600';
+  
+  // Memoize color calculations
+  const { winRateColor, winRateTextColor } = useMemo(() => ({
+    winRateColor: winRate >= 30 ? 'bg-green-500' : winRate >= 20 ? 'bg-yellow-500' : 'bg-red-500',
+    winRateTextColor: winRate >= 30 ? 'text-green-600' : winRate >= 20 ? 'text-yellow-600' : 'text-red-600'
+  }), [winRate]);
 
   return (
     <Card className="h-full">

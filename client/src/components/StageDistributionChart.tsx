@@ -25,6 +25,15 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     queryKey: ['/api/analytics', filters],
   });
 
+  // Memoize stage order for consistent sorting (must be before early return)
+  const stageOrder = useMemo(() => [
+    'Validation/Introduction',
+    'Discover',
+    'Developing Champions',
+    'ROI Analysis/Pricing',
+    'Negotiation/Review'
+  ], []);
+
   if (isLoading) {
     return (
       <Card>
@@ -45,15 +54,6 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
   }
 
   const stageData = analytics?.stageDistribution || [];
-  
-  // Memoize stage order for consistent sorting
-  const stageOrder = useMemo(() => [
-    'Validation/Introduction',
-    'Discover',
-    'Developing Champions',
-    'ROI Analysis/Pricing',
-    'Negotiation/Review'
-  ], []);
 
   // Memoize expensive data processing
   const chartData = useMemo(() => {

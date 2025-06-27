@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { useQuery } from '@tanstack/react-query';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { FilterState } from '@/types/pipeline';
-import { useState } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 
 interface FiscalYearPipelineChartProps {
   filters: FilterState;
@@ -30,8 +30,8 @@ export default function FiscalYearPipelineChart({ filters }: FiscalYearPipelineC
     );
   }
 
-  // Get data based on selected time view
-  const getData = () => {
+  // Memoize expensive data processing based on time view
+  const chartData = useMemo(() => {
     switch (timeView) {
       case 'year':
         return analytics?.fiscalYearPipeline?.map(item => ({ 
@@ -48,9 +48,7 @@ export default function FiscalYearPipelineChart({ filters }: FiscalYearPipelineC
       default:
         return [];
     }
-  };
-
-  const chartData = getData();
+  }, [analytics, timeView]);
 
   const getTitle = () => {
     return 'Pipeline Value';

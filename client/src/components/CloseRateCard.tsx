@@ -36,8 +36,12 @@ export default function CloseRateCard({ filters }: CloseRateCardProps) {
   });
 
   const closeRate = analyticsData?.metrics?.closeRate || 0;
-  const closeRateColor = closeRate >= 25 ? 'bg-blue-500' : closeRate >= 15 ? 'bg-orange-500' : 'bg-red-500';
-  const closeRateTextColor = closeRate >= 25 ? 'text-blue-600' : closeRate >= 15 ? 'text-orange-600' : 'text-red-600';
+  
+  // Memoize color calculations
+  const { closeRateColor, closeRateTextColor } = useMemo(() => ({
+    closeRateColor: closeRate >= 25 ? 'bg-blue-500' : closeRate >= 15 ? 'bg-orange-500' : 'bg-red-500',
+    closeRateTextColor: closeRate >= 25 ? 'text-blue-600' : closeRate >= 15 ? 'text-orange-600' : 'text-red-600'
+  }), [closeRate]);
 
   return (
     <Card className="h-full">
