@@ -28,7 +28,7 @@ export function registerSalesRoutes(app: Express) {
   // Get available clients for sales filtering
   app.get('/api/sales/clients', isAuthenticated, async (req, res) => {
     try {
-      const clients = await storage.getClientsList();
+      const clients = await storage.salesStorage.getClientsList();
       res.json(clients);
     } catch (error) {
       console.error('Error fetching clients:', error);
@@ -73,20 +73,20 @@ export function registerSalesRoutes(app: Express) {
         closeRateAnalysis,
         lossReasons
       ] = await Promise.all([
-        storage.getSalesPipelineValueByDate(filters),
-        storage.getSalesStageDistribution(filters),
-        storage.getSalesFiscalYearPipeline(filters),
-        storage.getSalesFiscalQuarterPipeline(filters),
-        storage.getSalesMonthlyPipeline(filters),
-        storage.getSalesStageTimingData(filters),
-        storage.getSalesDateSlippageData(filters),
-        storage.getSalesDuplicateOpportunities(filters),
-        storage.getSalesValueChanges(filters),
-        storage.getSalesClosingProbabilityData(filters),
-        storage.getSalesStageFunnel(filters),
-        storage.getSalesWinRateForFiscalYear(2025, filters),
-        storage.getSalesCloseRateForPeriod(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), new Date(), filters),
-        storage.getSalesLossReasons(filters)
+        storage.salesStorage.getSalesPipelineValueByDate(filters),
+        storage.salesStorage.getSalesStageDistribution(filters),
+        storage.salesStorage.getSalesFiscalYearPipeline(filters),
+        storage.salesStorage.getSalesFiscalQuarterPipeline(filters),
+        storage.salesStorage.getSalesMonthlyPipeline(filters),
+        storage.salesStorage.getSalesStageTimingData(filters),
+        storage.salesStorage.getSalesDateSlippageData(filters),
+        storage.salesStorage.getSalesDuplicateOpportunities(filters),
+        storage.salesStorage.getSalesValueChanges(filters),
+        storage.salesStorage.getSalesClosingProbabilityData(filters),
+        storage.salesStorage.getSalesStageFunnel(filters),
+        storage.salesStorage.getSalesWinRateForFiscalYear(2025, filters),
+        storage.salesStorage.getSalesCloseRateForPeriod(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), new Date(), filters),
+        storage.salesStorage.getSalesLossReasons(filters)
       ]);
 
       // Calculate metrics using the same logic as original pipeline analytics
@@ -97,7 +97,7 @@ export function registerSalesRoutes(app: Express) {
       const activeCount = stageDistribution.reduce((sum, stage) => sum + stage.count, 0);
       
       // Total Contract Value: Sum of TCV from current snapshots
-      const totalContractValue = await storage.getSalesTotalContractValue(filters);
+      const totalContractValue = await storage.salesStorage.getSalesTotalContractValue(filters);
       
       // Average Deal Size: Total Pipeline Value / Active Opportunities
       const avgDealSize = activeCount > 0 ? totalValue / activeCount : 0;
@@ -161,7 +161,7 @@ export function registerSalesRoutes(app: Express) {
         clientName: clientName as string
       };
 
-      const opportunities = await storage.getSalesOpportunities(filters);
+      const opportunities = await storage.salesStorage.getSalesOpportunities(filters);
       res.json(opportunities);
     } catch (error) {
       console.error('Error fetching sales opportunities:', error);
@@ -179,7 +179,7 @@ export function registerSalesRoutes(app: Express) {
         timeframe: timeframe as string || '90'
       };
 
-      const stageFlow = await storage.getSalesStageFlow(filters);
+      const stageFlow = await storage.salesStorage.getSalesStageFlow(filters);
       res.json(stageFlow);
     } catch (error) {
       console.error('Error fetching sales stage flow:', error);
@@ -198,7 +198,7 @@ export function registerSalesRoutes(app: Express) {
         endDate: endDate as string
       };
 
-      const lossAnalysis = await storage.getSalesLossAnalysis(filters);
+      const lossAnalysis = await storage.salesStorage.getSalesLossAnalysis(filters);
       res.json(lossAnalysis);
     } catch (error) {
       console.error('Error fetching sales loss analysis:', error);
@@ -216,7 +216,7 @@ export function registerSalesRoutes(app: Express) {
         days: 30 // Last 30 days
       };
 
-      const recentLosses = await storage.getSalesRecentLosses(filters);
+      const recentLosses = await storage.salesStorage.getSalesRecentLosses(filters);
       res.json({ recentLosses });
     } catch (error) {
       console.error('Error fetching recent losses:', error);
