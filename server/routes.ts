@@ -1451,7 +1451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const monthYear = getMonthYear(closeDate);
         
         if (!acc[monthYear]) acc[monthYear] = 0;
-        acc[monthYear] += snapshot.year1Arr || 0;
+        acc[monthYear] += snapshot.year1Value || 0;
         return acc;
       }, {} as Record<string, number>);
       
