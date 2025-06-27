@@ -18,8 +18,8 @@ export default function WinRateCard({ filters }: WinRateCardProps) {
     return getDateRangeByValue(selectedDateRange);
   }, [selectedDateRange]);
 
-  const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ['/api/analytics', dateRange.startDate?.toISOString(), dateRange.endDate?.toISOString()],
+  const { data: winRateData, isLoading } = useQuery({
+    queryKey: ['/api/analytics/win-rate', dateRange.startDate?.toISOString(), dateRange.endDate?.toISOString()],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (dateRange.startDate) {
@@ -29,13 +29,13 @@ export default function WinRateCard({ filters }: WinRateCardProps) {
         params.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
       }
       
-      const response = await fetch(`/api/analytics?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch analytics data');
+      const response = await fetch(`/api/analytics/win-rate?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch win rate data');
       return response.json();
     }
   });
 
-  const winRate = analyticsData?.metrics?.conversionRate || 0;
+  const winRate = winRateData?.conversionRate || 0;
   
   // Memoize color calculations
   const { winRateColor, winRateTextColor } = useMemo(() => ({

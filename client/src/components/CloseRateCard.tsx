@@ -18,8 +18,8 @@ export default function CloseRateCard({ filters }: CloseRateCardProps) {
     return getDateRangeByValue(selectedDateRange);
   }, [selectedDateRange]);
 
-  const { data: analyticsData, isLoading } = useQuery({
-    queryKey: ['/api/analytics', dateRange.startDate?.toISOString(), dateRange.endDate?.toISOString()],
+  const { data: closeRateData, isLoading } = useQuery({
+    queryKey: ['/api/analytics/close-rate', dateRange.startDate?.toISOString(), dateRange.endDate?.toISOString()],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (dateRange.startDate) {
@@ -29,13 +29,13 @@ export default function CloseRateCard({ filters }: CloseRateCardProps) {
         params.append('endDate', dateRange.endDate.toISOString().split('T')[0]);
       }
       
-      const response = await fetch(`/api/analytics?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch analytics data');
+      const response = await fetch(`/api/analytics/close-rate?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch close rate data');
       return response.json();
     }
   });
 
-  const closeRate = analyticsData?.metrics?.closeRate || 0;
+  const closeRate = closeRateData?.closeRate || 0;
   
   // Memoize color calculations
   const { closeRateColor, closeRateTextColor } = useMemo(() => ({

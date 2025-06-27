@@ -1180,6 +1180,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lightweight win rate endpoint (protected)
+  app.get("/api/analytics/win-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      // Get the most recent snapshot date
+      const latestDateResult = await storage.getAllSnapshots();
+      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
+        const snapshotDate = new Date(snapshot.snapshotDate);
+        return snapshotDate > latest ? snapshotDate : latest;
+      }, new Date(0));
+      
+      // Query only latest snapshots for win rate calculation
+      const latestSnapshots = await db.select().from(snapshots)
+        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
+      
+      // Filter by fiscal year deals that entered pipeline
+      let filteredSnapshots = latestSnapshots.filter(snapshot => {
+        if (!snapshot.enteredPipeline) return false;
+        
+        // Apply date range if provided
+        if (startDate && endDate && snapshot.closeDate) {
+          const closeDate = new Date(snapshot.closeDate);
+          return closeDate >= new Date(startDate) && closeDate <= new Date(endDate);
+        }
+        return true;
+      });
+      
+      // Count closed deals (won vs lost)
+      const closedDeals = filteredSnapshots.filter(s => 
+        s.stage === 'Closed Won' || s.stage === 'Closed Lost'
+      );
+      
+      const closedWon = closedDeals.filter(s => s.stage === 'Closed Won').length;
+      const closedLost = closedDeals.filter(s => s.stage === 'Closed Lost').length;
+      const totalClosed = closedWon + closedLost;
+      
+      const winRate = totalClosed > 0 ? (closedWon / totalClosed) * 100 : 0;
+      
+      res.json({ 
+        conversionRate: parseFloat(winRate.toFixed(1)),
+        closedWon,
+        closedLost,
+        totalClosed
+      });
+    } catch (error) {
+      console.error('❌ Error calculating win rate:', error);
+      res.status(500).json({ error: 'Failed to calculate win rate' });
+    }
+  });
+
+  // Lightweight close rate endpoint (protected)  
+  app.get("/api/analytics/close-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      // Get the most recent snapshot date
+      const latestDateResult = await storage.getAllSnapshots();
+      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
+        const snapshotDate = new Date(snapshot.snapshotDate);
+        return snapshotDate > latest ? snapshotDate : latest;
+      }, new Date(0));
+      
+      // Query only latest snapshots for close rate calculation
+      const latestSnapshots = await db.select().from(snapshots)
+        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
+
+      // Filter opportunities that entered pipeline in date range
+      let eligibleOpportunities = latestSnapshots.filter(snapshot => {
+        if (!snapshot.enteredPipeline) return false;
+        
+        if (startDate && endDate) {
+          const enteredDate = new Date(snapshot.enteredPipeline);
+          return enteredDate >= new Date(startDate) && enteredDate <= new Date(endDate);
+        }
+        return true;
+      });
+      
+      // Exclude validation stage
+      eligibleOpportunities = eligibleOpportunities.filter(s => 
+        s.stage !== 'Validation/Introduction'
+      );
+      
+      const closedWon = eligibleOpportunities.filter(s => s.stage === 'Closed Won').length;
+      const totalEligible = eligibleOpportunities.length;
+      
+      const closeRate = totalEligible > 0 ? (closedWon / totalEligible) * 100 : 0;
+      
+      res.json({ 
+        closeRate: parseFloat(closeRate.toFixed(1)),
+        closedWon,
+        totalEligible
+      });
+    } catch (error) {
+      console.error('❌ Error calculating close rate:', error);
+      res.status(500).json({ error: 'Failed to calculate close rate' });
+    }
+  });
+
   // Get pipeline analytics (protected)
   app.get('/api/analytics', isAuthenticated, requirePermission('pipeline'), async (req, res) => {
     try {
