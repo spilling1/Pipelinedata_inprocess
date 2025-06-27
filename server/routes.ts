@@ -458,9 +458,11 @@ async function parseExcelData(buffer: Buffer, filename: string) {
     }
 
     // Truncate opportunity ID to 15 characters if longer
+    console.log(`🔍 Processing opportunity ID: "${normalizedRow.opportunity_id}" (length: ${normalizedRow.opportunity_id.length})`);
     if (normalizedRow.opportunity_id.length > 15) {
-      console.log(`⚠️ Truncating opportunity ID from ${normalizedRow.opportunity_id.length} to 15 characters: "${normalizedRow.opportunity_id}" -> "${normalizedRow.opportunity_id.substring(0, 15)}"`);
+      const originalId = normalizedRow.opportunity_id;
       normalizedRow.opportunity_id = normalizedRow.opportunity_id.substring(0, 15);
+      console.log(`⚠️ TRUNCATED opportunity ID from ${originalId.length} to 15 characters: "${originalId}" -> "${normalizedRow.opportunity_id}"`);
     }
 
     // For rows with opportunity data, inherit stage/confidence from above if empty
