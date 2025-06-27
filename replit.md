@@ -255,6 +255,7 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Added memoization optimizations: currency formatter, query parameters, and stage color mapping
 - Implemented debounced search input (300ms delay) to prevent excessive API calls during typing
 - Optimized React rendering performance with proper memoization in OpportunitiesTable component
+- Fixed missing dependency arrays in useEffect hooks (Settings page) using useCallback to prevent stale closures
 - Improved application performance and reduced server load
 - Files now refresh when returning to browser tab or during actual uploads
 

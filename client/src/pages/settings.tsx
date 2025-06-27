@@ -24,20 +24,7 @@ export default function Settings() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  // Load current settings
-  useEffect(() => {
-    loadSettings();
-  }, [loadSettings]);
-
-  const loadSettings = async () => {
-    try {
-      await Promise.all([loadStageMappings(), loadProbabilityConfigs()]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadStageMappings = async () => {
+  const loadStageMappings = useCallback(async () => {
     try {
       const response = await fetch('/api/settings/stage-mappings');
       if (response.ok) {
@@ -47,9 +34,9 @@ export default function Settings() {
     } catch (error) {
       console.error('Failed to load stage mappings:', error);
     }
-  };
+  }, []);
 
-  const loadProbabilityConfigs = async () => {
+  const loadProbabilityConfigs = useCallback(async () => {
     try {
       const response = await fetch('/api/settings/probability-configs');
       if (response.ok) {
@@ -63,7 +50,20 @@ export default function Settings() {
       console.error('Failed to load probability configs:', error);
       setProbabilityConfigs(getDefaultProbabilityConfigs());
     }
-  };
+  }, []);
+
+  const loadSettings = useCallback(async () => {
+    try {
+      await Promise.all([loadStageMappings(), loadProbabilityConfigs()]);
+    } finally {
+      setLoading(false);
+    }
+  }, [loadStageMappings, loadProbabilityConfigs]);
+
+  // Load current settings
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   const getDefaultProbabilityConfigs = (): ProbabilityConfig[] => [
     { stage: 'Validation/Introduction', confidence: 'Pipeline', probability: 0 },
