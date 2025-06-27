@@ -829,8 +829,8 @@ export class MarketingStorage {
     for (const customer of uniqueCustomers) {
       console.log(`🔍 Processing customer: ${customer.opportunity.name} (ID: ${customer.opportunityId})`);
       
-      // Get all snapshots for this specific opportunity
-      const opportunitySnapshots = await db
+      // First try to find snapshots for the original opportunity
+      let opportunitySnapshots = await db
         .select({
           opportunityId: snapshots.opportunityId,
           stage: snapshots.stage,
@@ -843,6 +843,68 @@ export class MarketingStorage {
         .from(snapshots)
         .where(eq(snapshots.opportunityId, customer.opportunityId))
         .orderBy(desc(snapshots.snapshotDate), desc(snapshots.expectedCloseDate));
+
+      // If no recent snapshots found, try to find newer opportunity with suffixed ID
+      if (opportunitySnapshots.length === 0 || opportunitySnapshots[0].snapshotDate < cutoffDate) {
+        console.log(`🔍 Searching for newer opportunity with suffixed ID for ${customer.opportunity.name}`);
+        console.log(`   Original opportunityId: ${customer.opportunity.opportunityId}`);
+        console.log(`   Has snapshots: ${opportunitySnapshots.length > 0}, Latest date: ${opportunitySnapshots[0]?.snapshotDate}`);
+        console.log(`   Cutoff date: ${cutoffDate.toISOString()}`);
+        
+        // Extract base ID from the original opportunity
+        const baseOpportunityId = customer.opportunity.opportunityId
+          .replace(/IAT$|IAB$|IAC$|IAM$|IAN$|IAJ$/g, '');
+        
+        console.log(`   Base opportunityId: ${baseOpportunityId}`);
+        
+        // Look for opportunities that start with the base ID and have common suffixes
+        const newerOpportunities = await db
+          .select({
+            id: opportunities.id,
+            opportunityId: opportunities.opportunityId,
+            name: opportunities.name,
+          })
+          .from(opportunities)
+          .where(
+            or(
+              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAT'}`,
+              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAB'}`,
+              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAC'}`,
+              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAM'}`,
+              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAN'}`,
+              sql`${opportunities.opportunityId} = ${baseOpportunityId + 'IAJ'}`
+            )
+          );
+
+        console.log(`   Found ${newerOpportunities.length} newer opportunities with suffixed IDs`);
+        newerOpportunities.forEach(opp => console.log(`     - ${opp.opportunityId} (ID: ${opp.id})`));
+
+        if (newerOpportunities.length > 0) {
+          console.log(`📋 Found ${newerOpportunities.length} newer opportunities with suffixed IDs`);
+          
+          // Get snapshots from the newer opportunity records
+          const newerSnapshots = await db
+            .select({
+              opportunityId: snapshots.opportunityId,
+              stage: snapshots.stage,
+              year1Arr: snapshots.year1Value,
+              tcv: snapshots.tcv,
+              snapshotDate: snapshots.snapshotDate,
+              closeDate: snapshots.expectedCloseDate,
+              enteredPipeline: snapshots.enteredPipeline,
+            })
+            .from(snapshots)
+            .where(inArray(snapshots.opportunityId, newerOpportunities.map(o => o.id)))
+            .orderBy(desc(snapshots.snapshotDate), desc(snapshots.expectedCloseDate));
+
+          console.log(`   Found ${newerSnapshots.length} newer snapshots`);
+          if (newerSnapshots.length > 0) {
+            console.log(`     Latest snapshot: ${newerSnapshots[0].snapshotDate}, Stage: ${newerSnapshots[0].stage}`);
+            console.log(`📊 Found ${newerSnapshots.length} newer snapshots for ${customer.opportunity.name}`);
+            opportunitySnapshots = newerSnapshots;
+          }
+        }
+      }
 
       if (opportunitySnapshots.length === 0) {
         console.log(`❌ No snapshots found for opportunity ${customer.opportunityId}`);
