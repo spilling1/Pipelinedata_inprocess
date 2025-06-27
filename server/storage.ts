@@ -4,7 +4,6 @@ import {
   opportunities, 
   snapshots, 
   uploadedFiles,
-  users,
   type Opportunity, 
   type Snapshot, 
   type UploadedFile, 
@@ -14,11 +13,11 @@ import {
   type InsertUploadedFile,
   type UpsertUser
 } from '../shared/schema';
+import { userStorage, type IUserStorage } from './storage-user';
 
 export interface IStorage {
-  // User operations for Replit Auth
-  getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  // User operations for Replit Auth (delegated to userStorage)
+  userStorage: IUserStorage;
 
   // Opportunities
   getOpportunity(id: number): Promise<Opportunity | undefined>;
@@ -233,35 +232,8 @@ export interface IStorage {
 }
 
 export class PostgreSQLStorage implements IStorage {
-  // User operations for Replit Auth
-  async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
-  }
-
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    // Check if user already exists
-    const existingUser = await this.getUser(userData.id);
-    
-    const [user] = await db
-      .insert(users)
-      .values({
-        ...userData,
-        // Only set Default role for new users, preserve existing users' roles
-        role: existingUser ? existingUser.role : 'Default'
-      })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-          // Don't update role for existing users
-          role: sql`${users.role}`
-        },
-      })
-      .returning();
-    return user;
-  }
+  // User operations for Replit Auth (delegated to userStorage)
+  userStorage = userStorage;
 
   private stageMappings: Array<{ from: string; to: string }> = [
     { from: 'develop', to: 'Developing Champions' },
