@@ -854,9 +854,7 @@ export class MarketingStorage {
       
       result.push({
         opportunityId: latestSnapshot.opportunityId!,
-        stage: isOutdated && latestSnapshot.stage !== 'Closed Lost' && latestSnapshot.stage !== 'Closed Won' 
-          ? 'Closed Lost' 
-          : latestSnapshot.stage || 'Unknown',
+        stage: latestSnapshot.stage || 'Unknown', // Preserve original stage data for marketing analytics
         year1Arr: latestSnapshot.year1Arr,
         tcv: latestSnapshot.tcv,
         snapshotDate: latestSnapshot.snapshotDate.toISOString(),
