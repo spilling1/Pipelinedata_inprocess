@@ -1382,6 +1382,105 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Lightweight fiscal pipeline endpoint (protected)
+  app.get("/api/analytics/fiscal-pipeline", isAuthenticated, requirePermission('sales'), async (req, res) => {
+    try {
+      // Get the most recent snapshot date
+      const latestDateResult = await storage.getAllSnapshots();
+      const latestSnapshotDate = latestDateResult.reduce((latest, snapshot) => {
+        const snapshotDate = new Date(snapshot.snapshotDate);
+        return snapshotDate > latest ? snapshotDate : latest;
+      }, new Date(0));
+      
+      // Query only latest snapshots
+      const latestSnapshots = await db.select().from(snapshots)
+        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
+      
+      // Filter active pipeline stages (exclude closed and validation)
+      const activeSnapshots = latestSnapshots.filter(s => 
+        !s.stage?.includes('Closed Won') && 
+        !s.stage?.includes('Closed Lost') && 
+        s.stage !== 'Validation/Introduction'
+      );
+      
+      // Helper functions for fiscal calculations
+      const getFiscalYear = (date: Date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        return month >= 1 ? year : year - 1; // FY starts in Feb (month 1)
+      };
+      
+      const getFiscalQuarter = (date: Date) => {
+        const fiscalYear = getFiscalYear(date);
+        const month = date.getMonth();
+        
+        if (month >= 1 && month <= 3) return `FY${fiscalYear + 1} Q1`;
+        if (month >= 4 && month <= 6) return `FY${fiscalYear + 1} Q2`;
+        if (month >= 7 && month <= 9) return `FY${fiscalYear + 1} Q3`;
+        return `FY${fiscalYear + 1} Q4`;
+      };
+      
+      const getMonthYear = (date: Date) => {
+        return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+      };
+      
+      // Group by fiscal year
+      const fiscalYearGroups = activeSnapshots.reduce((acc, snapshot) => {
+        const createdDate = snapshot.createdDate ? new Date(snapshot.createdDate) : new Date();
+        const fiscalYear = `FY${getFiscalYear(createdDate) + 1}`;
+        
+        if (!acc[fiscalYear]) acc[fiscalYear] = 0;
+        acc[fiscalYear] += snapshot.amount || 0;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Group by fiscal quarter
+      const fiscalQuarterGroups = activeSnapshots.reduce((acc, snapshot) => {
+        const createdDate = snapshot.createdDate ? new Date(snapshot.createdDate) : new Date();
+        const fiscalQuarter = getFiscalQuarter(createdDate);
+        
+        if (!acc[fiscalQuarter]) acc[fiscalQuarter] = 0;
+        acc[fiscalQuarter] += snapshot.amount || 0;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Group by month
+      const monthlyGroups = activeSnapshots.reduce((acc, snapshot) => {
+        const createdDate = snapshot.createdDate ? new Date(snapshot.createdDate) : new Date();
+        const monthYear = getMonthYear(createdDate);
+        
+        if (!acc[monthYear]) acc[monthYear] = 0;
+        acc[monthYear] += snapshot.amount || 0;
+        return acc;
+      }, {} as Record<string, number>);
+      
+      // Convert to arrays
+      const fiscalYearPipeline = Object.entries(fiscalYearGroups).map(([fiscalYear, value]) => ({
+        fiscalYear,
+        value
+      }));
+      
+      const fiscalQuarterPipeline = Object.entries(fiscalQuarterGroups).map(([fiscalQuarter, value]) => ({
+        fiscalQuarter,
+        value
+      }));
+      
+      const monthlyPipeline = Object.entries(monthlyGroups).map(([month, value]) => ({
+        month,
+        value
+      }));
+      
+      res.json({
+        fiscalYearPipeline,
+        fiscalQuarterPipeline,
+        monthlyPipeline
+      });
+    } catch (error) {
+      console.error('❌ Error calculating fiscal pipeline data:', error);
+      res.status(500).json({ error: 'Failed to calculate fiscal pipeline data' });
+    }
+  });
+
   // Lightweight close rate endpoint (protected)  
   app.get("/api/analytics/close-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {

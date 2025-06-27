@@ -151,27 +151,13 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
   
   const chartFilters = getChartFilters();
   
-  const { data: pipelineData, isLoading } = useQuery({
-    queryKey: ['/api/analytics/pipeline-value', chartFilters.startDate, chartFilters.endDate],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (chartFilters.startDate) {
-        params.append('startDate', chartFilters.startDate);
-      }
-      if (chartFilters.endDate) {
-        params.append('endDate', chartFilters.endDate);
-      }
-      
-      const response = await fetch(`/api/analytics/pipeline-value?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch pipeline value data');
-      return response.json();
-    }
+  const { data: analytics, isLoading } = useQuery({
+    queryKey: ['/api/analytics', chartFilters],
   });
   
   // Memoize expensive data processing (must be before early return)
+  const pipelineData = (analytics as any)?.pipelineValueByDate || [];
   const chartData = useMemo(() => {
-    if (!pipelineData || !Array.isArray(pipelineData)) return [];
-    
     return pipelineData.map((item: any) => ({
       date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
       dateTimestamp: new Date(item.date).getTime(),

@@ -13,29 +13,31 @@ type TimeView = 'year' | 'quarter' | 'month';
 
 export default function FiscalYearPipelineChart({ filters }: FiscalYearPipelineChartProps) {
   const [timeView, setTimeView] = useState<TimeView>('year');
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/analytics', filters],
+  const { data: fiscalData, isLoading } = useQuery({
+    queryKey: ['/api/analytics/fiscal-pipeline'],
   });
 
   // Memoize expensive data processing based on time view (must be before early return)
   const chartData = useMemo(() => {
+    if (!fiscalData) return [];
+    
     switch (timeView) {
       case 'year':
-        return analytics?.fiscalYearPipeline?.map(item => ({ 
+        return fiscalData.fiscalYearPipeline?.map((item: any) => ({ 
           label: item.fiscalYear.replace('FY', '').replace('2026', '2025'), 
           value: item.value 
         })) || [];
       case 'quarter':
-        return analytics?.fiscalQuarterPipeline?.map(item => ({ 
+        return fiscalData.fiscalQuarterPipeline?.map((item: any) => ({ 
           label: item.fiscalQuarter.replace('2026', '2025'), 
           value: item.value 
         })) || [];
       case 'month':
-        return analytics?.monthlyPipeline?.map(item => ({ label: item.month, value: item.value })) || [];
+        return fiscalData.monthlyPipeline?.map((item: any) => ({ label: item.month, value: item.value })) || [];
       default:
         return [];
     }
-  }, [analytics, timeView]);
+  }, [fiscalData, timeView]);
 
   if (isLoading) {
     return (
