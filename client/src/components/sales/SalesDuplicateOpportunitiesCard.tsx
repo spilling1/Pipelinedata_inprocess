@@ -87,8 +87,8 @@ export default function SalesDuplicateOpportunitiesCard({ filters }: SalesDuplic
       <CardContent>
         <div className="space-y-3 max-h-64 overflow-y-auto">
           {duplicateData.length > 0 ? (
-            duplicateData.slice(0, 10).map((client: any, index: number) => (
-              <div key={index} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
+            duplicateData.slice(0, 10).map((client: any) => (
+              <div key={client.clientName} className="flex items-center justify-between p-3 bg-orange-50 rounded-lg border border-orange-200">
                 <div className="flex-1">
                   <div className="flex items-center justify-between mb-1">
                     <span className="font-medium text-sm">{client.clientName}</span>

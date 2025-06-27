@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -189,7 +189,7 @@ export default function FilterPanel({ filters, onFiltersChange, onUploadClick }:
       };
       onFiltersChange(filtersWithDefaults);
     }
-  }, []); // Only run on mount
+  }, [filters.startDate, filters.endDate, localFilters, onFiltersChange]); // Fixed missing dependencies
 
   const handleTimePeriodChange = (periodId: string) => {
     setSelectedTimePeriod(periodId);
