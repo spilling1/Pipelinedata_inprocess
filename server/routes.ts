@@ -1424,33 +1424,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
       };
       
-      // Group by fiscal year
-      const fiscalYearGroups = activeSnapshots.reduce((acc, snapshot) => {
-        const createdDate = snapshot.createdDate ? new Date(snapshot.createdDate) : new Date();
-        const fiscalYear = `FY${getFiscalYear(createdDate) + 1}`;
-        
-        if (!acc[fiscalYear]) acc[fiscalYear] = 0;
-        acc[fiscalYear] += snapshot.amount || 0;
-        return acc;
-      }, {} as Record<string, number>);
+      // For current fiscal pipeline, we should group by current fiscal periods
+      // All current pipeline should be in current fiscal year (FY2025)
+      const currentFiscalYear = 'FY2025';
+      // Use Year 1 ARR value for fiscal analysis, not amount (which is TCV)
+      const totalPipelineValue = activeSnapshots.reduce((sum, snapshot) => sum + (snapshot.year1Value || 0), 0);
       
-      // Group by fiscal quarter
+      // Group by fiscal year - current pipeline is all FY2025
+      const fiscalYearGroups = { [currentFiscalYear]: totalPipelineValue };
+      
+      // Group by fiscal quarter based on close dates for current opportunities
       const fiscalQuarterGroups = activeSnapshots.reduce((acc, snapshot) => {
-        const createdDate = snapshot.createdDate ? new Date(snapshot.createdDate) : new Date();
-        const fiscalQuarter = getFiscalQuarter(createdDate);
+        // Use close date if available, otherwise use current date for fiscal quarter
+        const closeDate = snapshot.closeDate ? new Date(snapshot.closeDate) : new Date();
+        const fiscalQuarter = getFiscalQuarter(closeDate);
         
         if (!acc[fiscalQuarter]) acc[fiscalQuarter] = 0;
-        acc[fiscalQuarter] += snapshot.amount || 0;
+        acc[fiscalQuarter] += snapshot.year1Value || 0;
         return acc;
       }, {} as Record<string, number>);
       
-      // Group by month
+      // Group by month based on close dates for current opportunities
       const monthlyGroups = activeSnapshots.reduce((acc, snapshot) => {
-        const createdDate = snapshot.createdDate ? new Date(snapshot.createdDate) : new Date();
-        const monthYear = getMonthYear(createdDate);
+        // Use close date if available, otherwise use current date for monthly grouping
+        const closeDate = snapshot.closeDate ? new Date(snapshot.closeDate) : new Date();
+        const monthYear = getMonthYear(closeDate);
         
         if (!acc[monthYear]) acc[monthYear] = 0;
-        acc[monthYear] += snapshot.amount || 0;
+        acc[monthYear] += snapshot.year1Arr || 0;
         return acc;
       }, {} as Record<string, number>);
       
