@@ -1,51 +1,41 @@
 import { Request, Response, NextFunction } from 'express';
-import { userManagementStorage } from '../storage-users';
-
-export interface AuthenticatedRequest extends Request {
-  user?: {
-    id: string;
-    email: string;
-    permissions: string[];
-    isAdmin: boolean;
-  };
-}
 
 /**
- * Middleware to check if user has required permission
+ * Simple permission middleware that reuses the existing /api/users/me logic
  */
 export function requirePermission(permission: string) {
-  return async (req: AuthenticatedRequest, res: Response, next: NextFunction) => {
+  return async (req: Request, res: Response, next: NextFunction) => {
     try {
-      // Skip permission check if user is not authenticated
-      if (!req.user?.id) {
+      // Extract user ID from session (same logic as existing auth)
+      const userId = (req as any).session?.passport?.user?.claims?.sub;
+      
+      if (!userId) {
+        // For development, use hardcoded user
+        if (process.env.NODE_ENV === 'development') {
+          // Check permission for our test user
+          const testUserPermissions = ['pipeline', 'marketing', 'sales', 'settings', 'user_management', 'financial', 'reporting', 'people_ops', 'database'];
+          if (!testUserPermissions.includes(permission)) {
+            return res.status(403).json({ 
+              error: 'Insufficient permissions',
+              required: permission 
+            });
+          }
+          return next();
+        }
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // Get user permissions from database
-      const userWithPermissions = await userManagementStorage.getUserWithPermissions(req.user.id);
+      // Use the same logic as /api/users/me endpoint to check permissions
+      const { userManagementStorage } = await import('../storage-users');
+      const userPermissions = await userManagementStorage.getUserPermissions(userId);
       
-      if (!userWithPermissions) {
-        return res.status(401).json({ error: 'User not found' });
-      }
-
-      // Check if user has the required permission
-      const hasPermission = userWithPermissions.permissions?.includes(permission) || false;
-      
-      if (!hasPermission) {
+      if (!userPermissions.includes(permission)) {
         return res.status(403).json({ 
           error: 'Insufficient permissions',
           required: permission,
-          userPermissions: userWithPermissions.permissions || []
+          userPermissions: userPermissions
         });
       }
-
-      // Add user info to request for downstream handlers
-      req.user = {
-        id: userWithPermissions.id,
-        email: userWithPermissions.email,
-        permissions: userWithPermissions.permissions || [],
-        isAdmin: userWithPermissions.role === 'Admin'
-      };
 
       next();
     } catch (error) {
@@ -60,22 +50,21 @@ export function requirePermission(permission: string) {
  */
 export async function attachUserInfo(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   try {
-    // Extract user ID from session or auth header
-    const userId = (req as any).session?.passport?.user?.claims?.sub || req.headers['x-user-id'];
+    const userId = extractUserId(req);
     
     if (!userId) {
       return next(); // Continue without user info
     }
 
     // Get user permissions from database
-    const userWithPermissions = await userManagementStorage.getUserWithPermissions(userId);
+    const user = await userManagementStorage.getUserPermissions(userId);
     
-    if (userWithPermissions) {
+    if (user) {
       req.user = {
-        id: userWithPermissions.id,
-        email: userWithPermissions.email,
-        permissions: userWithPermissions.permissions || [],
-        isAdmin: userWithPermissions.role === 'Admin'
+        id: user.user.id,
+        email: user.user.email,
+        permissions: user.permissions || [],
+        isAdmin: user.isAdmin
       };
     }
 

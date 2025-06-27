@@ -8,7 +8,7 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import { z } from "zod";
 import { setupAuth, isAuthenticated } from "./localAuthBypass";
-import { requirePermission, attachUserInfo, requireAnyAnalytics } from "./middleware/permissions";
+import { requirePermission } from "./middleware/permissions";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -1181,7 +1181,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Get pipeline analytics (protected)
-  app.get('/api/analytics', isAuthenticated, async (req, res) => {
+  app.get('/api/analytics', isAuthenticated, requirePermission('pipeline'), async (req, res) => {
     try {
       // Get date range from query parameters
       const startDate = req.query.startDate as string;
@@ -1681,7 +1681,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Close rate over time endpoint (protected)
-  app.get("/api/analytics/close-rate-over-time", isAuthenticated, async (req, res) => {
+  app.get("/api/analytics/close-rate-over-time", isAuthenticated, requirePermission('sales'), async (req, res) => {
     try {
       console.log('🔍 Processing close rate over time analysis');
       
