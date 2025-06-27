@@ -9,6 +9,7 @@ import Settings from "@/pages/settings";
 import DatabasePage from "@/pages/database";
 import MarketingAnalyticsPage from "@/pages/marketing-analytics";
 import SalesAnalyticsPage from "@/pages/sales-analytics";
+import UserManagement from "@/pages/UserManagement";
 import Landing from "@/pages/Landing";
 import Home from "@/pages/Home";
 import NotFound from "@/pages/not-found";
@@ -29,6 +30,7 @@ function Router() {
           <Route path="/marketing-analytics" component={MarketingAnalyticsPage} />
           <Route path="/sales" component={SalesAnalyticsPage} />
           <Route path="/sales-analytics" component={SalesAnalyticsPage} />
+          <Route path="/user-management" component={UserManagement} />
           <Route path="/settings" component={Settings} />
         </>
       )}
