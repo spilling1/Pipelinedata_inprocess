@@ -226,7 +226,6 @@ export async function parseExcelData(buffer: Buffer, filename: string) {
     const enteredPipeline = normalizedRow.entered_pipeline_date ||
                             normalizedRow.entered_pipeline ||
                             normalizedRow.pipeline_entry_date ||
-                            normalizedRow.created_date ||
                             null;
 
     const lastModified = normalizedRow.last_modified_date || 
