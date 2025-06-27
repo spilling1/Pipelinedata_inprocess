@@ -45,12 +45,25 @@ const ROLE_OPTIONS = [
   'Engineering'
 ];
 
+const AVAILABLE_PERMISSIONS = [
+  { key: 'pipeline', label: 'Pipeline Analytics' },
+  { key: 'marketing', label: 'Marketing Analytics' },
+  { key: 'sales', label: 'Sales Analytics' },
+  { key: 'database', label: 'Database Management' },
+  { key: 'settings', label: 'System Settings' },
+  { key: 'user_management', label: 'User Management' },
+  { key: 'financial', label: 'Financial Data' },
+  { key: 'reporting', label: 'Advanced Reporting' },
+];
+
 export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { isAdmin, isLoading: permissionsLoading } = usePermissions();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  const [isRoleEditDialogOpen, setIsRoleEditDialogOpen] = useState(false);
 
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ['/api/users/users'],
@@ -110,6 +123,32 @@ export default function UserManagement() {
     },
   });
 
+  const updateRoleMutation = useMutation({
+    mutationFn: async ({ roleId, updates }: { roleId: number; updates: Partial<Role> }) => {
+      const response = await fetch(`/api/users/roles/${roleId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates),
+      });
+      if (!response.ok) throw new Error('Failed to update role');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users/roles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users/users'] });
+      toast({ title: "Role updated successfully" });
+      setIsRoleEditDialogOpen(false);
+      setEditingRole(null);
+    },
+    onError: (error) => {
+      toast({ 
+        title: "Error updating role", 
+        description: error.message,
+        variant: "destructive" 
+      });
+    },
+  });
+
   const handleEditUser = (user: User) => {
     setEditingUser(user);
     setIsEditDialogOpen(true);
@@ -131,6 +170,41 @@ export default function UserManagement() {
   const handleToggleUserStatus = (userId: string, isActive: boolean) => {
     const action = isActive ? 'deactivate' : 'activate';
     toggleUserStatusMutation.mutate({ userId, action });
+  };
+
+  const handleEditRole = (role: Role) => {
+    setEditingRole({ ...role });
+    setIsRoleEditDialogOpen(true);
+  };
+
+  const handleUpdateRole = () => {
+    if (!editingRole) return;
+    
+    const updates = {
+      displayName: editingRole.displayName,
+      description: editingRole.description,
+      permissions: editingRole.permissions,
+    };
+    
+    updateRoleMutation.mutate({ roleId: editingRole.id, updates });
+  };
+
+  const toggleRolePermission = (permission: string) => {
+    if (!editingRole) return;
+    
+    const currentPermissions = [...editingRole.permissions];
+    const index = currentPermissions.indexOf(permission);
+    
+    if (index > -1) {
+      currentPermissions.splice(index, 1);
+    } else {
+      currentPermissions.push(permission);
+    }
+    
+    setEditingRole({
+      ...editingRole,
+      permissions: currentPermissions
+    });
   };
 
   if (permissionsLoading) {
@@ -272,10 +346,21 @@ export default function UserManagement() {
                   {roles?.map((role) => (
                     <Card key={role.id} className="border border-gray-200">
                       <CardHeader className="pb-3">
-                        <CardTitle className="text-lg">{role.displayName}</CardTitle>
-                        <CardDescription className="text-sm">
-                          {role.description}
-                        </CardDescription>
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <CardTitle className="text-lg">{role.displayName}</CardTitle>
+                            <CardDescription className="text-sm">
+                              {role.description}
+                            </CardDescription>
+                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleEditRole(role)}
+                          >
+                            Edit
+                          </Button>
+                        </div>
                       </CardHeader>
                       <CardContent>
                         <div className="space-y-2">
@@ -283,7 +368,7 @@ export default function UserManagement() {
                           <div className="flex flex-wrap gap-1">
                             {role.permissions.map((permission) => (
                               <Badge key={permission} variant="secondary" className="text-xs">
-                                {permission}
+                                {AVAILABLE_PERMISSIONS.find(p => p.key === permission)?.label || permission}
                               </Badge>
                             ))}
                           </div>
@@ -352,6 +437,75 @@ export default function UserManagement() {
               Cancel
             </Button>
             <Button onClick={handleUpdateUser}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Role Dialog */}
+      <Dialog open={isRoleEditDialogOpen} onOpenChange={setIsRoleEditDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Edit Role: {editingRole?.displayName}</DialogTitle>
+            <DialogDescription>
+              Update role information and permissions
+            </DialogDescription>
+          </DialogHeader>
+          {editingRole && (
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="displayName">Display Name</Label>
+                <Input
+                  id="displayName"
+                  value={editingRole.displayName}
+                  onChange={(e) => setEditingRole({...editingRole, displayName: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label htmlFor="description">Description</Label>
+                <Input
+                  id="description"
+                  value={editingRole.description || ''}
+                  onChange={(e) => setEditingRole({...editingRole, description: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>Permissions</Label>
+                <div className="mt-2 space-y-2">
+                  {AVAILABLE_PERMISSIONS.map((permission) => (
+                    <div key={permission.key} className="flex items-center space-x-2">
+                      <input
+                        type="checkbox"
+                        id={permission.key}
+                        checked={editingRole.permissions.includes(permission.key)}
+                        onChange={() => toggleRolePermission(permission.key)}
+                        className="rounded border-gray-300"
+                      />
+                      <Label htmlFor={permission.key} className="text-sm font-normal">
+                        {permission.label}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <div className="bg-gray-50 dark:bg-gray-800 p-3 rounded-lg">
+                <p className="text-sm font-medium mb-2">Selected Permissions:</p>
+                <div className="flex flex-wrap gap-1">
+                  {editingRole.permissions.map((permission) => (
+                    <Badge key={permission} variant="secondary" className="text-xs">
+                      {AVAILABLE_PERMISSIONS.find(p => p.key === permission)?.label || permission}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsRoleEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateRole}>
               Save Changes
             </Button>
           </DialogFooter>
