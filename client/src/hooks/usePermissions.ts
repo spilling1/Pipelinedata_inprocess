@@ -41,12 +41,12 @@ export function usePermissions() {
 
   const hasPermission = (permission: Permission): boolean => {
     if (!data) return false;
-    return data.isAdmin || data.permissions.includes(permission);
+    return data.permissions.includes(permission);
   };
 
   const hasAnyPermission = (permissions: Permission[]): boolean => {
     if (!data) return false;
-    return data.isAdmin || permissions.some(p => data.permissions.includes(p));
+    return permissions.some(p => data.permissions.includes(p));
   };
 
   const canAccessPage = (page: string): boolean => {
