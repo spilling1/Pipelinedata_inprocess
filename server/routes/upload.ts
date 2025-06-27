@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { storage } from "../storage";
+import { settingsStorage } from "../storage-settings";
 import { insertUploadedFileSchema, opportunities, snapshots, uploadedFiles, type Opportunity, type Snapshot } from "@shared/schema";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
@@ -53,7 +54,7 @@ function normalizeHeader(header: string): string {
 // Helper function to normalize stage names using dynamic mappings
 async function normalizeStage(stage: string): Promise<string> {
   const trimmedStage = stage.trim();
-  const mappings = await storage.getStageMappings();
+  const mappings = await settingsStorage.getStageMappings();
   
   // Check for dynamic mappings (case-insensitive)
   const mapping = mappings.find((m: any) => m.from.toLowerCase() === trimmedStage.toLowerCase());
@@ -316,10 +317,10 @@ export function registerUploadRoutes(app: Express) {
               }
               
               // Create or update opportunity
-              let opportunity = await storage.getOpportunityById(opportunityId);
+              let opportunity = await storage.opportunitiesStorage.getOpportunityById(opportunityId);
               
               if (!opportunity) {
-                opportunity = await storage.createOpportunity({
+                opportunity = await storage.opportunitiesStorage.createOpportunity({
                   name: opportunityName,
                   clientName: clientName || null,
                   opportunityId: opportunityId
@@ -327,17 +328,14 @@ export function registerUploadRoutes(app: Express) {
               }
               
               // Create snapshot
-              await storage.createSnapshot({
+              await storage.snapshotsStorage.createSnapshot({
                 opportunityId: opportunity.id,
                 snapshotDate,
                 stage: normalizedStage,
                 amount,
-                probability,
-                owner: owner || null,
                 closeDate: parsedCloseDate,
-                uploadedFileId: uploadedFile.id,
                 opportunityName,
-                clientName: clientName || null,
+                accountName: clientName || null,
                 tcv: amount, // Use amount as TCV for now
                 year1Value: null,
                 homesBuilt: null,
@@ -390,7 +388,7 @@ export function registerUploadRoutes(app: Express) {
   // Get uploaded files
   app.get('/api/files', async (req, res) => {
     try {
-      const files = await storage.getAllUploadedFiles();
+      const files = await storage.filesStorage.getAllUploadedFiles();
       res.json(files);
     } catch (error) {
       console.error('Error fetching files:', error);
