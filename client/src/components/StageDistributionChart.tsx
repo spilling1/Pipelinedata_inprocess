@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { FilterState } from "@/types/pipeline";
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 
 interface StageDistributionChartProps {
   filters: FilterState;
@@ -46,49 +46,53 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
 
   const stageData = analytics?.stageDistribution || [];
   
-  // Filter out closed stages only
-  const activeStageData = stageData.filter((item: any) => 
-    !item.stage.includes('Closed Won') && 
-    !item.stage.includes('Closed Lost')
-  );
-
-  // Define stage order for consistent sorting
-  const stageOrder = [
+  // Memoize stage order for consistent sorting
+  const stageOrder = useMemo(() => [
     'Validation/Introduction',
     'Discover',
     'Developing Champions',
     'ROI Analysis/Pricing',
     'Negotiation/Review'
-  ];
+  ], []);
 
-  // Sort stages according to the defined order
-  const sortedStageData = activeStageData.sort((a: any, b: any) => {
-    const indexA = stageOrder.indexOf(a.stage);
-    const indexB = stageOrder.indexOf(b.stage);
+  // Memoize expensive data processing
+  const chartData = useMemo(() => {
+    // Filter out closed stages only
+    const activeStageData = stageData.filter((item: any) => 
+      !item.stage.includes('Closed Won') && 
+      !item.stage.includes('Closed Lost')
+    );
+
+    // Sort stages according to the defined order
+    const sortedStageData = activeStageData.sort((a: any, b: any) => {
+      const indexA = stageOrder.indexOf(a.stage);
+      const indexB = stageOrder.indexOf(b.stage);
+      
+      if (indexA !== -1 && indexB !== -1) {
+        return indexA - indexB;
+      }
+      if (indexA !== -1) return -1;
+      if (indexB !== -1) return 1;
+      return a.stage.localeCompare(b.stage);
+    });
     
-    if (indexA !== -1 && indexB !== -1) {
-      return indexA - indexB;
-    }
-    if (indexA !== -1) return -1;
-    if (indexB !== -1) return 1;
-    return a.stage.localeCompare(b.stage);
-  });
-  
-  // Format data for chart
-  const chartData = sortedStageData.map((item: any, index: number) => ({
-    name: item.stage,
-    count: item.count,
-    value: item.value,
-    displayValue: viewMode === 'count' ? item.count : item.value,
-    color: COLORS[index % COLORS.length],
-    formattedValue: item.value >= 1000000 
-      ? `$${(item.value / 1000000).toFixed(1)}M`
-      : item.value >= 1000
-      ? `$${(item.value / 1000).toFixed(0)}K`
-      : `$${item.value}`
-  }));
+    // Format data for chart
+    return sortedStageData.map((item: any, index: number) => ({
+      name: item.stage,
+      count: item.count,
+      value: item.value,
+      displayValue: viewMode === 'count' ? item.count : item.value,
+      color: COLORS[index % COLORS.length],
+      formattedValue: item.value >= 1000000 
+        ? `$${(item.value / 1000000).toFixed(1)}M`
+        : item.value >= 1000
+        ? `$${(item.value / 1000).toFixed(0)}K`
+        : `$${item.value}`
+    }));
+  }, [stageData, viewMode, stageOrder]);
 
-  const formatTooltipValue = (value: number, name: string) => {
+  // Memoize tooltip formatting function
+  const formatTooltipValue = useCallback((value: number, name: string) => {
     if (viewMode === 'count') {
       return [`${value} opportunities`, 'Count'];
     } else {
@@ -100,7 +104,7 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
         return [`$${value}`, 'Value'];
       }
     }
-  };
+  }, [viewMode]);
 
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {

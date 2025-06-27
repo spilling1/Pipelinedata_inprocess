@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -186,17 +186,20 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
 
   const pipelineData = (analytics as any)?.pipelineValueByDate || [];
   
-  // Format data for chart
-  const chartData = pipelineData.map((item: any) => ({
-    date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
-    dateTimestamp: new Date(item.date).getTime(),
-    value: item.value,
-    formattedValue: item.value >= 1000000 
-      ? `$${(item.value / 1000000).toFixed(1)}M`
-      : `$${(item.value / 1000).toFixed(0)}K`
-  }));
+  // Memoize expensive data processing
+  const chartData = useMemo(() => {
+    return pipelineData.map((item: any) => ({
+      date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+      dateTimestamp: new Date(item.date).getTime(),
+      value: item.value,
+      formattedValue: item.value >= 1000000 
+        ? `$${(item.value / 1000000).toFixed(1)}M`
+        : `$${(item.value / 1000).toFixed(0)}K`
+    }));
+  }, [pipelineData]);
 
-  const formatTooltipValue = (value: number) => {
+  // Memoize tooltip formatting function
+  const formatTooltipValue = useCallback((value: number) => {
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
@@ -204,10 +207,10 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
     } else {
       return `$${value.toFixed(0)}`;
     }
-  };
+  }, []);
 
-  // Calculate tick count and custom ticks for even spacing
-  const getCustomTicks = () => {
+  // Memoize expensive custom ticks calculation
+  const customTicks = useMemo(() => {
     if (chartData.length === 0) return [];
     
     const firstTimestamp = chartData[0].dateTimestamp;
@@ -224,9 +227,7 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
     }
     
     return ticks;
-  };
-
-  const customTicks = getCustomTicks();
+  }, [chartData]);
 
   return (
     <Card>
