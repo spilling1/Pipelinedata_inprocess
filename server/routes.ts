@@ -10,6 +10,7 @@ import { setupAuth, isAuthenticated } from "./localAuthBypass";
 import { requirePermission } from "./middleware/permissions";
 import { parseFileData } from "./utils/fileParser";
 import { extractDateFromFilename } from "./utils/fileUtils";
+import analyticsRouter from "./routes/analytics";
 
 // Configure multer for file uploads
 const upload = multer({
@@ -28,6 +29,9 @@ const upload = multer({
 
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register analytics routes
+  app.use(analyticsRouter);
+  
   // Authentication is already set up in index.ts
 
   // Auth routes
@@ -526,106 +530,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Lightweight win rate endpoint (protected)
-  app.get("/api/analytics/win-rate", isAuthenticated, requirePermission('sales'), async (req, res) => {
-    try {
-      const startDate = req.query.startDate as string;
-      const endDate = req.query.endDate as string;
-      
-      // Get the most recent snapshot date efficiently
-      const latestSnapshotResult = await db.select({ 
-        maxDate: sql<string>`MAX(DATE(${snapshots.snapshotDate}))` 
-      }).from(snapshots);
-      
-      const latestSnapshotDate = latestSnapshotResult[0]?.maxDate 
-        ? new Date(latestSnapshotResult[0].maxDate + 'T00:00:00.000Z')
-        : new Date(0);
-      
-      // Query only latest snapshots for win rate calculation
-      const latestSnapshots = await db.select().from(snapshots)
-        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
-      
-      // Filter by fiscal year deals that entered pipeline
-      let filteredSnapshots = latestSnapshots.filter(snapshot => {
-        if (!snapshot.enteredPipeline) return false;
-        
-        // Apply date range if provided
-        if (startDate && endDate && snapshot.closeDate) {
-          const closeDate = new Date(snapshot.closeDate);
-          return closeDate >= new Date(startDate) && closeDate <= new Date(endDate);
-        }
-        return true;
-      });
-      
-      // Count closed deals (won vs lost)
-      const closedDeals = filteredSnapshots.filter(s => 
-        s.stage === 'Closed Won' || s.stage === 'Closed Lost'
-      );
-      
-      const closedWon = closedDeals.filter(s => s.stage === 'Closed Won').length;
-      const closedLost = closedDeals.filter(s => s.stage === 'Closed Lost').length;
-      const totalClosed = closedWon + closedLost;
-      
-      const winRate = totalClosed > 0 ? (closedWon / totalClosed) * 100 : 0;
-      
-      res.json({ 
-        conversionRate: parseFloat(winRate.toFixed(1)),
-        closedWon,
-        closedLost,
-        totalClosed
-      });
-    } catch (error) {
-      console.error('❌ Error calculating win rate:', error);
-      res.status(500).json({ error: 'Failed to calculate win rate' });
-    }
-  });
-
   // Lightweight pipeline metrics endpoint (protected)
-  app.get("/api/analytics/pipeline-metrics", isAuthenticated, requirePermission('sales'), async (req, res) => {
-    try {
-      // Get the most recent snapshot date efficiently
-      const latestSnapshotResult = await db.select({ 
-        maxDate: sql<string>`MAX(DATE(${snapshots.snapshotDate}))` 
-      }).from(snapshots);
-      
-      const latestSnapshotDate = latestSnapshotResult[0]?.maxDate 
-        ? new Date(latestSnapshotResult[0].maxDate + 'T00:00:00.000Z')
-        : new Date(0);
-      
-      // Query only latest snapshots for pipeline metrics
-      const latestSnapshots = await db.select().from(snapshots)
-        .where(sql`DATE(${snapshots.snapshotDate}) = ${latestSnapshotDate.toISOString().split('T')[0]}`);
-      
-      // Filter active pipeline stages (exclude closed and validation)
-      const activeSnapshots = latestSnapshots.filter(s => 
-        !s.stage?.includes('Closed Won') && 
-        !s.stage?.includes('Closed Lost') && 
-        s.stage !== 'Validation/Introduction'
-      );
-      
-      const totalValue = activeSnapshots.reduce((sum, s) => sum + (s.tcv || 0), 0);
-      const totalYear1Arr = activeSnapshots.reduce((sum, s) => sum + (s.amount || 0), 0);
-      const activeCount = activeSnapshots.length;
-      const avgDealSize = activeCount > 0 ? totalYear1Arr / activeCount : 0;
-      
-      // Get closed won deals for avgDealSizeClosedWon
-      const closedWonSnapshots = latestSnapshots.filter(s => s.stage === 'Closed Won');
-      const closedWonYear1Arr = closedWonSnapshots.reduce((sum, s) => sum + (s.amount || 0), 0);
-      const avgDealSizeClosedWon = closedWonSnapshots.length > 0 ? closedWonYear1Arr / closedWonSnapshots.length : 0;
-      
-      res.json({
-        totalValue,
-        totalYear1Arr,
-        totalContractValue: totalValue,
-        activeCount,
-        avgDealSize,
-        avgDealSizeClosedWon,
-        avgDealSizePipeline: avgDealSize
-      });
-    } catch (error) {
-      console.error('❌ Error calculating pipeline metrics:', error);
-      res.status(500).json({ error: 'Failed to calculate pipeline metrics' });
-    }
-  });
 
   // Lightweight pipeline value endpoint (protected)
   app.get("/api/analytics/pipeline-value", isAuthenticated, requirePermission('sales'), async (req, res) => {
