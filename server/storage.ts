@@ -1462,8 +1462,8 @@ export class PostgreSQLStorage implements IStorage {
 
       console.log(`📊 Found ${allSnapshots.length} snapshots from latest snapshot date`);
 
-      // Get ALL closed lost deals with loss reasons, not filtered by date range
-      // This ensures we capture all deals that became closed lost at any time
+      // Get ALL closed lost deals with loss reasons
+      // We'll filter by close_date later for more accurate results
       const allClosedLostSnapshots = await db
         .select({
           opportunityId: snapshots.opportunityId,
@@ -1480,10 +1480,7 @@ export class PostgreSQLStorage implements IStorage {
           eq(snapshots.stage, 'Closed Lost'),
           isNotNull(snapshots.opportunityId),
           isNotNull(snapshots.lossReason),
-          sql`${snapshots.lossReason} != ''`,
-          // Apply date filtering to when they became closed lost (if provided)
-          ...(startDate ? [gte(snapshots.snapshotDate, new Date(startDate))] : []),
-          ...(endDate ? [lte(snapshots.snapshotDate, new Date(endDate))] : [])
+          sql`${snapshots.lossReason} != ''`
         ))
         .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
 
@@ -1499,6 +1496,20 @@ export class PostgreSQLStorage implements IStorage {
       
       const closedLostSnapshots = Array.from(latestClosedLostByOpportunity.values());
       console.log(`📊 Found ${closedLostSnapshots.length} unique closed lost deals with loss reasons across all snapshots`);
+      
+      // Debug: Check if GreenTech Homes is in the list
+      const greenTechDeal = closedLostSnapshots.find(snap => snap.opportunityId === 4516);
+      if (greenTechDeal) {
+        console.log(`🔍 DEBUG: GreenTech Homes found in closed lost deals:`, {
+          opportunityId: greenTechDeal.opportunityId,
+          lossReason: greenTechDeal.lossReason,
+          closeDate: greenTechDeal.closeDate,
+          snapshotDate: greenTechDeal.snapshotDate
+        });
+      } else {
+        console.log(`🔍 DEBUG: GreenTech Homes NOT found in closed lost deals list`);
+        console.log(`🔍 DEBUG: Sample opportunity IDs:`, closedLostSnapshots.slice(0, 5).map(s => s.opportunityId));
+      }
 
       // For each closed lost deal, get historical data to find the previous stage
       const lossReasonTransitions: Array<{
@@ -1551,6 +1562,14 @@ export class PostgreSQLStorage implements IStorage {
           .filter(s => s.stage !== 'Closed Lost' && s.stage !== null)
           .sort((a, b) => new Date(a.snapshotDate).getTime() - new Date(b.snapshotDate).getTime());
         
+        // Debug logging for GreenTech Homes (opportunity 4516)
+        if (opportunityId === 4516) {
+          console.log(`🔍 DEBUG: GreenTech Homes (ID: ${opportunityId}) historical analysis:`);
+          console.log(`🔍 DEBUG: Total historical snapshots: ${historicalSnapshots.length}`);
+          console.log(`🔍 DEBUG: Non-closed-lost snapshots: ${sortedHistoricalSnapshots.length}`);
+          console.log(`🔍 DEBUG: Sample historical stages:`, sortedHistoricalSnapshots.slice(-3).map(s => ({ stage: s.stage, date: s.snapshotDate })));
+        }
+        
         if (sortedHistoricalSnapshots.length > 0) {
           // Get the last (most recent) non-closed lost stage
           previousStage = sortedHistoricalSnapshots[sortedHistoricalSnapshots.length - 1].stage;
@@ -1593,13 +1612,17 @@ export class PostgreSQLStorage implements IStorage {
       let filteredTransitions = lossReasonTransitions;
       if (startDate && endDate) {
         const startFilterDate = new Date(startDate);
+        // Set end date to end of day to be inclusive
         const endFilterDate = new Date(endDate);
+        endFilterDate.setHours(23, 59, 59, 999);
         
         filteredTransitions = lossReasonTransitions.filter(transition => {
-          return transition.closeDate >= startFilterDate && transition.closeDate <= endFilterDate;
+          const closeDate = new Date(transition.closeDate);
+          return closeDate >= startFilterDate && closeDate <= endFilterDate;
         });
         
         console.log(`📊 Filtered ${lossReasonTransitions.length} transitions to ${filteredTransitions.length} based on close date range ${startDate} to ${endDate}`);
+        console.log(`📊 Debug: End filter date set to ${endFilterDate.toISOString()} for inclusive comparison`);
       }
 
       console.log(`📊 Found ${filteredTransitions.length} transitions to Closed Lost with loss reasons`);
