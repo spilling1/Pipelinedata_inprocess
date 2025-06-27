@@ -29,13 +29,16 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     }
   }, []);
 
-  // Main pipeline metrics query using main analytics endpoint for accurate closed won metrics  
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/analytics'],
+  // Main pipeline metrics query using lightweight endpoint for performance
+  const { data: pipelineMetrics, isLoading } = useQuery({
+    queryKey: ['/api/analytics/pipeline-metrics'],
   });
 
-  // Type the analytics response properly
-  const analyticsData = analytics as any;
+  // Get closed won avg deal size from main analytics endpoint (fiscal year calculation)
+  const { data: analyticsData, isLoading: analyticsLoading } = useQuery({
+    queryKey: ['/api/analytics'],
+    select: (data: any) => data?.metrics?.avgDealSizeClosedWon || 0,
+  });
 
   // Win Rate query with FY to Date range using lightweight endpoint
   const { data: winRateData, isLoading: winRateLoading } = useQuery({
@@ -73,7 +76,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     }
   });
 
-  if (isLoading || winRateLoading || closeRateLoading) {
+  if (isLoading || winRateLoading || closeRateLoading || analyticsLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         {[...Array(5)].map((_, i) => (
@@ -91,7 +94,7 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
     );
   }
 
-  const metrics = analyticsData?.metrics || {
+  const metrics = pipelineMetrics || {
     totalValue: 0,
     activeCount: 0,
     avgDealSize: 0,
@@ -107,8 +110,8 @@ export default function MetricsCards({ filters }: MetricsCardsProps) {
   const winRate = winRateData?.conversionRate || 0;
   const closeRate = closeRateData?.closeRate || 0;
   
-  // Use main analytics avgDealSizeClosedWon since lightweight endpoints don't include this
-  const fyAvgDealSizeClosedWon = metrics.avgDealSizeClosedWon || 0;
+  // Use fiscal year closed won average deal size from analytics endpoint 
+  const fyAvgDealSizeClosedWon = analyticsData || 0;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
