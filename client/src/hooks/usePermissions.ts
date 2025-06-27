@@ -65,7 +65,7 @@ export function usePermissions() {
       case 'settings':
         return hasPermission('settings');
       case 'user-management':
-        return data?.isAdmin || false;
+        return hasPermission('user_management');
       default:
         return true; // Default pages are accessible to all
     }

@@ -60,20 +60,22 @@ const AVAILABLE_PERMISSIONS = [
 export default function UserManagement() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { isAdmin, isLoading: permissionsLoading } = usePermissions();
+  const { hasPermission, isLoading: permissionsLoading } = usePermissions();
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [isRoleEditDialogOpen, setIsRoleEditDialogOpen] = useState(false);
 
+  const canManageUsers = hasPermission('user_management');
+
   const { data: users, isLoading: usersLoading } = useQuery<User[]>({
     queryKey: ['/api/users/users'],
-    enabled: isAdmin,
+    enabled: canManageUsers,
   });
 
   const { data: roles, isLoading: rolesLoading } = useQuery<Role[]>({
     queryKey: ['/api/users/roles'],
-    enabled: isAdmin,
+    enabled: canManageUsers,
   });
 
   const updateUserMutation = useMutation({
@@ -221,7 +223,7 @@ export default function UserManagement() {
     return <div className="flex items-center justify-center min-h-screen">Loading...</div>;
   }
 
-  if (!isAdmin) {
+  if (!canManageUsers) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <Card className="w-full max-w-md">
