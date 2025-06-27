@@ -304,16 +304,16 @@ export default function SankeyFlowChart({ filters }: SankeyFlowChartProps) {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Last 1 Month">Last 1 Month</SelectItem>
-                  <SelectItem value="Last 3 months">Last 3 months</SelectItem>
-                  <SelectItem value="Last 6 months">Last 6 months</SelectItem>
-                  <SelectItem value="Last 12 months">Last 12 months</SelectItem>
-                  <SelectItem value="Month to Date">Month to Date</SelectItem>
-                  <SelectItem value="FQ to Date">FQ to Date</SelectItem>
-                  <SelectItem value="FY to Date">FY to Date</SelectItem>
-                  <SelectItem value="Last FQ">Last FQ</SelectItem>
-                  <SelectItem value="Last FY">Last FY</SelectItem>
-                  <SelectItem value="Custom">Custom</SelectItem>
+                  <SelectItem key="last-1-month" value="Last 1 Month">Last 1 Month</SelectItem>
+                  <SelectItem key="last-3-months" value="Last 3 months">Last 3 months</SelectItem>
+                  <SelectItem key="last-6-months" value="Last 6 months">Last 6 months</SelectItem>
+                  <SelectItem key="last-12-months" value="Last 12 months">Last 12 months</SelectItem>
+                  <SelectItem key="month-to-date" value="Month to Date">Month to Date</SelectItem>
+                  <SelectItem key="fq-to-date" value="FQ to Date">FQ to Date</SelectItem>
+                  <SelectItem key="fy-to-date" value="FY to Date">FY to Date</SelectItem>
+                  <SelectItem key="last-fq" value="Last FQ">Last FQ</SelectItem>
+                  <SelectItem key="last-fy" value="Last FY">Last FY</SelectItem>
+                  <SelectItem key="custom" value="Custom">Custom</SelectItem>
                 </SelectContent>
               </Select>
               
