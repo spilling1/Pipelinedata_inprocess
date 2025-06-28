@@ -50,7 +50,7 @@ export interface CampaignComparison {
   campaignType: string;
   cost: number;
   startDate: Date;
-  endDate: Date | null;
+  status: string;
   metrics: {
     totalCustomers: number;
     targetAccountCustomers: number;
@@ -109,7 +109,7 @@ export class MarketingComparativeStorage {
           attendees: campaignCustomers.attendees,
           // Current snapshot data
           currentStage: snapshots.stage,
-          currentYear1Arr: snapshots.year1Arr,
+          currentYear1Value: snapshots.year1Value,
           targetAccount: snapshots.targetAccount,
           closeDate: snapshots.closeDate,
         })
@@ -172,7 +172,7 @@ export class MarketingComparativeStorage {
         .select({
           campaignId: campaignCustomers.campaignId,
           attendees: campaignCustomers.attendees,
-          currentYear1Arr: snapshots.year1Arr,
+          currentYear1Value: snapshots.year1Value,
           currentStage: snapshots.stage,
           campaignCost: campaigns.cost,
         })
@@ -243,7 +243,7 @@ export class MarketingComparativeStorage {
           type: campaigns.type,
           cost: campaigns.cost,
           startDate: campaigns.startDate,
-          endDate: campaigns.endDate,
+          status: campaigns.status,
         })
         .from(campaigns)
         .orderBy(desc(campaigns.startDate));
@@ -259,7 +259,7 @@ export class MarketingComparativeStorage {
             campaignType: campaign.type,
             cost: campaign.cost || 0,
             startDate: campaign.startDate,
-            endDate: campaign.endDate,
+            status: campaign.status || 'active',
             metrics
           };
         })
@@ -286,7 +286,7 @@ export class MarketingComparativeStorage {
         .select({
           attendees: campaignCustomers.attendees,
           targetAccount: snapshots.targetAccount,
-          currentYear1Arr: snapshots.year1Arr,
+          currentYear1Value: snapshots.year1Value,
           currentStage: snapshots.stage,
           campaignCost: campaigns.cost,
         })
@@ -351,7 +351,7 @@ export class MarketingComparativeStorage {
 
   private calculateAccountTypeMetrics(data: any[]) {
     const totalCustomers = data.length;
-    const totalPipelineValue = data.reduce((sum, row) => sum + (row.currentYear1Arr || 0), 0);
+    const totalPipelineValue = data.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
     const averageDealSize = totalCustomers > 0 ? totalPipelineValue / totalCustomers : 0;
     
     const closedWonCustomers = data.filter(row => 
@@ -377,7 +377,7 @@ export class MarketingComparativeStorage {
 
   private calculateAttendeeSegmentMetrics(data: any[], range: string) {
     const customerCount = data.length;
-    const totalPipelineValue = data.reduce((sum, row) => sum + (row.currentYear1Arr || 0), 0);
+    const totalPipelineValue = data.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
     const averageDealSize = customerCount > 0 ? totalPipelineValue / customerCount : 0;
     
     const closedWonCustomers = data.filter(row => 
@@ -412,7 +412,7 @@ export class MarketingComparativeStorage {
       .select({
         attendees: campaignCustomers.attendees,
         targetAccount: snapshots.targetAccount,
-        currentYear1Arr: snapshots.year1Arr,
+        currentYear1Value: snapshots.year1Value,
         currentStage: snapshots.stage,
       })
       .from(campaignCustomers)
@@ -432,12 +432,12 @@ export class MarketingComparativeStorage {
     const totalAttendees = campaignData.reduce((sum, row) => sum + (row.attendees || 0), 0);
     const averageAttendees = totalCustomers > 0 ? totalAttendees / totalCustomers : 0;
     
-    const pipelineValue = campaignData.reduce((sum, row) => sum + (row.currentYear1Arr || 0), 0);
+    const pipelineValue = campaignData.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
     
     const closedWonCustomers = campaignData.filter(row => 
       row.currentStage && row.currentStage.toLowerCase().includes('closed won')
     );
-    const closedWonValue = closedWonCustomers.reduce((sum, row) => sum + (row.currentYear1Arr || 0), 0);
+    const closedWonValue = closedWonCustomers.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
     
     const closedLostCustomers = campaignData.filter(row => 
       row.currentStage && row.currentStage.toLowerCase().includes('closed lost')
@@ -494,13 +494,13 @@ export class MarketingComparativeStorage {
     const winRate = (closedWonCustomers + closedLostCustomers) > 0 ? 
       (closedWonCustomers / (closedWonCustomers + closedLostCustomers)) * 100 : 0;
 
-    const totalValue = data.reduce((sum, row) => sum + (row.currentYear1Arr || 0), 0);
+    const totalValue = data.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
     const averageDealSize = customerCount > 0 ? totalValue / customerCount : 0;
     
     const totalCost = data.reduce((sum, row) => sum + (row.campaignCost || 0), 0);
     const closedWonValue = data
       .filter(row => row.currentStage && row.currentStage.toLowerCase().includes('closed won'))
-      .reduce((sum, row) => sum + (row.currentYear1Arr || 0), 0);
+      .reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
     
     const roi = totalCost > 0 ? (closedWonValue / totalCost) * 100 : 0;
 

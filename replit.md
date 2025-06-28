@@ -456,3 +456,5 @@ Preferred communication style: Simple, everyday language.
 ## Development Guidelines
 
 **Marketing Analytics Separation**: All marketing work must be completely separated from Pipeline analytics other than the shared database. Marketing pages can be updated but extreme care must be taken to avoid breaking existing pipeline functionality. Marketing analytics should remain in its dedicated module structure.
+
+**File Creation Strategy**: Default to creating new code files whenever possible to maintain modularity and separation of concerns. Avoid modifying existing files unless absolutely necessary.
