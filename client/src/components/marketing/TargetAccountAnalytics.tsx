@@ -113,11 +113,11 @@ const TargetAccountAnalytics: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Deal Size Advantage</p>
-                <p className={`text-2xl font-bold ${getAdvantageColor(data?.comparison.targetAccountAdvantage.dealSizeMultiplier || 0)}`}>
-                  {data?.comparison.targetAccountAdvantage.dealSizeMultiplier.toFixed(1)}x
+                <p className={`text-2xl font-bold ${getAdvantageColor(data?.comparison?.targetAccountAdvantage?.dealSizeMultiplier || 0)}`}>
+                  {(data?.comparison?.targetAccountAdvantage?.dealSizeMultiplier || 0).toFixed(1)}x
                 </p>
                 <p className="text-xs text-gray-500">
-                  {getAdvantageLevel(data?.comparison.targetAccountAdvantage.dealSizeMultiplier || 0)}
+                  {getAdvantageLevel(data?.comparison?.targetAccountAdvantage?.dealSizeMultiplier || 0)}
                 </p>
               </div>
               <DollarSign className="h-8 w-8 text-green-600" />
@@ -130,9 +130,9 @@ const TargetAccountAnalytics: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Win Rate Advantage</p>
-                <p className={`text-2xl font-bold ${data && data.comparison.targetAccountAdvantage.winRateAdvantage > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {data && data.comparison.targetAccountAdvantage.winRateAdvantage > 0 ? '+' : ''}
-                  {formatPercentage(data?.comparison.targetAccountAdvantage.winRateAdvantage || 0)}
+                <p className={`text-2xl font-bold ${data && data.comparison?.targetAccountAdvantage?.winRateAdvantage && data.comparison.targetAccountAdvantage.winRateAdvantage > 0 ? 'text-green-600' : 'text-red-600'}`}>
+                  {data && data.comparison?.targetAccountAdvantage?.winRateAdvantage && data.comparison.targetAccountAdvantage.winRateAdvantage > 0 ? '+' : ''}
+                  {formatPercentage(data?.comparison?.targetAccountAdvantage?.winRateAdvantage || 0)}
                 </p>
                 <p className="text-xs text-gray-500">vs Non-targets</p>
               </div>
@@ -146,8 +146,8 @@ const TargetAccountAnalytics: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Attendee Efficiency</p>
-                <p className={`text-2xl font-bold ${getAdvantageColor(data?.comparison.targetAccountAdvantage.attendeeEfficiency || 0)}`}>
-                  {data?.comparison.targetAccountAdvantage.attendeeEfficiency.toFixed(1)}x
+                <p className={`text-2xl font-bold ${getAdvantageColor(data?.comparison?.targetAccountAdvantage?.attendeeEfficiency || 0)}`}>
+                  {(data?.comparison?.targetAccountAdvantage?.attendeeEfficiency || 0).toFixed(1)}x
                 </p>
                 <p className="text-xs text-gray-500">Pipeline per attendee</p>
               </div>
@@ -175,13 +175,13 @@ const TargetAccountAnalytics: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-600">Customer Count</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {data?.targetAccounts.customerCount.toLocaleString()}
+                  {(data?.targetAccounts?.customerCount || 0).toLocaleString()}
                 </p>
               </div>
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-600">Pipeline Value</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(data?.targetAccounts.totalPipelineValue || 0)}
+                  {formatCurrency(data?.targetAccounts?.totalPipelineValue || 0)}
                 </p>
               </div>
             </div>
@@ -191,7 +191,7 @@ const TargetAccountAnalytics: React.FC = () => {
                 <div className="flex justify-between mb-1">
                   <span className="text-sm font-medium">Average Deal Size</span>
                   <span className="text-sm font-bold">
-                    {formatCurrency(data?.targetAccounts.averageDealSize || 0)}
+                    {formatCurrency(data?.targetAccounts?.averageDealSize || 0)}
                   </span>
                 </div>
                 <Progress value={75} className="h-2" />
@@ -201,10 +201,10 @@ const TargetAccountAnalytics: React.FC = () => {
                 <div className="flex justify-between mb-1">
                   <span className="text-sm font-medium">Win Rate</span>
                   <span className="text-sm font-bold">
-                    {formatPercentage(data?.targetAccounts.winRate || 0)}
+                    {formatPercentage(data?.targetAccounts?.winRate || 0)}
                   </span>
                 </div>
-                <Progress value={data?.targetAccounts.winRate || 0} className="h-2" />
+                <Progress value={data?.targetAccounts?.winRate || 0} className="h-2" />
               </div>
 
               <div>
