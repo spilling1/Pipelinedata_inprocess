@@ -56,6 +56,10 @@ export default function MarketingAnalyticsPage() {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [nameFilter, setNameFilter] = useState<string>('');
   
+  // Team member form state
+  const [newMemberName, setNewMemberName] = useState('');
+  const [newMemberRole, setNewMemberRole] = useState('');
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -162,6 +166,61 @@ export default function MarketingAnalyticsPage() {
       });
     },
   });
+
+  const updateTeamMutation = useMutation({
+    mutationFn: (data: { campaignId: number, teamAttendees: any[] }) => 
+      fetch(`/api/marketing/campaigns/${data.campaignId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ teamAttendees: data.teamAttendees }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/marketing/campaigns'] });
+      setNewMemberName('');
+      setNewMemberRole('');
+      toast({
+        title: "Team member added",
+        description: "Team member has been added to the campaign.",
+      });
+    },
+    onError: () => {
+      toast({
+        title: "Error", 
+        description: "Failed to add team member. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const addTeamMember = () => {
+    if (!newMemberName.trim() || !newMemberRole.trim() || !selectedCampaign) return;
+    
+    const currentTeam = selectedCampaign.teamAttendees || [];
+    const newTeamMember = { name: newMemberName.trim(), role: newMemberRole };
+    const updatedTeam = [...currentTeam, newTeamMember];
+    
+    updateTeamMutation.mutate({
+      campaignId: selectedCampaign.id,
+      teamAttendees: updatedTeam
+    });
+  };
+
+  const removeTeamMember = (indexToRemove: number) => {
+    if (!selectedCampaign) return;
+    
+    const currentTeam = selectedCampaign.teamAttendees || [];
+    const updatedTeam = currentTeam.filter((_: any, index: number) => index !== indexToRemove);
+    
+    updateTeamMutation.mutate({
+      campaignId: selectedCampaign.id,
+      teamAttendees: updatedTeam
+    });
+  };
+
+  const clearTeamForm = () => {
+    setNewMemberName('');
+    setNewMemberRole('');
+  };
 
   if (isLoading) {
     return (
@@ -679,14 +738,53 @@ export default function MarketingAnalyticsPage() {
                 <TabsContent value="team" className="space-y-6">
                   <div className="flex justify-between items-center">
                     <h3 className="text-lg font-semibold">Team Members</h3>
-                    <Button 
-                      onClick={() => setEditingCampaign(selectedCampaign)} 
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Edit className="h-4 w-4 mr-2" />
-                      Manage Team
-                    </Button>
+                  </div>
+
+                  {/* Add Team Member Form */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border">
+                    <div>
+                      <Label htmlFor="teamMemberName" className="text-sm font-medium">Name</Label>
+                      <Input
+                        id="teamMemberName"
+                        placeholder="Enter name"
+                        className="mt-1"
+                        value={newMemberName}
+                        onChange={(e) => setNewMemberName(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="teamMemberRole" className="text-sm font-medium">Role</Label>
+                      <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Sales">Sales</SelectItem>
+                          <SelectItem value="Marketing">Marketing</SelectItem>
+                          <SelectItem value="Engineering">Engineering</SelectItem>
+                          <SelectItem value="Customer Success">Customer Success</SelectItem>
+                          <SelectItem value="Leadership">Leadership</SelectItem>
+                          <SelectItem value="Product">Product</SelectItem>
+                          <SelectItem value="Support">Support</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-end gap-2">
+                      <Button 
+                        className="bg-blue-500 hover:bg-blue-600 text-white"
+                        onClick={addTeamMember}
+                        disabled={!newMemberName.trim() || !newMemberRole.trim() || updateTeamMutation.isPending}
+                      >
+                        {updateTeamMutation.isPending ? "Adding..." : "Add"}
+                      </Button>
+                      <Button 
+                        variant="outline"
+                        onClick={clearTeamForm}
+                        disabled={updateTeamMutation.isPending}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Team Members List */}
@@ -709,18 +807,29 @@ export default function MarketingAnalyticsPage() {
                                   </p>
                                 </div>
                               </div>
-                              <Badge 
-                                variant="secondary" 
-                                className={
-                                  member.role === 'Sales' ? 'bg-green-100 text-green-800' :
-                                  member.role === 'Marketing' ? 'bg-purple-100 text-purple-800' :
-                                  member.role === 'Engineering' ? 'bg-blue-100 text-blue-800' :
-                                  member.role === 'Leadership' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                                }
-                              >
-                                {member.role}
-                              </Badge>
+                              <div className="flex items-center gap-2">
+                                <Badge 
+                                  variant="secondary" 
+                                  className={
+                                    member.role === 'Sales' ? 'bg-green-100 text-green-800' :
+                                    member.role === 'Marketing' ? 'bg-purple-100 text-purple-800' :
+                                    member.role === 'Engineering' ? 'bg-blue-100 text-blue-800' :
+                                    member.role === 'Leadership' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-100 text-gray-800'
+                                  }
+                                >
+                                  {member.role}
+                                </Badge>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => removeTeamMember(index)}
+                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                                  disabled={updateTeamMutation.isPending}
+                                >
+                                  <X className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           </CardContent>
                         </Card>
