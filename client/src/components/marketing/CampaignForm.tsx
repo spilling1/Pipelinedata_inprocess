@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
@@ -24,7 +25,12 @@ import {
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
-import { Plus } from "lucide-react";
+import { Plus, X, Users } from "lucide-react";
+
+const teamMemberSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  role: z.string().min(1, "Role is required"),
+});
 
 const campaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required"),
@@ -38,6 +44,7 @@ const campaignSchema = z.object({
 });
 
 type CampaignFormData = z.infer<typeof campaignSchema>;
+type TeamMember = z.infer<typeof teamMemberSchema>;
 
 interface Campaign {
   id: number;
@@ -48,6 +55,7 @@ interface Campaign {
   cost?: number;
   notes?: string;
   salesforceUrl?: string;
+  teamAttendees?: TeamMember[];
   status?: string;
 }
 
@@ -63,6 +71,13 @@ export default function CampaignForm({ campaign, onClose, onSuccess }: CampaignF
   const [showNewInfluenceInput, setShowNewInfluenceInput] = useState(false);
   const [newType, setNewType] = useState("");
   const [newInfluence, setNewInfluence] = useState("");
+  
+  // Team member management state
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>(campaign?.teamAttendees || []);
+  const [newMemberName, setNewMemberName] = useState("");
+  const [newMemberRole, setNewMemberRole] = useState("");
+  const [showAddMember, setShowAddMember] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isEditing = !!campaign;
@@ -126,11 +141,30 @@ export default function CampaignForm({ campaign, onClose, onSuccess }: CampaignF
     },
   });
 
+  // Team member management functions
+  const addTeamMember = () => {
+    if (newMemberName.trim() && newMemberRole.trim()) {
+      const newMember: TeamMember = {
+        name: newMemberName.trim(),
+        role: newMemberRole.trim(),
+      };
+      setTeamMembers(prev => [...prev, newMember]);
+      setNewMemberName("");
+      setNewMemberRole("");
+      setShowAddMember(false);
+    }
+  };
+
+  const removeTeamMember = (index: number) => {
+    setTeamMembers(prev => prev.filter((_, i) => i !== index));
+  };
+
   const mutation = useMutation({
     mutationFn: async (data: CampaignFormData) => {
       const payload = {
         ...data,
         cost: cost ? parseFloat(cost) : undefined,
+        teamAttendees: teamMembers,
       };
 
       const url = isEditing 
@@ -397,6 +431,110 @@ export default function CampaignForm({ campaign, onClose, onSuccess }: CampaignF
             />
             <p className="text-xs text-muted-foreground">
               Link to the Salesforce campaign page for easy reference
+            </p>
+          </div>
+
+          {/* Team Members Section */}
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="flex items-center gap-2">
+                <Users className="h-4 w-4" />
+                Team Members
+              </Label>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setShowAddMember(true)}
+                className="flex items-center gap-2"
+              >
+                <Plus className="h-4 w-4" />
+                Add Member
+              </Button>
+            </div>
+
+            {/* Current Team Members */}
+            {teamMembers.length > 0 && (
+              <div className="space-y-2">
+                {teamMembers.map((member, index) => (
+                  <div key={index} className="flex items-center justify-between p-2 border rounded-md">
+                    <div className="flex items-center gap-2">
+                      <Badge variant="secondary">{member.role}</Badge>
+                      <span className="text-sm">{member.name}</span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeTeamMember(index)}
+                      className="text-red-600 hover:text-red-700"
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Add Team Member Form */}
+            {showAddMember && (
+              <div className="p-3 border rounded-md bg-gray-50 space-y-3">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Label htmlFor="memberName" className="text-xs">Name</Label>
+                    <Input
+                      id="memberName"
+                      value={newMemberName}
+                      onChange={(e) => setNewMemberName(e.target.value)}
+                      placeholder="Enter name"
+                      size={undefined}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="memberRole" className="text-xs">Role</Label>
+                    <Select value={newMemberRole} onValueChange={setNewMemberRole}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Sales">Sales</SelectItem>
+                        <SelectItem value="Marketing">Marketing</SelectItem>
+                        <SelectItem value="Engineering">Engineering</SelectItem>
+                        <SelectItem value="Customer Success">Customer Success</SelectItem>
+                        <SelectItem value="Leadership">Leadership</SelectItem>
+                        <SelectItem value="Product">Product</SelectItem>
+                        <SelectItem value="Support">Support</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    onClick={addTeamMember}
+                    disabled={!newMemberName.trim() || !newMemberRole.trim()}
+                  >
+                    Add
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowAddMember(false);
+                      setNewMemberName("");
+                      setNewMemberRole("");
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <p className="text-xs text-muted-foreground">
+              Add team members who attended or contributed to this campaign for performance tracking
             </p>
           </div>
 
