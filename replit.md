@@ -123,22 +123,21 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
-✓ Marketing Comparative Analytics Backend Complete with Performance Optimization (June 28, 2025)
-- Created dedicated storage layer in `server/storage-mktg-comparative.ts` for target account and attendee analytics
-- Built comprehensive API routes in `server/routes-mktg-comparative.ts` with 6 endpoints for comparative analysis
-- Successfully registered all comparative routes in server architecture (`server/routes-register-comparative.ts`)
-- Implemented target account vs non-target account performance comparison analytics (153 target accounts, $38.5M pipeline)
-- Added attendee effectiveness analysis with 4-tier segmentation delivering optimal 3-5 attendee recommendations
-- Created strategic engagement matrix combining target account status with optimal attendee counts (714% ROI insights)
-- Built campaign comparison system analyzing 23 campaigns with comprehensive metrics and ROI calculations
-- Added campaign type aggregation analytics and dashboard summary endpoint (210ms response time)
-- Optimized all database queries removing problematic subqueries for enterprise-grade performance
-- Performance benchmarks: Target accounts 99ms, Attendee effectiveness 75ms, Campaign comparison 441ms, Strategic matrix 30ms
-- Generated actionable insights: $252K target account deal size advantage, optimal attendee efficiency strategies
-- Updated PRD documents and implementation checklist with Phase 1 completion status
-- All analytics leverage existing database fields (target_account, attendees) without schema changes
-- Complete separation from pipeline analytics maintained per development guidelines
-- System successfully processing live data: 450+ opportunities, 153 target accounts, $1.04B total pipeline analysis
+✓ Advanced Marketing Analytics with Campaign Influence & Team Performance Tracking Complete (June 28, 2025)
+- Enhanced marketing comparative analytics system with behavioral influence tracking and team attendee effectiveness analysis
+- Implemented campaign influence metrics based on meaningful behavioral changes: close date acceleration (within 30 days), stage progression analysis, and multi-touch point correlation
+- Added comprehensive team attendee tracking with individual performance analytics showing which team members create and close the most pipeline
+- Built team effectiveness system analyzing Sales, Marketing, and Engineering roles across campaign types with performance scoring
+- Enhanced campaign comparison analytics with close acceleration rates, stage advancement tracking, and touch point effectiveness measurements
+- Created database schema extension with team_attendees JSONB field for flexible team member tracking across campaigns
+- Successfully tested team attendee analysis showing Sam Pilling ($128M pipeline, Event campaigns) and Alex Thompson ($36M pipeline, Roadshow campaigns) performance
+- Implemented role-based performance insights identifying top pipeline creators, top closers, and most versatile team members across campaign types
+- Added strategic insights for touch point effectiveness comparing single-touch vs multi-touch campaign correlation with close rates
+- Enhanced multi-touch attribution system preserving all campaign interactions while measuring influence patterns and campaign overlap analysis
+- All influence metrics leverage snapshot data for behavioral change tracking within 30-day campaign windows
+- Team attendee effectiveness endpoint operational at /api/marketing/comparative/team-attendee-effectiveness with 185ms response time
+- System processes authentic campaign data identifying specific individuals who drive pipeline creation and deal closure success
+- Complete behavioral analytics framework tracking stage progression, acceleration patterns, and team member contribution analysis
 
 ✓ Smart Salesforce ID Matching System Fixed and Operational (June 28, 2025)
 - Fixed critical bug in Smart ID Matching System where it wasn't using base ID for matching
