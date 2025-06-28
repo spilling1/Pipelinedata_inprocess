@@ -1021,6 +1021,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         if (minValue && (latestSnapshot.year1Value || 0) < parseFloat(minValue as string)) continue;
         if (maxValue && (latestSnapshot.year1Value || 0) > parseFloat(maxValue as string)) continue;
+        if (targetAccount && typeof targetAccount === 'string') {
+          if (targetAccount === '1' && latestSnapshot.targetAccount !== 1) continue;
+          if (targetAccount === '0' && latestSnapshot.targetAccount !== 0) continue;
+        }
 
         enrichedOpportunities.push({
           ...opportunity,
