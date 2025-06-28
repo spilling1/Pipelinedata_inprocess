@@ -289,4 +289,26 @@ router.get('/dashboard-summary', async (req, res) => {
   }
 });
 
+/**
+ * Get customer journey analysis with multi-touch attribution
+ * Shows touches per customer and cumulative CAC
+ */
+router.get('/customer-journey', async (req, res) => {
+  try {
+    console.log('🎯🛤️ API: Fetching customer journey analysis...');
+    
+    const customerJourneyData = await marketingComparativeStorage.getCustomerJourneyAnalysis();
+    
+    console.log(`🎯🛤️ Customer journey analysis completed - ${customerJourneyData.customers.length} customers analyzed`);
+    res.json(customerJourneyData);
+    
+  } catch (error) {
+    console.error('❌ API Error in /customer-journey:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch customer journey analysis',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;
