@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Users, Target, TrendingUp } from 'lucide-react';
+import { BarChart3, Users, Target, TrendingUp, Trophy } from 'lucide-react';
 import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffectiveness';
 import CampaignEffectivenessRankings from '@/components/marketing/CampaignEffectivenessRankings';
 import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytics';
 import StrategicEngagementMatrix from '@/components/marketing/StrategicEngagementMatrix';
+import CampaignTypeAnalysis from '@/components/marketing/CampaignTypeAnalysis';
 
 const MarketingComparativeAnalytics: React.FC = () => {
   return (
@@ -20,7 +21,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
       </div>
 
       <Tabs defaultValue="team-performance" className="space-y-6">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="team-performance" className="flex items-center gap-2">
             <Users className="h-4 w-4" />
             Team Performance
@@ -28,6 +29,10 @@ const MarketingComparativeAnalytics: React.FC = () => {
           <TabsTrigger value="campaign-influence" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Campaign Influence
+          </TabsTrigger>
+          <TabsTrigger value="campaign-types" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Campaign Types
           </TabsTrigger>
           <TabsTrigger value="target-accounts" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
@@ -45,6 +50,10 @@ const MarketingComparativeAnalytics: React.FC = () => {
 
         <TabsContent value="campaign-influence" className="space-y-6">
           <CampaignEffectivenessRankings />
+        </TabsContent>
+
+        <TabsContent value="campaign-types" className="space-y-6">
+          <CampaignTypeAnalysis />
         </TabsContent>
 
         <TabsContent value="target-accounts" className="space-y-6">
