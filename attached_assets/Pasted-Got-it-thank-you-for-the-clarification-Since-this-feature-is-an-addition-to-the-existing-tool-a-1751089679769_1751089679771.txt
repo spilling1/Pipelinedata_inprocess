@@ -1,0 +1,185 @@
+Got it—thank you for the clarification! Since this feature is **an addition** to the existing tool and leverages existing data structures (while keeping code modular and clean), here’s a **detailed PRD** designed for an AI agent and a junior developer. It ensures:
+✅ Clear structure and instructions
+✅ New code is separate except for shared DB or minimal integration points
+✅ Code files stay under \~300 lines
+
+---
+
+# 📄 **Product Requirements Document (PRD)**
+
+## Title: **Campaign and Customer Comparative Analytics Module**
+
+---
+
+## 1️⃣ **Objective**
+
+Enhance the existing Marketing Analytics tool to:
+
+* Compare campaigns against each other across key performance metrics
+* Compare campaign types overall
+* Analyze customer-level contributions (e.g., CAC sum, touch counts)
+* Provide flexible filtering (by type, timeframe)
+* Display results in tables and charts
+
+---
+
+## 2️⃣ **User Stories**
+
+* **As a marketing analyst**, I want to see which campaign performs best across multiple KPIs so I can optimize future investments.
+* **As a manager**, I want to compare campaign types to understand where to focus budget.
+* **As a sales ops user**, I want visibility into cumulative customer CAC and touches for strategic planning.
+
+---
+
+## 3️⃣ **Key Metrics**
+
+For **campaign-level** comparison:
+
+* Total pipeline touched (\$)
+* Pipeline generated (\$)
+* Closed won (\$)
+* Win rate (%)
+* CAC (\$)
+* ROI (Closed won / Budget)
+* Pipeline generated per \$ spent
+
+For **campaign type-level** comparison:
+
+* Aggregate above metrics
+* Average win rate
+* Avg pipeline generated / cost
+* Impact (e.g., % of customers moved to next stage in 30 days)
+
+For **customer-level** view:
+
+* Sum CAC
+* Count # of campaigns touched
+* Count # of stage movements
+
+---
+
+## 4️⃣ **Features**
+
+### 4.1 Campaign Comparison View
+
+* Table: 1 row per campaign
+
+* Columns: \[Name, Type, Pipeline Touched, Pipeline Generated, Closed Won, Win Rate, CAC, ROI, Pipeline/Cost]
+
+* Sorting/filtering: By any column, by type
+
+* Charts:
+
+  * Bar chart of ROI per campaign
+  * Bar chart of Win Rate per campaign
+
+---
+
+### 4.2 Campaign Type Comparison
+
+* Table: 1 row per type
+* Columns: \[Type, Aggregate Pipeline, Aggregate Closed Won, Avg Win Rate, ROI, Pipeline/Cost]
+* Chart: Bar chart of key metrics per type
+
+---
+
+### 4.3 Customer Summary
+
+* Table: 1 row per customer
+* Columns: \[Customer Name, Total CAC, Total Touches, # Campaigns, # Stage Movements]
+
+---
+
+## 5️⃣ **Architecture**
+
+### 📂 New module directory:
+
+`/analytics-comparison/`
+
+* `CampaignComparison.tsx`
+* `CampaignTypeComparison.tsx`
+* `CustomerSummary.tsx`
+* `useCampaignComparisonData.ts`
+* `useCampaignTypeData.ts`
+* `useCustomerSummaryData.ts`
+* `types.ts`
+* `utils.ts`
+
+➡ Each component handles only rendering + UI
+➡ Each hook handles data aggregation + querying
+
+---
+
+## 6️⃣ **Data**
+
+✅ Use existing DB tables
+✅ Aggregate via query hooks or backend API (depending on existing architecture)
+✅ No duplication of DB models
+
+---
+
+## 7️⃣ **Code Requirements**
+
+* No file > 300 lines
+* Modular hooks for data processing
+* Charts use existing chart library (or propose one if missing)
+* Tables use existing table components
+
+---
+
+## 8️⃣ **Implementation Notes**
+
+* **Integration:** Add a new `Comparison` tab or route in Marketing Analytics
+* **Code isolation:** All new code lives under `/analytics-comparison/`
+* **Reuse:** Use existing query logic where possible, wrap with new aggregation hooks
+* **Testing:** Unit test data hooks and utility functions
+
+---
+
+## 9️⃣ **Deliverables**
+
+* `CampaignComparison.tsx`: Table + charts for individual campaigns
+* `CampaignTypeComparison.tsx`: Table + charts for campaign types
+* `CustomerSummary.tsx`: Table for customer metrics
+* `useCampaignComparisonData.ts`: Aggregates campaign data
+* `useCampaignTypeData.ts`: Aggregates type data
+* `useCustomerSummaryData.ts`: Aggregates customer data
+* `types.ts`: Shared types/interfaces
+* `utils.ts`: Helpers for % calc, ROI, etc.
+
+---
+
+## 10️⃣ **Example Wireframe**
+
+```
+[Campaign Comparison]
+---------------------------------------------------------
+| Name | Type | Pipeline Touched | Closed Won | Win % | ROI |
+---------------------------------------------------------
+| 2024 IBS | Event | $9.5M | $2.2M | 30.6% | 8.8x |
+| Spring 2025 Boards | 20 Club | ... | ... | ... | ... |
+
+[Bar chart: ROI per Campaign]
+[Bar chart: Win Rate per Campaign]
+```
+
+---
+
+## 11️⃣ **Risks / Considerations**
+
+* Ensure large dataset performance (consider pagination or lazy loading in tables)
+* Align metric definitions (e.g. pipeline touched = sum of customers with pipeline entries linked to campaign)
+
+---
+
+## 12️⃣ **Next Steps**
+
+✅ Review this PRD
+✅ Approve or request changes
+✅ I can draft skeleton code structure and data aggregation queries if you'd like
+
+---
+
+If you want, I can **generate a starter code structure** for these files or help with **query hook design**!
+
+Would you like that next? 🚀
