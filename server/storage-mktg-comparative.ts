@@ -415,10 +415,21 @@ export class MarketingComparativeStorage {
       // Get the corrected campaign analytics that exclude closed lost and apply proper filtering
       const analytics = await marketingStorage.getCampaignAnalytics(campaignId);
       
-      // Get additional data needed for comparative analytics (attendees, target accounts)
-      const campaignData = await db
+      // Get campaign customers using the same customer-centric grouping as individual analytics
+      const campaignCustomersData = await marketingStorage.getCampaignCustomers(campaignId);
+      
+      // Get attendee data from campaign_customers table
+      const attendeeData = await db
         .select({
+          opportunityId: campaignCustomers.opportunityId,
           attendees: campaignCustomers.attendees,
+        })
+        .from(campaignCustomers)
+        .where(eq(campaignCustomers.campaignId, campaignId));
+
+      // Get target account data (for customers with current snapshots)
+      const targetAccountSnapshots = await db
+        .select({
           targetAccount: snapshots.targetAccount,
         })
         .from(campaignCustomers)
@@ -434,9 +445,9 @@ export class MarketingComparativeStorage {
         )
         .orderBy(desc(snapshots.snapshotDate));
 
-      const totalCustomers = campaignData.length;
-      const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
-      const totalAttendees = campaignData.reduce((sum, row) => sum + (row.attendees || 0), 0);
+      const totalCustomers = campaignCustomersData.length; // Use customer-centric count
+      const targetAccountCustomers = targetAccountSnapshots.filter(row => row.targetAccount === 1).length;
+      const totalAttendees = attendeeData.reduce((sum, row) => sum + (row.attendees || 0), 0);
       const averageAttendees = totalCustomers > 0 ? totalAttendees / totalCustomers : 0;
 
       // Use the corrected analytics values
@@ -445,8 +456,8 @@ export class MarketingComparativeStorage {
       const winRate = analytics.currentWinRate * 100; // Convert to percentage
 
       // Calculate target account win rate (simplified for now)
-      const targetAccountData = campaignData.filter(row => row.targetAccount === 1);
-      const targetAccountWinRate = targetAccountData.length > 0 ? winRate : 0; // Use overall win rate for now
+      const targetAccountWinRate = targetAccountSnapshots.length > 0 ? winRate : 0; // Use overall win rate for now
+      // Remove the duplicate line that was causing errors
 
       // Get campaign cost
       const campaignRecord = await db.select({ cost: campaigns.cost }).from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
