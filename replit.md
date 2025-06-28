@@ -123,14 +123,15 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
-✓ Smart Salesforce ID Matching System Implemented (June 28, 2025)
-- Added enhanced base ID matching logic to prevent duplicate opportunities from Salesforce's inconsistent ID formats
-- Implemented smart ID upgrading: 15-digit IDs automatically upgrade to 18-digit when available
-- Upload system now matches on first 15 characters regardless of incoming ID format (15 or 18 digits)
+✓ Smart Salesforce ID Matching System Fixed and Operational (June 28, 2025)
+- Fixed critical bug in Smart ID Matching System where it wasn't using base ID for matching
+- Successfully deleted 454 empty 15-digit opportunity records incorrectly created during June 27 upload
 - Enhanced PostgreSQLOpportunitiesStorage with getOpportunityByBaseId() and findOrCreateOpportunityWithSmartUpgrade() methods
-- System handles manual downloads (15-digit) and reports (18-digit) seamlessly without creating duplicates
+- System now correctly matches on first 15 characters regardless of incoming ID format (15 or 18 digits)
+- Implemented smart ID upgrading: 15-digit IDs automatically upgrade to 18-digit when available
+- Upload system handles manual downloads (15-digit) and reports (18-digit) seamlessly without creating duplicates
 - Snapshots remain format-agnostic, referencing only internal opportunities.id (integer)
-- Fixed root cause of duplicate opportunity creation during file uploads
+- Verified GL Homes now exists as single clean record with 18-digit ID and complete data history
 
 ✓ Influence Methods Management Moved to Marketing Section (June 28, 2025)
 - Added "Settings" tab to Marketing Analytics page for influence methods management

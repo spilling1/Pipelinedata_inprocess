@@ -63,7 +63,7 @@ export class PostgreSQLOpportunitiesStorage implements IOpportunitiesStorage {
     console.log(`🔍 Looking for opportunity with base ID: ${baseId} (from ${incomingId})`);
     
     // Try to find existing opportunity by base ID (first 15 characters)
-    const existing = await this.getOpportunityByBaseId(incomingId);
+    const existing = await this.getOpportunityByBaseId(baseId);
     
     if (existing) {
       console.log(`📋 Found existing opportunity: ${existing.opportunityId} -> ${existing.name}`);
