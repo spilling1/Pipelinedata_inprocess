@@ -38,6 +38,7 @@ import PipelineWalkChart from "../components/marketing/PipelineWalkChart";
 import StageMovementsCard from "../components/marketing/StageMovementsCard";
 import StageFlowCard from "../components/marketing/StageFlowCard";
 import PipelineByOwnerCard from "../components/marketing/PipelineByOwnerCard";
+import InfluenceMethodsManagement from "../components/marketing/InfluenceMethodsManagement";
 
 
 export default function MarketingAnalyticsPage() {
@@ -428,9 +429,10 @@ export default function MarketingAnalyticsPage() {
           <CardContent>
             {selectedCampaign ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                   <TabsTrigger value="customers">Customers ({campaignCustomers.length})</TabsTrigger>
+                  <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="analytics" className="space-y-6">
@@ -663,6 +665,19 @@ export default function MarketingAnalyticsPage() {
                   </div>
 
                   <CampaignCustomersList campaignId={selectedCampaign.id} />
+                </TabsContent>
+
+                <TabsContent value="settings" className="space-y-6">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Marketing Settings</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">
+                        Manage influence methods and other marketing configuration settings.
+                      </p>
+                    </div>
+                    
+                    <InfluenceMethodsManagement />
+                  </div>
                 </TabsContent>
               </Tabs>
             ) : (
