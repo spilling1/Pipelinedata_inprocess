@@ -140,6 +140,7 @@ export const campaignCustomers = pgTable("campaign_customers", {
   year1Arr: real("year1_arr"),
   tcv: real("tcv"),
   closeDate: timestamp("close_date"),
+  attendees: integer("attendees"), // Optional field for number of attendees
   createdAt: timestamp("created_at").defaultNow(),
 });
 

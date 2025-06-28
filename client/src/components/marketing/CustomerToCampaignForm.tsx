@@ -15,6 +15,7 @@ import { useToast } from "@/hooks/use-toast";
 const customerToCampaignSchema = z.object({
   customerId: z.string().min(1, "Please select a customer"),
   snapshotDate: z.string().min(1, "Please select a snapshot date"),
+  attendees: z.string().optional(),
 });
 
 type CustomerToCampaignData = z.infer<typeof customerToCampaignSchema>;
@@ -96,6 +97,7 @@ export default function CustomerToCampaignForm({
         body: JSON.stringify({
           opportunityId: parseInt(data.customerId),
           snapshotDate: data.snapshotDate,
+          attendees: data.attendees ? parseInt(data.attendees) : null,
         }),
       });
       if (!response.ok) {
@@ -307,6 +309,27 @@ export default function CustomerToCampaignForm({
                             updateSnapshotPreview(currentCustomer, e.target.value);
                           }
                         }}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="attendees"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Number of Attendees (Optional)</FormLabel>
+                    <FormControl>
+                      <input
+                        type="number"
+                        min="0"
+                        placeholder="e.g., 25"
+                        value={field.value || ''}
+                        onChange={(e) => field.onChange(e.target.value)}
                         className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                       />
                     </FormControl>
