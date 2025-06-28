@@ -437,9 +437,10 @@ export default function MarketingAnalyticsPage() {
           <CardContent>
             {selectedCampaign ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                   <TabsTrigger value="customers">Customers ({campaignCustomers.length})</TabsTrigger>
+                  <TabsTrigger value="team">Team ({selectedCampaign.teamAttendees?.length || 0})</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="analytics" className="space-y-6">
@@ -674,6 +675,108 @@ export default function MarketingAnalyticsPage() {
                   <CampaignCustomersList campaignId={selectedCampaign.id} />
                 </TabsContent>
 
+                <TabsContent value="team" className="space-y-6">
+                  <div className="flex justify-between items-center">
+                    <h3 className="text-lg font-semibold">Team Members</h3>
+                    <Button 
+                      onClick={() => setEditingCampaign(selectedCampaign)} 
+                      size="sm"
+                      variant="outline"
+                    >
+                      <Edit className="h-4 w-4 mr-2" />
+                      Manage Team
+                    </Button>
+                  </div>
+
+                  {/* Team Members List */}
+                  {selectedCampaign.teamAttendees && selectedCampaign.teamAttendees.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {selectedCampaign.teamAttendees.map((member: any, index: number) => (
+                        <Card key={index} className="border border-gray-200">
+                          <CardContent className="p-4">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center space-x-3">
+                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                                  <Users className="h-5 w-5 text-blue-600" />
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-gray-900 dark:text-white">
+                                    {member.name}
+                                  </h4>
+                                  <p className="text-sm text-gray-500">
+                                    {member.role}
+                                  </p>
+                                </div>
+                              </div>
+                              <Badge 
+                                variant="secondary" 
+                                className={
+                                  member.role === 'Sales' ? 'bg-green-100 text-green-800' :
+                                  member.role === 'Marketing' ? 'bg-purple-100 text-purple-800' :
+                                  member.role === 'Engineering' ? 'bg-blue-100 text-blue-800' :
+                                  member.role === 'Leadership' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }
+                              >
+                                {member.role}
+                              </Badge>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                        No Team Members Added
+                      </h3>
+                      <p className="text-gray-500 mb-6">
+                        Add team members to track individual performance and contribution to this campaign.
+                      </p>
+                      <Button 
+                        onClick={() => setEditingCampaign(selectedCampaign)}
+                        variant="outline"
+                      >
+                        <Users className="w-4 h-4 mr-2" />
+                        Add Team Members
+                      </Button>
+                    </div>
+                  )}
+
+                  {/* Team Performance Preview */}
+                  {selectedCampaign.teamAttendees && selectedCampaign.teamAttendees.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <TrendingUp className="h-5 w-5" />
+                          Team Performance Tracking
+                        </CardTitle>
+                        <CardDescription>
+                          View detailed team member performance in Marketing Comparative Analytics
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border">
+                          <div>
+                            <h4 className="font-medium text-gray-900 dark:text-white">
+                              Advanced Team Analytics Available
+                            </h4>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">
+                              Track ROI, pipeline effectiveness, and individual contribution across campaigns
+                            </p>
+                          </div>
+                          <Button asChild>
+                            <a href="/marketing-comparative">
+                              <BarChart3 className="w-4 h-4 mr-2" />
+                              View Analytics
+                            </a>
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+                </TabsContent>
 
               </Tabs>
             ) : (
