@@ -2,6 +2,7 @@ import "dotenv/config";
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { registerMarketingGraphRoutes } from './routes-mktg';
+import { registerComparativeRoutes } from './routes-register-comparative';
 import { registerSalesRoutes } from './routes-sales';
 import { registerUserManagementRoutes } from './routes-users';
 import { setupVite, serveStatic, log } from "./vite";
@@ -62,6 +63,11 @@ app.use((req, res, next) => {
   console.log('🔗 Registering marketing graph routes');
   registerMarketingGraphRoutes(app);
   console.log('✅ Marketing graph routes registered successfully');
+
+  // Register comparative analytics routes
+  console.log('🔗 Registering marketing comparative analytics routes');
+  registerComparativeRoutes(app);
+  console.log('✅ Marketing comparative analytics routes registered successfully');
 
   // Register sales routes
   console.log('🔗 Registering sales routes');
