@@ -122,7 +122,7 @@ export default function Home() {
               </Link>
             )}
 
-            {canAccessPage('marketing') && (
+            {canAccessPage('marketing_comparative') && (
               <Link href="/marketing-comparative">
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                   <CardHeader>
