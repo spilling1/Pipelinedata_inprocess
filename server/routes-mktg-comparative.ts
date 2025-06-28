@@ -149,7 +149,7 @@ router.get('/campaign-types', async (req, res) => {
       const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
       
       // Calculate aggregate win rate using actual closed won/lost counts
-      const totalClosedWonCount = campaigns.reduce((sum, c) => sum + (c.metrics.closedWonCount || 0), 0);
+      const totalClosedWonCount = campaigns.reduce((sum, c) => sum + (c.metrics.closedWonValue > 0 ? 1 : 0), 0);
       const totalCustomersInType = campaigns.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
       
       // For Spring 20 Club, calculate actual win rate from our database query
@@ -173,7 +173,8 @@ router.get('/campaign-types', async (req, res) => {
           aggregateWinRate = totalWeight > 0 ? weightedWinRate / totalWeight : 0;
         }
       }
-      const avgROI = campaigns.reduce((sum, c) => sum + c.metrics.roi, 0) / totalCampaigns;
+      // Calculate ROI as Closed Won Value / Total Cost (not average of individual ROIs)
+      const aggregateROI = totalCost > 0 ? (totalClosedWonValue / totalCost) * 100 : 0;
       const avgTargetAccountWinRate = campaigns.reduce((sum, c) => sum + c.metrics.targetAccountWinRate, 0) / totalCampaigns;
       
       const costEfficiency = totalCost > 0 ? totalPipelineValue / totalCost : 0;
@@ -191,7 +192,7 @@ router.get('/campaign-types', async (req, res) => {
         totalClosedWonValue,
         totalAttendees,
         averageWinRate: aggregateWinRate,
-        averageROI: avgROI,
+        averageROI: aggregateROI,
         averageTargetAccountWinRate: avgTargetAccountWinRate,
         costEfficiency,
         attendeeEfficiency,
