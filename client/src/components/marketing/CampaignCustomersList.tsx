@@ -60,6 +60,8 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
   const queryClient = useQueryClient();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<CampaignCustomer | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [customerToEdit, setCustomerToEdit] = useState<CampaignCustomer | null>(null);
   const [nameFilter, setNameFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [pipelineFilter, setPipelineFilter] = useState("all");
@@ -194,6 +196,11 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
   const handleDeleteCustomer = (customer: CampaignCustomer) => {
     setCustomerToDelete(customer);
     setDeleteDialogOpen(true);
+  };
+
+  const handleEditCustomer = (customer: CampaignCustomer) => {
+    setCustomerToEdit(customer);
+    setEditDialogOpen(true);
   };
 
   const confirmDelete = () => {
@@ -497,6 +504,11 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
                               📊 Pipeline Entry: {format(new Date(currentSnapshot.enteredPipeline), 'MMM d, yyyy')}
                             </span>
                           )}
+                          {customer.attendees && (
+                            <span className="text-indigo-600 font-medium text-xs bg-indigo-50 px-2 py-1 rounded">
+                              👥 Attendees: {customer.attendees}
+                            </span>
+                          )}
                         </div>
                         {isCustomerExcludedFromAnalytics(customer).excluded && (
                           <div className="mt-2">
@@ -513,15 +525,25 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
                       </div>
                     </div>
                     
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="text-red-500 hover:text-red-700"
-                      onClick={() => handleDeleteCustomer(customer)}
-                      disabled={deleteMutation.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex gap-1">
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-blue-500 hover:text-blue-700"
+                        onClick={() => handleEditCustomer(customer)}
+                      >
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-red-500 hover:text-red-700"
+                        onClick={() => handleDeleteCustomer(customer)}
+                        disabled={deleteMutation.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -552,6 +574,22 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Edit Customer Dialog */}
+      {customerToEdit && (
+        <EditCampaignCustomerForm
+          customer={customerToEdit}
+          isOpen={editDialogOpen}
+          onClose={() => {
+            setEditDialogOpen(false);
+            setCustomerToEdit(null);
+          }}
+          onSuccess={() => {
+            setEditDialogOpen(false);
+            setCustomerToEdit(null);
+          }}
+        />
+      )}
     </div>
   );
 }

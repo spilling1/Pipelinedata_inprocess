@@ -20,10 +20,10 @@ interface CampaignCustomer {
   id: number;
   campaignId: number;
   opportunityId: number;
-  snapshotDate: string;
   stage: string;
-  year1Arr: number | null;
-  tcv: number | null;
+  year1Arr: number;
+  tcv: number;
+  snapshotDate: string;
   closeDate: string | null;
   attendees: number | null;
   createdAt: string;
