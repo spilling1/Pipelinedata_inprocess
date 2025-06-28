@@ -129,6 +129,7 @@ export const campaigns = pgTable("campaigns", {
   notes: text("notes"), // Optional additional information
   salesforceUrl: text("salesforce_url"), // Link to Salesforce campaign page
   status: text("status").default("active").notNull(), // active, paused, completed, cancelled
+  teamAttendees: jsonb("team_attendees"), // Array of team member objects with name, role, isLead
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

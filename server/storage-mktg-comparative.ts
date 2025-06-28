@@ -68,6 +68,23 @@ export interface CampaignComparison {
     targetAccountWinRate: number;
     attendeeEfficiency: number;
     campaignInfluenceScore: number;
+    // Campaign influence metrics
+    closeAcceleration: {
+      closedWithin30Days: number;
+      averageDaysToClose: number;
+      accelerationRate: number;
+    };
+    stageProgression: {
+      advancedStages: number;
+      stageAdvancementRate: number;
+      averageDaysToAdvance: number;
+    };
+    touchPointEffectiveness: {
+      averageTouchPoints: number;
+      touchPointCloseRate: number;
+      singleTouchCloseRate: number;
+      multiTouchCloseRate: number;
+    };
   };
 }
 
@@ -93,6 +110,50 @@ export interface StrategicEngagementMatrix {
     reasoning: string;
     expectedROI: number;
   }>;
+}
+
+export interface TeamAttendeeEffectiveness {
+  attendeePerformance: Array<{
+    attendeeName: string;
+    role: string;
+    campaignsAttended: number;
+    totalOpportunities: number;
+    totalPipelineValue: number;
+    closedWonDeals: number;
+    closedWonValue: number;
+    winRate: number;
+    averageDealSize: number;
+    pipelinePerCampaign: number;
+    closeRate: number;
+    campaignTypes: string[]; // Array of campaign types attended
+  }>;
+  roleAnalysis: Array<{
+    role: string;
+    attendeeCount: number;
+    totalCampaigns: number;
+    averagePipelinePerAttendee: number;
+    averageWinRate: number;
+    mostEffectiveAttendee: string;
+    roleEfficiencyScore: number;
+  }>;
+  insights: {
+    topPipelineCreator: {
+      name: string;
+      role: string;
+      pipelineValue: number;
+    };
+    topCloser: {
+      name: string;
+      role: string;
+      winRate: number;
+      closedValue: number;
+    };
+    mostVersatile: {
+      name: string;
+      role: string;
+      campaignTypesCount: number;
+    };
+  };
 }
 
 export class MarketingComparativeStorage {
@@ -412,7 +473,15 @@ export class MarketingComparativeStorage {
   }
 
   private async calculateCampaignMetrics(campaignId: number) {
-    // Get campaign customers and their current snapshots (optimized query)
+    // Get campaign start date for influence tracking
+    const campaignInfo = await db
+      .select({ startDate: campaigns.startDate })
+      .from(campaigns)
+      .where(eq(campaigns.id, campaignId))
+      .limit(1);
+    const campaignStartDate = campaignInfo[0]?.startDate;
+
+    // Get campaign customers with current and historical snapshots for influence tracking
     const campaignData = await db
       .select({
         opportunityId: campaignCustomers.opportunityId,
@@ -420,6 +489,8 @@ export class MarketingComparativeStorage {
         targetAccount: snapshots.targetAccount,
         currentYear1Value: snapshots.year1Value,
         currentStage: snapshots.stage,
+        snapshotDate: snapshots.snapshotDate,
+        closeDate: snapshots.closeDate,
       })
       .from(campaignCustomers)
       .innerJoin(
@@ -429,19 +500,20 @@ export class MarketingComparativeStorage {
       .where(
         and(
           eq(campaignCustomers.campaignId, campaignId),
-          // Use recent snapshot data for better performance
-          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
+          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '60 days'`)
         )
       )
       .orderBy(desc(snapshots.snapshotDate));
 
-    // Get cross-campaign influence data for this campaign's opportunities
-    const crossCampaignData = await db
+    // Get cross-campaign touch point data
+    const touchPointData = await db
       .select({
         opportunityId: campaignCustomers.opportunityId,
         campaignCount: sql`COUNT(DISTINCT ${campaignCustomers.campaignId})`.as('campaignCount'),
+        campaignNames: sql`STRING_AGG(DISTINCT ${campaigns.name}, ', ')`.as('campaignNames'),
       })
       .from(campaignCustomers)
+      .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
       .where(
         inArray(
           campaignCustomers.opportunityId,
@@ -449,6 +521,37 @@ export class MarketingComparativeStorage {
         )
       )
       .groupBy(campaignCustomers.opportunityId);
+
+    // Get stage progression data for influence analysis
+    const stageProgressionData = await db
+      .select({
+        opportunityId: snapshots.opportunityId,
+        stage: snapshots.stage,
+        snapshotDate: snapshots.snapshotDate,
+        preCampaignStage: sql`
+          LAG(${snapshots.stage}) OVER (
+            PARTITION BY ${snapshots.opportunityId} 
+            ORDER BY ${snapshots.snapshotDate}
+          )
+        `.as('preCampaignStage'),
+        preCampaignDate: sql`
+          LAG(${snapshots.snapshotDate}) OVER (
+            PARTITION BY ${snapshots.opportunityId} 
+            ORDER BY ${snapshots.snapshotDate}
+          )
+        `.as('preCampaignDate'),
+      })
+      .from(snapshots)
+      .where(
+        and(
+          inArray(
+            snapshots.opportunityId,
+            campaignData.map(row => row.opportunityId)
+          ),
+          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '90 days'`)
+        )
+      )
+      .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
 
     const totalCustomers = campaignData.length;
     const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
@@ -487,8 +590,8 @@ export class MarketingComparativeStorage {
     // Multi-touch attribution calculations
     const uniqueOpportunities = new Set(campaignData.map(row => row.opportunityId)).size;
     const sharedOpportunities = campaignData.filter(row => {
-      const crossCampaignRecord = crossCampaignData.find(cc => cc.opportunityId === row.opportunityId);
-      return crossCampaignRecord && Number(crossCampaignRecord.campaignCount) > 1;
+      const touchPoint = touchPointData.find(tp => tp.opportunityId === row.opportunityId);
+      return touchPoint && Number(touchPoint.campaignCount) > 1;
     }).length;
     
     const influenceRate = totalCustomers > 0 ? (sharedOpportunities / totalCustomers) * 100 : 0;
@@ -496,6 +599,62 @@ export class MarketingComparativeStorage {
     // Campaign influence score: weighs unique opportunities higher than shared ones
     const campaignInfluenceScore = (uniqueOpportunities - sharedOpportunities) * 1.0 + 
                                    (sharedOpportunities * 0.5); // Shared opportunities get 50% weight
+
+    // Close Date Acceleration Analysis (within 30 days of campaign)
+    const closedWithin30Days = closedWonCustomers.filter(row => {
+      if (!row.closeDate || !campaignStartDate) return false;
+      const daysDiff = Math.abs(new Date(row.closeDate).getTime() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24);
+      return daysDiff <= 30;
+    }).length;
+
+    const closedWonWithDates = closedWonCustomers.filter(row => row.closeDate && campaignStartDate);
+    const averageDaysToClose = closedWonWithDates.length > 0 ? 
+      closedWonWithDates.reduce((sum, row) => {
+        const daysDiff = Math.abs(new Date(row.closeDate!).getTime() - new Date(campaignStartDate!).getTime()) / (1000 * 60 * 60 * 24);
+        return sum + daysDiff;
+      }, 0) / closedWonWithDates.length : 0;
+
+    const accelerationRate = closedWonCustomers.length > 0 ? (closedWithin30Days / closedWonCustomers.length) * 100 : 0;
+
+    // Stage Progression Analysis 
+    const stageAdvancedOpportunities = stageProgressionData.filter(row => {
+      if (!row.preCampaignStage || !campaignStartDate) return false;
+      const progressionDate = new Date(row.snapshotDate);
+      const campaignDate = new Date(campaignStartDate);
+      const daysSinceCampaign = (progressionDate.getTime() - campaignDate.getTime()) / (1000 * 60 * 60 * 24);
+      
+      // Check if stage changed within 30 days of campaign and progressed forward
+      return daysSinceCampaign <= 30 && daysSinceCampaign >= 0 && 
+             row.stage !== row.preCampaignStage && 
+             !row.stage?.toLowerCase().includes('closed lost');
+    });
+
+    const advancedStages = stageAdvancedOpportunities.length;
+    const stageAdvancementRate = totalCustomers > 0 ? (advancedStages / totalCustomers) * 100 : 0;
+    const averageDaysToAdvance = stageAdvancedOpportunities.length > 0 ?
+      stageAdvancedOpportunities.reduce((sum, row) => {
+        const daysDiff = Math.abs(new Date(row.snapshotDate).getTime() - new Date(campaignStartDate!).getTime()) / (1000 * 60 * 60 * 24);
+        return sum + daysDiff;
+      }, 0) / stageAdvancedOpportunities.length : 0;
+
+    // Touch Point Effectiveness Analysis
+    const averageTouchPoints = touchPointData.length > 0 ? 
+      touchPointData.reduce((sum, tp) => sum + Number(tp.campaignCount), 0) / touchPointData.length : 0;
+
+    const singleTouchOpportunities = touchPointData.filter(tp => Number(tp.campaignCount) === 1);
+    const multiTouchOpportunities = touchPointData.filter(tp => Number(tp.campaignCount) > 1);
+
+    const singleTouchClosed = singleTouchOpportunities.filter(st => {
+      return closedWonCustomers.some(closed => closed.opportunityId === st.opportunityId);
+    }).length;
+
+    const multiTouchClosed = multiTouchOpportunities.filter(mt => {
+      return closedWonCustomers.some(closed => closed.opportunityId === mt.opportunityId);
+    }).length;
+
+    const singleTouchCloseRate = singleTouchOpportunities.length > 0 ? (singleTouchClosed / singleTouchOpportunities.length) * 100 : 0;
+    const multiTouchCloseRate = multiTouchOpportunities.length > 0 ? (multiTouchClosed / multiTouchOpportunities.length) * 100 : 0;
+    const touchPointCloseRate = touchPointData.length > 0 ? ((singleTouchClosed + multiTouchClosed) / touchPointData.length) * 100 : 0;
 
     const cac = closedWonCustomers.length > 0 ? campaignCost / closedWonCustomers.length : 0;
     const roi = campaignCost > 0 ? (closedWonValue / campaignCost) * 100 : 0;
@@ -518,7 +677,23 @@ export class MarketingComparativeStorage {
       pipelineEfficiency,
       targetAccountWinRate,
       attendeeEfficiency,
-      campaignInfluenceScore
+      campaignInfluenceScore,
+      closeAcceleration: {
+        closedWithin30Days,
+        averageDaysToClose,
+        accelerationRate
+      },
+      stageProgression: {
+        advancedStages,
+        stageAdvancementRate,
+        averageDaysToAdvance
+      },
+      touchPointEffectiveness: {
+        averageTouchPoints,
+        touchPointCloseRate,
+        singleTouchCloseRate,
+        multiTouchCloseRate
+      }
     };
   }
 
