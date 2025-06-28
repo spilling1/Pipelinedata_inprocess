@@ -122,25 +122,53 @@
   - [ ] `useCampaignComparisonData.ts`
   - [ ] `useCampaignTypeData.ts`
   - [ ] `useCustomerAttributionData.ts`
+  - [ ] `useTargetAccountAnalytics.ts`
+  - [ ] `useAttendeeEffectivenessData.ts`
+  - [ ] `useStrategicEngagementMatrix.ts`
   - [ ] Error handling and loading states
 
 ---
 
-## Phase 4: Customer Attribution (Week 5)
+## Phase 4: Target Account & Attendee Analytics (Week 5)
 
-### Customer Multi-Touch Analysis
-- [ ] **4.1** Create `CustomerAttributionTable.tsx`
-  - [ ] Customer name, Total CAC, Campaign touches columns
-  - [ ] Stage progression tracking
-  - [ ] Attribution weight calculations
-  - [ ] Customer lifetime value display
+### Target Account Implementation
+- [ ] **4.1** Implement target account filtering across all views
+  - [ ] Add target account toggles to campaign comparison tables
+  - [ ] Create target vs non-target performance metrics
+  - [ ] Implement strategic impact scoring algorithm
+  - [ ] Add target account coverage calculations
 
-### Attribution Logic Implementation
-- [ ] **4.2** Implement attribution calculations
-  - [ ] Simple sum-based CAC attribution
-  - [ ] Campaign contribution weighting
-  - [ ] Customer journey mapping
-  - [ ] Multi-touch timeline visualization
+### Attendee Analytics Implementation
+- [ ] **4.2** Build attendee effectiveness analysis
+  - [ ] Calculate attendee-to-pipeline conversion rates
+  - [ ] Implement engagement quality scoring
+  - [ ] Create attendee segmentation analysis (1-2, 3-5, 6+ ranges)
+  - [ ] Build optimal attendance range identification
+
+### Strategic Engagement Matrix
+- [ ] **4.3** Create combined target account and attendee analysis
+  - [ ] Build interactive matrix visualization
+  - [ ] Implement strategic campaign sizing recommendations
+  - [ ] Create optimal investment strategy guidance
+  - [ ] Add heat map for engagement effectiveness
+
+---
+
+## Phase 5: Customer Attribution Enhancement (Week 6)
+
+### Enhanced Customer Multi-Touch Analysis
+- [ ] **5.1** Upgrade `CustomerAttributionTable.tsx` with new dimensions
+  - [ ] Add target account flag column
+  - [ ] Include total attendees across campaigns
+  - [ ] Calculate engagement intensity metrics
+  - [ ] Implement strategic customer value weighting
+
+### Advanced Attribution Logic
+- [ ] **5.2** Implement enhanced attribution calculations
+  - [ ] Attendee-weighted attribution modeling
+  - [ ] Target account priority weighting
+  - [ ] Strategic customer value calculations
+  - [ ] Multi-touch timeline with engagement levels
 
 ### Customer Detail Views
 - [ ] **4.3** Create customer drill-down functionality
@@ -223,6 +251,9 @@
 - [ ] **T.13** Export functionality completes under 5 seconds
 - [ ] **T.14** No memory leaks in chart components
 - [ ] **T.15** Efficient re-rendering on filter changes
+- [ ] **T.16** Target account analysis queries execute under 1.5 seconds
+- [ ] **T.17** Attendee segmentation analysis handles 1000+ campaign records
+- [ ] **T.18** Strategic matrix visualization renders smoothly with full dataset
 
 ---
 
@@ -249,6 +280,9 @@
 - [ ] **S.2** Campaign type analysis shows clear performance differences
 - [ ] **S.3** Customer attribution identifies multi-touch customers
 - [ ] **S.4** Export generates usable reports for stakeholders
+- [ ] **S.5** Target account filtering works across all comparison views
+- [ ] **S.6** Attendee effectiveness analysis identifies optimal event sizing
+- [ ] **S.7** Strategic engagement matrix provides actionable insights
 
 ### Performance Success  
 - [ ] **S.5** All comparison views load within 3 seconds
@@ -261,6 +295,9 @@
 - [ ] **S.10** Campaign type recommendations based on data
 - [ ] **S.11** Customer journey insights for marketing strategy
 - [ ] **S.12** Data-driven campaign planning capabilities
+- [ ] **S.13** Target account performance analysis improves strategic focus
+- [ ] **S.14** Optimal attendee counts identified for event planning
+- [ ] **S.15** Strategic vs tactical campaign effectiveness clearly differentiated
 
 ---
 
