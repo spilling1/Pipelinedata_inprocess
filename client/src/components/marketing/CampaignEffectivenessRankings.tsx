@@ -15,16 +15,37 @@ interface CampaignComparisonData {
   status: string;
   metrics: {
     totalCustomers: number;
-    totalTargetCustomers: number;
-    targetAccountPercentage: number;
-    totalPipelineValue: number;
-    totalClosedWonValue: number;
+    uniqueOpportunities: number;
+    sharedOpportunities: number;
+    influenceRate: number;
+    targetAccountCustomers: number;
     totalAttendees: number;
+    averageAttendees: number;
+    pipelineValue: number;
+    closedWonValue: number;
     winRate: number;
+    cac: number;
     roi: number;
+    pipelineEfficiency: number;
     targetAccountWinRate: number;
-    costEfficiency: number;
     attendeeEfficiency: number;
+    campaignInfluenceScore: number;
+    closeAcceleration: {
+      closedWithin30Days: number;
+      averageDaysToClose: number;
+      accelerationRate: number;
+    };
+    stageProgression: {
+      advancedStages: number;
+      stageAdvancementRate: number;
+      averageDaysToAdvance: number;
+    };
+    touchPointEffectiveness: {
+      averageTouchPoints: number;
+      touchPointCloseRate: number;
+      singleTouchCloseRate: number;
+      multiTouchCloseRate: number;
+    };
   };
 }
 
@@ -73,7 +94,7 @@ const CampaignEffectivenessRankings: React.FC = () => {
 
   // Sort campaigns by pipeline value (highest first)
   const sortedByPipeline = [...(campaignData || [])].sort((a, b) => 
-    (b.metrics?.totalPipelineValue || 0) - (a.metrics?.totalPipelineValue || 0)
+    (b.metrics?.pipelineValue || 0) - (a.metrics?.pipelineValue || 0)
   );
 
   // Sort campaigns by win rate (highest first)
@@ -124,7 +145,7 @@ const CampaignEffectivenessRankings: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Pipeline</p>
                 <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(campaignData?.reduce((sum, c) => sum + (c.metrics?.totalPipelineValue || 0), 0) || 0)}
+                  {formatCurrency(campaignData?.reduce((sum, c) => sum + (c.metrics?.pipelineValue || 0), 0) || 0)}
                 </p>
               </div>
               <TrendingUp className="h-8 w-8 text-green-600" />
@@ -138,7 +159,7 @@ const CampaignEffectivenessRankings: React.FC = () => {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Closed Won</p>
                 <p className="text-2xl font-bold text-purple-600">
-                  {formatCurrency(campaignData?.reduce((sum, c) => sum + (c.metrics?.totalClosedWonValue || 0), 0) || 0)}
+                  {formatCurrency(campaignData?.reduce((sum, c) => sum + (c.metrics?.closedWonValue || 0), 0) || 0)}
                 </p>
               </div>
               <Trophy className="h-8 w-8 text-purple-600" />
@@ -204,13 +225,13 @@ const CampaignEffectivenessRankings: React.FC = () => {
                     <div>
                       <p className="text-gray-600">Pipeline Value</p>
                       <p className="font-semibold">
-                        {formatCurrency(campaign.metrics?.totalPipelineValue || 0)}
+                        {formatCurrency(campaign.metrics?.pipelineValue || 0)}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-600">Closed Won</p>
                       <p className="font-semibold">
-                        {formatCurrency(campaign.metrics?.totalClosedWonValue || 0)}
+                        {formatCurrency(campaign.metrics?.closedWonValue || 0)}
                       </p>
                     </div>
                     <div>
@@ -218,9 +239,9 @@ const CampaignEffectivenessRankings: React.FC = () => {
                       <p className="font-semibold">{formatPercentage(campaign.metrics?.winRate || 0)}</p>
                     </div>
                     <div>
-                      <p className="text-gray-600">Cost Efficiency</p>
+                      <p className="text-gray-600">Pipeline Efficiency</p>
                       <p className="font-semibold">
-                        {formatCurrency(campaign.metrics?.costEfficiency || 0)}
+                        {formatCurrency(campaign.metrics?.pipelineEfficiency || 0)}
                       </p>
                     </div>
                   </div>
@@ -276,10 +297,10 @@ const CampaignEffectivenessRankings: React.FC = () => {
                       </span>
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(campaign.metrics?.totalPipelineValue || 0)}
+                      {formatCurrency(campaign.metrics?.pipelineValue || 0)}
                     </TableCell>
                     <TableCell className="text-right">
-                      {formatCurrency(campaign.metrics?.totalClosedWonValue || 0)}
+                      {formatCurrency(campaign.metrics?.closedWonValue || 0)}
                     </TableCell>
                     <TableCell className="text-right">
                       {formatPercentage(campaign.metrics?.winRate || 0)}
@@ -288,7 +309,7 @@ const CampaignEffectivenessRankings: React.FC = () => {
                       <div>
                         <p>{campaign.metrics?.totalCustomers || 0}</p>
                         <p className="text-xs text-gray-500">
-                          {campaign.metrics?.totalTargetCustomers || 0} target
+                          {campaign.metrics?.targetAccountCustomers || 0} target
                         </p>
                       </div>
                     </TableCell>
