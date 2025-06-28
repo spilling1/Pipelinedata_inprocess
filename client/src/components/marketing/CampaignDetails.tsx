@@ -27,7 +27,8 @@ import {
   Target, 
   Plus,
   Trash2,
-  Upload
+  Upload,
+  ExternalLink
 } from "lucide-react";
 import CampaignMetrics from './CampaignMetrics';
 import { format } from "date-fns";
@@ -44,6 +45,7 @@ interface Campaign {
   influence?: string;
   cost?: number;
   notes?: string;
+  salesforceUrl?: string;
 }
 
 interface CampaignMetrics {
@@ -181,6 +183,20 @@ export default function CampaignDetails({ campaign, onClose }: CampaignDetailsPr
                 <div>
                   <p className="text-sm font-medium mb-1">Notes:</p>
                   <p className="text-sm text-muted-foreground">{campaign.notes}</p>
+                </div>
+              )}
+
+              {campaign.salesforceUrl && (
+                <div className="flex items-center text-sm">
+                  <ExternalLink className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <a 
+                    href={campaign.salesforceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    View in Salesforce
+                  </a>
                 </div>
               )}
             </CardContent>
