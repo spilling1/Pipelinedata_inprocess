@@ -360,6 +360,7 @@ export default function UserManagement() {
                         <TableHead>Name</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Role</TableHead>
+                        <TableHead>Last Login</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
                       </TableRow>
@@ -379,6 +380,18 @@ export default function UserManagement() {
                             <Badge variant="outline" className="text-xs">
                               {user.roleInfo?.displayName || user.role}
                             </Badge>
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-600">
+                            {user.lastLogin 
+                              ? new Date(user.lastLogin).toLocaleDateString('en-US', {
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                  hour: '2-digit',
+                                  minute: '2-digit'
+                                })
+                              : 'Never'
+                            }
                           </TableCell>
                           <TableCell>
                             <Badge variant={user.isActive ? "default" : "destructive"} className="text-xs">
