@@ -723,17 +723,24 @@ export class MarketingStorage {
 
 
     // Total Campaign Pipeline: All customers who entered pipeline AND have close dates after campaign start
-    // This includes both open and closed (won/lost) customers
+    // EXCLUDE Closed Lost customers - only include open pipeline and closed won
     const totalCampaignPipelineSnapshots = pipelineSnapshots.filter(s => {
       // Must have entered pipeline
       if (!s.enteredPipeline) return false;
       
-      // Must have close date after campaign start
-      if (!s.closeDate || !campaign.startDate) return false;
+      // EXCLUDE Closed Lost customers from pipeline totals
+      if (s.stage === 'Closed Lost') return false;
       
-      const closeDate = new Date(s.closeDate);
-      const campaignStartDate = new Date(campaign.startDate);
-      return closeDate > campaignStartDate;
+      // Must have close date after campaign start (for closed won) OR be open pipeline
+      if (s.stage === 'Closed Won') {
+        if (!s.closeDate || !campaign.startDate) return false;
+        const closeDate = new Date(s.closeDate);
+        const campaignStartDate = new Date(campaign.startDate);
+        return closeDate > campaignStartDate;
+      }
+      
+      // For open pipeline (not closed), include all customers who entered pipeline
+      return s.stage !== 'Closed Won' && s.stage !== 'Closed Lost';
     });
 
     const totalCampaignPipeline = totalCampaignPipelineSnapshots.reduce((sum, s) => sum + (s.year1Arr || 0), 0);
@@ -742,7 +749,7 @@ export class MarketingStorage {
     console.log('Total Campaign Pipeline Calculation:', {
       totalCustomers: totalCampaignPipelineSnapshots.length,
       totalValue: totalCampaignPipeline,
-      criteria: 'Entered Pipeline + Close Date After Campaign Start'
+      criteria: 'Entered Pipeline + EXCLUDE Closed Lost + (Closed Won after campaign start OR Open Pipeline)'
     });
 
     // Calculate Win Rate using standard formula: Closed Won / (Closed Won + Closed Lost)
