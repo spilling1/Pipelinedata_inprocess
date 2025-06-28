@@ -357,7 +357,7 @@ export default function DatabasePage() {
                     <h3 className="text-lg font-semibold mb-4 text-orange-700 dark:text-orange-400">Marketing</h3>
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       {tables?.filter((table: DatabaseTable) => 
-                        ['campaigns', 'campaign_customers', 'campaign_associations', 'influence_methods'].includes(table.table_name)
+                        ['campaigns', 'campaign_customers', 'campaign_types', 'influence_methods'].includes(table.table_name)
                       ).map((table: DatabaseTable) => (
                         <Card 
                           key={table.table_name}
@@ -418,13 +418,13 @@ export default function DatabasePage() {
 
                   {/* Other Tables (if any exist that don't fit the above categories) */}
                   {tables?.filter((table: DatabaseTable) => 
-                    !['opportunities', 'snapshots', 'uploaded_files', 'campaigns', 'campaign_customers', 'campaign_associations', 'influence_methods', 'users', 'sessions'].includes(table.table_name)
+                    !['opportunities', 'snapshots', 'uploaded_files', 'campaigns', 'campaign_customers', 'campaign_types', 'influence_methods', 'users', 'sessions'].includes(table.table_name)
                   ).length > 0 && (
                     <div>
                       <h3 className="text-lg font-semibold mb-4 text-gray-700 dark:text-gray-400">Other</h3>
                       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                         {tables?.filter((table: DatabaseTable) => 
-                          !['opportunities', 'snapshots', 'uploaded_files', 'campaigns', 'campaign_customers', 'campaign_associations', 'influence_methods', 'users', 'sessions'].includes(table.table_name)
+                          !['opportunities', 'snapshots', 'uploaded_files', 'campaigns', 'campaign_customers', 'campaign_types', 'influence_methods', 'users', 'sessions'].includes(table.table_name)
                         ).map((table: DatabaseTable) => (
                           <Card 
                             key={table.table_name}
