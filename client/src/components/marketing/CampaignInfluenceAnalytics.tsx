@@ -3,36 +3,28 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Progress } from '@/components/ui/progress';
-import { TrendingUp, Clock, Target, Users, Zap } from 'lucide-react';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { TrendingUp, DollarSign, Target, Users, Trophy, Zap } from 'lucide-react';
 
-interface CampaignInfluenceMetrics {
+interface CampaignComparisonData {
   campaignId: number;
   campaignName: string;
   campaignType: string;
+  cost: number;
   startDate: string;
+  status: string;
   metrics: {
     totalCustomers: number;
-    influenceRate: number;
-    sharedOpportunities: number;
-    uniqueOpportunities: number;
-    campaignInfluenceScore: number;
-    closeAcceleration: {
-      closedWithin30Days: number;
-      averageDaysToClose: number;
-      accelerationRate: number;
-    };
-    stageProgression: {
-      advancedStages: number;
-      stageAdvancementRate: number;
-      averageDaysToAdvance: number;
-    };
-    touchPointEffectiveness: {
-      averageTouchPoints: number;
-      touchPointCloseRate: number;
-      singleTouchCloseRate: number;
-      multiTouchCloseRate: number;
-    };
+    totalTargetCustomers: number;
+    targetAccountPercentage: number;
+    totalPipelineValue: number;
+    totalClosedWonValue: number;
+    totalAttendees: number;
+    winRate: number;
+    roi: number;
+    targetAccountWinRate: number;
+    costEfficiency: number;
+    attendeeEfficiency: number;
   };
 }
 

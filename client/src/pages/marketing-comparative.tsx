@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Users, Target, TrendingUp } from 'lucide-react';
 import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffectiveness';
-import CampaignInfluenceAnalytics from '@/components/marketing/CampaignInfluenceAnalytics';
+import CampaignEffectivenessRankings from '@/components/marketing/CampaignEffectivenessRankings';
 import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytics';
 import StrategicEngagementMatrix from '@/components/marketing/StrategicEngagementMatrix';
 
@@ -44,7 +44,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="campaign-influence" className="space-y-6">
-          <CampaignInfluenceAnalytics />
+          <CampaignEffectivenessRankings />
         </TabsContent>
 
         <TabsContent value="target-accounts" className="space-y-6">
