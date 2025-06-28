@@ -146,6 +146,7 @@ router.get('/campaign-types', async (req, res) => {
       const totalTargetCustomers = campaigns.reduce((sum, c) => sum + c.metrics.targetAccountCustomers, 0);
       const totalPipelineValue = campaigns.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
       const totalClosedWonValue = campaigns.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
+      const totalOpenOpportunities = campaigns.reduce((sum, c) => sum + (c.metrics.pipelineValue > 0 ? 1 : 0), 0);
       const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
       
       // Calculate aggregate win rate using actual closed won/lost counts
@@ -190,6 +191,7 @@ router.get('/campaign-types', async (req, res) => {
         targetAccountPercentage,
         totalPipelineValue,
         totalClosedWonValue,
+        totalOpenOpportunities,
         totalAttendees,
         averageWinRate: aggregateWinRate,
         averageROI: aggregateROI,

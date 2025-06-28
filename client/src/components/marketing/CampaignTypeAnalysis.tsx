@@ -41,6 +41,7 @@ interface CampaignTypeMetrics {
   totalCustomers: number;
   totalPipelineValue: number;
   totalClosedWonValue: number;
+  totalOpenOpportunities: number;
   averageROI: number;
   averageWinRate: number;
   averageCAC: number;
@@ -282,6 +283,7 @@ const CampaignTypeAnalysis: React.FC = () => {
                   <TableHead className="text-right">Total Cost</TableHead>
                   <TableHead className="text-right">Pipeline Value</TableHead>
                   <TableHead className="text-right">Closed Won</TableHead>
+                  <TableHead className="text-right">Open Opps</TableHead>
                   <TableHead className="text-right">ROI</TableHead>
                   <TableHead className="text-right">Win Rate</TableHead>
                   <TableHead className="text-right">CAC</TableHead>
@@ -309,6 +311,7 @@ const CampaignTypeAnalysis: React.FC = () => {
                     <TableCell className="text-right">{formatCurrency(typeMetrics.totalCost)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(typeMetrics.totalPipelineValue)}</TableCell>
                     <TableCell className="text-right">{formatCurrency(typeMetrics.totalClosedWonValue)}</TableCell>
+                    <TableCell className="text-right">{typeMetrics.totalOpenOpportunities || 0}</TableCell>
                     <TableCell className={`text-right font-bold ${getROIColor(typeMetrics.averageROI)}`}>
                       {formatPercentage(typeMetrics.averageROI)}
                     </TableCell>
