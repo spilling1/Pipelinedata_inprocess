@@ -107,6 +107,7 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
         snapshotDate: currentSnapshot.snapshotDate,
         closeDate: currentSnapshot.closeDate,
         enteredPipeline: currentSnapshot.enteredPipeline,
+        targetAccount: currentSnapshot.targetAccount,
         isOutdated: currentSnapshot.isOutdated,
         outdatedNote: currentSnapshot.outdatedNote
       };
@@ -119,6 +120,7 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
       snapshotDate: customer.snapshotDate,
       closeDate: customer.closeDate,
       enteredPipeline: null,
+      targetAccount: null,
       isOutdated: false,
       outdatedNote: undefined
     };
@@ -504,6 +506,15 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
                           {currentSnapshot?.enteredPipeline && (
                             <span className="text-blue-600 font-medium text-xs bg-blue-50 px-2 py-1 rounded">
                               📊 Pipeline Entry: {format(new Date(currentSnapshot.enteredPipeline), 'MMM d, yyyy')}
+                            </span>
+                          )}
+                          {currentSnapshot?.targetAccount !== null && (
+                            <span className={`font-medium text-xs px-2 py-1 rounded ${
+                              currentSnapshot.targetAccount === 1 
+                                ? 'text-emerald-600 bg-emerald-50' 
+                                : 'text-gray-600 bg-gray-50'
+                            }`}>
+                              🎯 Target Account: {currentSnapshot.targetAccount === 1 ? 'Yes' : 'No'}
                             </span>
                           )}
                           {customer.attendees && (
