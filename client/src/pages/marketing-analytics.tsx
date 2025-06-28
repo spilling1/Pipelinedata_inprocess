@@ -30,7 +30,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink, BarChart3 } from "lucide-react";
+import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink, BarChart3, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CampaignForm from "../components/marketing/CampaignForm";
 import CustomerToCampaignForm from "../components/marketing/CustomerToCampaignForm";
@@ -788,69 +788,55 @@ export default function MarketingAnalyticsPage() {
                   </div>
 
                   {/* Team Members List */}
-                  {selectedCampaign.teamAttendees && selectedCampaign.teamAttendees.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {selectedCampaign.teamAttendees.map((member: any, index: number) => (
-                        <Card key={index} className="border border-gray-200">
-                          <CardContent className="p-4">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center space-x-3">
-                                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                                  <Users className="h-5 w-5 text-blue-600" />
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-gray-900 dark:text-white">
-                                    {member.name}
-                                  </h4>
-                                  <p className="text-sm text-gray-500">
-                                    {member.role}
-                                  </p>
-                                </div>
+                  {selectedCampaign.teamAttendees && selectedCampaign.teamAttendees.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-md font-semibold text-gray-900 dark:text-white">Current Team Members</h4>
+                      <div className="space-y-2">
+                        {selectedCampaign.teamAttendees.map((member: any, index: number) => (
+                          <div key={index} className="flex items-center justify-between p-3 bg-white dark:bg-gray-800 border rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                                <Users className="h-4 w-4 text-blue-600" />
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge 
-                                  variant="secondary" 
-                                  className={
-                                    member.role === 'Sales' ? 'bg-green-100 text-green-800' :
-                                    member.role === 'Marketing' ? 'bg-purple-100 text-purple-800' :
-                                    member.role === 'Engineering' ? 'bg-blue-100 text-blue-800' :
-                                    member.role === 'Leadership' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-gray-100 text-gray-800'
-                                  }
-                                >
+                              <div>
+                                <div className="font-medium text-gray-900 dark:text-white">
+                                  {member.name}
+                                </div>
+                                <div className="text-sm text-gray-500">
                                   {member.role}
-                                </Badge>
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() => removeTeamMember(index)}
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  disabled={updateTeamMutation.isPending}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
+                                </div>
                               </div>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12">
-                      <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-                        No Team Members Added
-                      </h3>
-                      <p className="text-gray-500 mb-6">
-                        Add team members to track individual performance and contribution to this campaign.
-                      </p>
-                      <Button 
-                        onClick={() => setEditingCampaign(selectedCampaign)}
-                        variant="outline"
-                      >
-                        <Users className="w-4 h-4 mr-2" />
-                        Add Team Members
-                      </Button>
+                            <div className="flex items-center gap-2">
+                              <Badge 
+                                variant="secondary" 
+                                className={
+                                  member.role === 'Sales' ? 'bg-green-100 text-green-800' :
+                                  member.role === 'Marketing' ? 'bg-purple-100 text-purple-800' :
+                                  member.role === 'Engineering' ? 'bg-blue-100 text-blue-800' :
+                                  member.role === 'Leadership' ? 'bg-yellow-100 text-yellow-800' :
+                                  member.role === 'Customer Success' ? 'bg-teal-100 text-teal-800' :
+                                  member.role === 'Product' ? 'bg-orange-100 text-orange-800' :
+                                  member.role === 'Support' ? 'bg-pink-100 text-pink-800' :
+                                  'bg-gray-100 text-gray-800'
+                                }
+                              >
+                                {member.role}
+                              </Badge>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => removeTeamMember(index)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 p-1"
+                                disabled={updateTeamMutation.isPending}
+                                title="Remove team member"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
 
