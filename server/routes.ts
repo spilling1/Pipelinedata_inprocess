@@ -892,22 +892,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Process each row
           for (const row of parsedData as any[]) {
-            // Find or create opportunity by ID, not name
-            let opportunity = await storage.opportunitiesStorage.getOpportunityById(row.opportunityId);
-            if (!opportunity) {
-              console.log(`📝 Creating NEW opportunity: ${row.opportunityId} - ${row.opportunityName}`);
-            } else {
-              console.log(`📋 Found EXISTING opportunity: ${row.opportunityId} - ${opportunity.name}`);
-            }
-            if (!opportunity) {
-              opportunity = await storage.opportunitiesStorage.createOpportunity({
-                opportunityId: row.opportunityId,
-                name: row.opportunityName,
-                clientName: row.clientName,
-                owner: row.owner,
-                createdDate: row.createdDate
-              });
-            }
+            // Use smart opportunity matching with base ID logic and auto-upgrading
+            const opportunity = await storage.opportunitiesStorage.findOrCreateOpportunityWithSmartUpgrade({
+              opportunityId: row.opportunityId,
+              name: row.opportunityName,
+              clientName: row.clientName,
+              owner: row.owner,
+              createdDate: row.createdDate
+            });
 
             // Create snapshot with all fields
             await storage.snapshotsStorage.createSnapshot({
