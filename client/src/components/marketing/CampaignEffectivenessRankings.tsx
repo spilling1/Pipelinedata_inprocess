@@ -344,7 +344,7 @@ const CampaignEffectivenessRankings: React.FC = () => {
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-green-600">
-                      {formatCurrency(campaign.metrics?.totalPipelineValue || 0)}
+                      {formatCurrency(campaign.metrics?.pipelineValue || 0)}
                     </p>
                     <p className="text-xs text-gray-500">#{index + 1}</p>
                   </div>
