@@ -33,6 +33,7 @@ const campaignSchema = z.object({
   influence: z.string().optional(),
   cost: z.number().optional(),
   notes: z.string().optional(),
+  salesforceUrl: z.string().optional(),
   status: z.string().min(1, "Status is required"),
 });
 
@@ -46,6 +47,7 @@ interface Campaign {
   influence?: string;
   cost?: number;
   notes?: string;
+  salesforceUrl?: string;
   status?: string;
 }
 
@@ -84,6 +86,7 @@ export default function CampaignForm({ campaign, onClose, onSuccess }: CampaignF
       influence: campaign?.influence || "",
       cost: campaign?.cost || undefined,
       notes: campaign?.notes || "",
+      salesforceUrl: campaign?.salesforceUrl || "",
       status: campaign?.status || "active",
     },
   });
@@ -382,6 +385,19 @@ export default function CampaignForm({ campaign, onClose, onSuccess }: CampaignF
               placeholder="Additional campaign details..."
               rows={2}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="salesforceUrl">Salesforce Campaign URL (Optional)</Label>
+            <Input
+              id="salesforceUrl"
+              {...form.register("salesforceUrl")}
+              placeholder="https://higharc.my.salesforce.com/..."
+              type="url"
+            />
+            <p className="text-xs text-muted-foreground">
+              Link to the Salesforce campaign page for easy reference
+            </p>
           </div>
 
           <DialogFooter>

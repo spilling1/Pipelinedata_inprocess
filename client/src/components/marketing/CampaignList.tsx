@@ -24,6 +24,7 @@ interface Campaign {
   influence?: string;
   cost?: number;
   notes?: string;
+  salesforceUrl?: string;
   createdAt: string;
   updatedAt: string;
 }

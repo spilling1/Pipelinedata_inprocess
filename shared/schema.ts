@@ -124,6 +124,7 @@ export const campaigns = pgTable("campaigns", {
   influence: text("influence"), // Description of influence method
   cost: real("cost"), // Optional; used for CAC calculation
   notes: text("notes"), // Optional additional information
+  salesforceUrl: text("salesforce_url"), // Link to Salesforce campaign page
   status: text("status").default("active").notNull(), // active, paused, completed, cancelled
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
