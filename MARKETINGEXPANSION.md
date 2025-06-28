@@ -60,9 +60,45 @@ The system currently includes:
 - Budget allocation recommendations based on performance
 - Type-specific conversion funnel analysis
 
-### 3. Customer Multi-Touch Attribution
+### 3. Target Account Analytics
 
-**Purpose**: Customer-level view showing total marketing investment and outcomes
+**Purpose**: Specialized analysis for target accounts vs non-target accounts to measure campaign effectiveness on strategic prospects
+
+**Key Metrics**:
+- **Target Account Coverage**: Percentage of target accounts touched by campaigns
+- **Target vs Non-Target Win Rates**: Comparative success rates between target and regular accounts
+- **Target Account Pipeline Value**: Total ARR from target accounts across campaigns
+- **Target Account CAC**: Cost to acquire target accounts vs regular accounts
+- **Target Account Conversion Time**: Average sales cycle for target vs non-target accounts
+- **Strategic Impact Score**: Weighted score based on target account outcomes
+
+**Features**:
+- Target account filter overlay on all existing comparison views
+- Target account performance dashboard showing strategic vs tactical campaign effectiveness
+- Target account journey mapping across multiple campaigns
+- ROI analysis specifically for target account investments
+
+### 4. Attendee Analytics
+
+**Purpose**: Analyze campaign effectiveness based on attendee engagement levels and event participation
+
+**Key Metrics**:
+- **Attendee-to-Pipeline Conversion**: Pipeline value per attendee across campaigns
+- **Engagement Quality Score**: Pipeline value / Number of attendees (efficiency metric)
+- **Attendee Segmentation**: Performance breakdown by attendee count ranges (1-2, 3-5, 6+ attendees)
+- **Attendance Impact**: Correlation between attendee count and deal progression
+- **Event ROI by Attendance**: Campaign cost per attendee vs pipeline generated per attendee
+- **Optimal Attendance Range**: Attendee count that maximizes conversion rates
+
+**Features**:
+- Attendee count overlays on campaign comparison tables
+- Engagement quality charts showing attendee efficiency
+- Attendee segmentation analysis for optimal event sizing
+- Attendance-weighted campaign scoring
+
+### 5. Customer Multi-Touch Attribution
+
+**Purpose**: Customer-level view showing total marketing investment and outcomes with strategic account and engagement dimensions
 
 **Customer Metrics**:
 - **Total CAC**: Sum of all campaign costs where customer was touched
@@ -70,12 +106,35 @@ The system currently includes:
 - **Stage Progression**: Movement through pipeline stages across campaigns
 - **Attribution Weight**: Percentage contribution of each campaign to customer outcome
 - **Customer Lifetime Value**: Current ARR or total contract value
+- **Target Account Flag**: Identify which customers are strategic targets
+- **Total Attendees Across Campaigns**: Sum of attendees from all campaigns touching this customer
+- **Engagement Intensity**: Average attendees per campaign for this customer
+- **Strategic Customer Value**: Enhanced weighting for target account customers
+- **Attendee-Weighted Attribution**: Campaign contribution weighted by attendee engagement
 
 **Features**:
 - Customer journey mapping across multiple campaigns
 - Campaign effectiveness per customer segment
 - Multi-touch attribution modeling
 - High-value customer identification
+- Target account highlighting and strategic customer analysis
+- Engagement intensity tracking and optimization
+
+### 6. Strategic Engagement Analysis
+
+**Purpose**: Combined analysis of target accounts and attendee effectiveness for optimal campaign planning
+
+**Combined Metrics**:
+- **Strategic Engagement Matrix**: Target accounts vs attendee count effectiveness
+- **Optimal Investment Strategy**: Best attendee investment levels for target vs non-target accounts
+- **Strategic Campaign Sizing**: Recommended attendee counts for target account-focused campaigns
+- **Engagement ROI by Account Type**: Return on investment segmented by target account status and attendee levels
+
+**Features**:
+- Interactive matrix showing target account success by attendee engagement
+- Optimization recommendations for event sizing based on account type
+- Strategic vs tactical campaign effectiveness comparison
+- Resource allocation guidance for maximum target account impact
 
 ## Technical Implementation Plan
 

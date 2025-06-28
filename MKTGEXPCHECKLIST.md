@@ -9,6 +9,9 @@
   - [ ] `getCustomerMultiTouchData()`
   - [ ] `calculateCampaignROI(campaignId: number)`
   - [ ] `getCampaignEfficiencyMetrics()`
+  - [ ] `getTargetAccountAnalytics()`
+  - [ ] `getAttendeeEffectivenessData()`
+  - [ ] `getStrategicEngagementMatrix()`
 
 ### Database Query Optimization
 - [ ] **1.2** Create efficient SQL queries for cross-campaign analysis
@@ -23,6 +26,9 @@
   - [ ] `GET /api/marketing/analytics/campaign-types` 
   - [ ] `GET /api/marketing/analytics/customer-attribution`
   - [ ] `GET /api/marketing/analytics/efficiency`
+  - [ ] `GET /api/marketing/analytics/target-accounts`
+  - [ ] `GET /api/marketing/analytics/attendee-effectiveness`
+  - [ ] `GET /api/marketing/analytics/strategic-matrix`
 
 ### Type Definitions
 - [ ] **1.4** Extend TypeScript types in storage and shared files
@@ -31,6 +37,9 @@
   - [ ] `CustomerAttribution` interface
   - [ ] `EfficiencyMetrics` interface
   - [ ] `CampaignFilters` interface
+  - [ ] `TargetAccountAnalytics` interface
+  - [ ] `AttendeeEffectiveness` interface
+  - [ ] `StrategicEngagementMatrix` interface
 
 ---
 
@@ -63,7 +72,30 @@
   - [ ] Date range selector
   - [ ] Status filter (active, completed, etc.)
   - [ ] Cost range slider
+  - [ ] Target account filter toggle
+  - [ ] Attendee count range filter
   - [ ] Clear all filters functionality
+
+### Target Account Analytics
+- [ ] **2.5** Create `TargetAccountAnalytics.tsx`
+  - [ ] Target vs non-target performance comparison
+  - [ ] Target account coverage metrics
+  - [ ] Strategic impact score calculations
+  - [ ] Target account conversion time analysis
+
+### Attendee Effectiveness
+- [ ] **2.6** Create `AttendeeEffectivenessChart.tsx`
+  - [ ] Attendee-to-pipeline conversion visualization
+  - [ ] Engagement quality score by attendee count
+  - [ ] Optimal attendance range identification
+  - [ ] Event ROI by attendance level
+
+### Strategic Engagement Analysis
+- [ ] **2.7** Create `StrategicEngagementMatrix.tsx`
+  - [ ] Target account vs attendee effectiveness matrix
+  - [ ] Strategic campaign sizing recommendations
+  - [ ] Interactive heat map visualization
+  - [ ] Optimal investment strategy guidance
 
 ---
 
@@ -80,6 +112,9 @@
   - [ ] **Campaign Performance** sub-tab
   - [ ] **Type Analysis** sub-tab  
   - [ ] **Customer Attribution** sub-tab
+  - [ ] **Target Account Analytics** sub-tab
+  - [ ] **Attendee Effectiveness** sub-tab
+  - [ ] **Strategic Engagement** sub-tab
   - [ ] Consistent styling with existing UI patterns
 
 ### Data Integration Hooks
