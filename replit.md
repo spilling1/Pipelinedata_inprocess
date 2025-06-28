@@ -123,6 +123,12 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
+✓ Influence Methods Management Moved to Marketing Section (June 28, 2025)
+- Added "Settings" tab to Marketing Analytics page for influence methods management
+- Influence methods now managed directly within marketing workflow via campaign creation/editing
+- Simple integration using existing "Add New Method..." option in campaign forms
+- Consolidated marketing configuration within Marketing section instead of database management
+
 ✓ Target Account Binary Field Implementation Complete (June 28, 2025)
 - Added target_account integer column to snapshots database table for binary 1/0 values
 - Updated CSV parser to extract "Target Account" field from uploaded files with normalized header matching
