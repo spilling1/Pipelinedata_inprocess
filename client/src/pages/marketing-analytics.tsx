@@ -170,7 +170,7 @@ export default function MarketingAnalyticsPage() {
   const updateTeamMutation = useMutation({
     mutationFn: (data: { campaignId: number, teamAttendees: any[] }) => 
       fetch(`/api/marketing/campaigns/${data.campaignId}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ teamAttendees: data.teamAttendees }),
       }),
