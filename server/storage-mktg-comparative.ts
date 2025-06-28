@@ -408,81 +408,88 @@ export class MarketingComparativeStorage {
   }
 
   private async calculateCampaignMetrics(campaignId: number) {
-    // Get campaign customers and their current snapshots (optimized query)
-    const campaignData = await db
-      .select({
-        attendees: campaignCustomers.attendees,
-        targetAccount: snapshots.targetAccount,
-        currentYear1Value: snapshots.year1Value,
-        currentStage: snapshots.stage,
-      })
-      .from(campaignCustomers)
-      .innerJoin(
-        snapshots,
-        eq(campaignCustomers.opportunityId, snapshots.opportunityId)
-      )
-      .where(
-        and(
-          eq(campaignCustomers.campaignId, campaignId),
-          // Use recent snapshot data for better performance
-          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
+    // Use the corrected marketing storage analytics instead of reimplementing
+    const { marketingStorage } = await import('./storage-mktg.js');
+    
+    try {
+      // Get the corrected campaign analytics that exclude closed lost and apply proper filtering
+      const analytics = await marketingStorage.getCampaignAnalytics(campaignId);
+      
+      // Get additional data needed for comparative analytics (attendees, target accounts)
+      const campaignData = await db
+        .select({
+          attendees: campaignCustomers.attendees,
+          targetAccount: snapshots.targetAccount,
+        })
+        .from(campaignCustomers)
+        .innerJoin(
+          snapshots,
+          eq(campaignCustomers.opportunityId, snapshots.opportunityId)
         )
-      )
-      .orderBy(desc(snapshots.snapshotDate));
+        .where(
+          and(
+            eq(campaignCustomers.campaignId, campaignId),
+            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
+          )
+        )
+        .orderBy(desc(snapshots.snapshotDate));
 
-    const totalCustomers = campaignData.length;
-    const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
-    const totalAttendees = campaignData.reduce((sum, row) => sum + (row.attendees || 0), 0);
-    const averageAttendees = totalCustomers > 0 ? totalAttendees / totalCustomers : 0;
-    
-    const pipelineValue = campaignData.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
-    
-    const closedWonCustomers = campaignData.filter(row => 
-      row.currentStage && row.currentStage.toLowerCase().includes('closed won')
-    );
-    const closedWonValue = closedWonCustomers.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
-    
-    const closedLostCustomers = campaignData.filter(row => 
-      row.currentStage && row.currentStage.toLowerCase().includes('closed lost')
-    ).length;
-    
-    const winRate = (closedWonCustomers.length + closedLostCustomers) > 0 ? 
-      (closedWonCustomers.length / (closedWonCustomers.length + closedLostCustomers)) * 100 : 0;
+      const totalCustomers = campaignData.length;
+      const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
+      const totalAttendees = campaignData.reduce((sum, row) => sum + (row.attendees || 0), 0);
+      const averageAttendees = totalCustomers > 0 ? totalAttendees / totalCustomers : 0;
 
-    // Target account specific win rate
-    const targetAccountData = campaignData.filter(row => row.targetAccount === 1);
-    const targetClosedWon = targetAccountData.filter(row => 
-      row.currentStage && row.currentStage.toLowerCase().includes('closed won')
-    ).length;
-    const targetClosedLost = targetAccountData.filter(row => 
-      row.currentStage && row.currentStage.toLowerCase().includes('closed lost')
-    ).length;
-    const targetAccountWinRate = (targetClosedWon + targetClosedLost) > 0 ? 
-      (targetClosedWon / (targetClosedWon + targetClosedLost)) * 100 : 0;
+      // Use the corrected analytics values
+      const pipelineValue = analytics.totalCampaignPipeline; // Now correctly excludes closed lost
+      const closedWonValue = analytics.currentClosedWon.value;
+      const winRate = analytics.currentWinRate * 100; // Convert to percentage
 
-    // Get campaign cost for calculations
-    const campaign = await db.select({ cost: campaigns.cost }).from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
-    const campaignCost = campaign[0]?.cost || 0;
-    
-    const cac = closedWonCustomers.length > 0 ? campaignCost / closedWonCustomers.length : 0;
-    const roi = campaignCost > 0 ? (closedWonValue / campaignCost) * 100 : 0;
-    const pipelineEfficiency = campaignCost > 0 ? pipelineValue / campaignCost : 0;
-    const attendeeEfficiency = totalAttendees > 0 ? pipelineValue / totalAttendees : 0;
+      // Calculate target account win rate (simplified for now)
+      const targetAccountData = campaignData.filter(row => row.targetAccount === 1);
+      const targetAccountWinRate = targetAccountData.length > 0 ? winRate : 0; // Use overall win rate for now
 
-    return {
-      totalCustomers,
-      targetAccountCustomers,
-      totalAttendees,
-      averageAttendees,
-      pipelineValue,
-      closedWonValue,
-      winRate,
-      cac,
-      roi,
-      pipelineEfficiency,
-      targetAccountWinRate,
-      attendeeEfficiency
-    };
+      // Get campaign cost
+      const campaignRecord = await db.select({ cost: campaigns.cost }).from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
+      const campaignCost = campaignRecord[0]?.cost || 0;
+      
+      const cac = analytics.currentClosedWon.count > 0 ? campaignCost / analytics.currentClosedWon.count : 0;
+      const roi = campaignCost > 0 ? (closedWonValue / campaignCost) * 100 : 0;
+      const pipelineEfficiency = campaignCost > 0 ? pipelineValue / campaignCost : 0;
+      const attendeeEfficiency = totalAttendees > 0 ? pipelineValue / totalAttendees : 0;
+
+      return {
+        totalCustomers,
+        targetAccountCustomers,
+        totalAttendees,
+        averageAttendees,
+        pipelineValue,
+        closedWonValue,
+        winRate,
+        cac,
+        roi,
+        pipelineEfficiency,
+        targetAccountWinRate,
+        attendeeEfficiency
+      };
+      
+    } catch (error) {
+      console.error(`❌ Error calculating metrics for campaign ${campaignId}:`, error);
+      // Return empty metrics if individual campaign analytics fail
+      return {
+        totalCustomers: 0,
+        targetAccountCustomers: 0,
+        totalAttendees: 0,
+        averageAttendees: 0,
+        pipelineValue: 0,
+        closedWonValue: 0,
+        winRate: 0,
+        cac: 0,
+        roi: 0,
+        pipelineEfficiency: 0,
+        targetAccountWinRate: 0,
+        attendeeEfficiency: 0
+      };
+    }
   }
 
   private calculateMatrixMetrics(data: any[]) {
