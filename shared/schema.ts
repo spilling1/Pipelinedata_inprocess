@@ -104,6 +104,9 @@ export const snapshots = pgTable("snapshots", {
   lastModified: timestamp("last_modified"),
   enteredPipeline: timestamp("entered_pipeline"),
   homesBuilt: integer("homes_built"),
+  
+  // Target account flag (binary: 1 = Yes, 0 = No)
+  targetAccount: integer("target_account"),
 });
 
 export const uploadedFiles = pgTable("uploaded_files", {

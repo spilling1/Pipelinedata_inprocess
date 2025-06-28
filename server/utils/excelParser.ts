@@ -238,6 +238,11 @@ export async function parseExcelData(buffer: Buffer, filename: string) {
                        normalizedRow.number_of_homes ||
                        null;
 
+    const targetAccount = normalizedRow.target_account || 
+                          normalizedRow.target_account_flag ||
+                          normalizedRow.is_target_account ||
+                          null;
+
     // Parse various date formats
     const parseExcelDate = (value: any): Date | null => {
       if (!value) return null;
@@ -301,6 +306,7 @@ export async function parseExcelData(buffer: Buffer, filename: string) {
       lastModified: parseExcelDate(lastModified),
       enteredPipeline: parseExcelDate(enteredPipeline),
       homesBuilt: homesBuilt ? parseInt(homesBuilt) || null : null,
+      targetAccount: targetAccount ? parseInt(targetAccount) || null : null,
       snapshotDate
     });
   }

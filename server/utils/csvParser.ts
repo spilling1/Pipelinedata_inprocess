@@ -151,6 +151,11 @@ export async function parseCSVData(buffer: Buffer, filename: string) {
                         normalizedRow.close_probability ||
                         null;
 
+    const targetAccount = normalizedRow.target_account || 
+                          normalizedRow.target_account_flag ||
+                          normalizedRow.is_target_account ||
+                          null;
+
     // Parse date function for CSV
     const parseDate = (dateStr: any): Date | null => {
       if (!dateStr) return null;
@@ -187,6 +192,7 @@ export async function parseCSVData(buffer: Buffer, filename: string) {
       lastModified: parseDate(normalizedRow.last_modified || normalizedRow.modified_date),
       enteredPipeline: parseDate(enteredPipeline),
       homesBuilt: normalizedRow.homes_built ? parseInt(normalizedRow.homes_built) || null : null,
+      targetAccount: targetAccount ? parseInt(targetAccount) || null : null,
       snapshotDate
     });
   }
