@@ -24,15 +24,30 @@ interface TeamAttendeeEffectivenessData {
   attendeePerformance: TeamAttendeePerformance[];
   roleAnalysis: {
     role: string;
-    averagePipelineValue: number;
+    attendeeCount: number;
+    totalCampaigns: number;
+    averagePipelinePerAttendee: number;
     averageWinRate: number;
-    totalAttendees: number;
-    topPerformer: string;
+    mostEffectiveAttendee: string;
+    roleEfficiencyScore: number;
   }[];
   insights: {
-    topPipelineCreator: TeamAttendeePerformance;
-    topCloser: TeamAttendeePerformance;
-    mostVersatile: TeamAttendeePerformance;
+    topPipelineCreator: {
+      name: string;
+      role: string;
+      pipelineValue: number;
+    };
+    topCloser: {
+      name: string;
+      role: string;
+      winRate: number;
+      closedValue: number;
+    };
+    mostVersatile: {
+      name: string;
+      role: string;
+      campaignTypesCount: number;
+    };
   };
 }
 
@@ -79,7 +94,8 @@ const TeamAttendeeEffectiveness: React.FC = () => {
     );
   }
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined | null) => {
+    if (!value || isNaN(value)) return '$0';
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`;
     }
@@ -89,7 +105,8 @@ const TeamAttendeeEffectiveness: React.FC = () => {
     return `$${value.toLocaleString()}`;
   };
 
-  const formatPercentage = (value: number) => {
+  const formatPercentage = (value: number | undefined | null) => {
+    if (!value || isNaN(value)) return '0.0%';
     return `${Math.min(value, 100).toFixed(1)}%`;
   };
 
@@ -116,9 +133,9 @@ const TeamAttendeeEffectiveness: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Top Pipeline Creator</p>
-                  <p className="text-lg font-bold">{data.insights.topPipelineCreator.attendeeName}</p>
+                  <p className="text-lg font-bold">{data.insights.topPipelineCreator.name}</p>
                   <p className="text-sm text-gray-500">
-                    {formatCurrency(data.insights.topPipelineCreator.totalPipelineValue)}
+                    {formatCurrency(data.insights.topPipelineCreator.pipelineValue)}
                   </p>
                 </div>
                 <TrendingUp className="h-8 w-8 text-blue-600" />
@@ -131,9 +148,9 @@ const TeamAttendeeEffectiveness: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Top Closer</p>
-                  <p className="text-lg font-bold">{data.insights.topCloser.attendeeName}</p>
+                  <p className="text-lg font-bold">{data.insights.topCloser.name}</p>
                   <p className="text-sm text-gray-500">
-                    {formatPercentage(data.insights.topCloser.winRate)} win rate
+                    {formatCurrency(data.insights.topCloser.closedValue)} closed
                   </p>
                 </div>
                 <Target className="h-8 w-8 text-green-600" />
@@ -146,9 +163,9 @@ const TeamAttendeeEffectiveness: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-gray-600">Most Versatile</p>
-                  <p className="text-lg font-bold">{data.insights.mostVersatile.attendeeName}</p>
+                  <p className="text-lg font-bold">{data.insights.mostVersatile.name}</p>
                   <p className="text-sm text-gray-500">
-                    {data.insights.mostVersatile.campaignTypes.length} campaign types
+                    {data.insights.mostVersatile.campaignTypesCount} campaign types
                   </p>
                 </div>
                 <Users className="h-8 w-8 text-purple-600" />
@@ -157,6 +174,8 @@ const TeamAttendeeEffectiveness: React.FC = () => {
           </Card>
         </div>
       )}
+
+      {/* Individual Performance */}
 
       {/* Individual Performance */}
       <Card>
@@ -259,14 +278,14 @@ const TeamAttendeeEffectiveness: React.FC = () => {
                       {role.role}
                     </Badge>
                     <span className="text-sm text-gray-600">
-                      {role.totalAttendees} members
+                      {role.attendeeCount} members
                     </span>
                   </div>
                   <div className="space-y-2">
                     <div>
                       <p className="text-sm font-medium text-gray-600">Avg Pipeline</p>
                       <p className="text-lg font-semibold">
-                        {formatCurrency(role.averagePipelineValue)}
+                        {formatCurrency(role.averagePipelinePerAttendee)}
                       </p>
                     </div>
                     <div>
@@ -278,7 +297,13 @@ const TeamAttendeeEffectiveness: React.FC = () => {
                     <div>
                       <p className="text-sm font-medium text-gray-600">Top Performer</p>
                       <p className="text-sm font-semibold text-blue-600">
-                        {role.topPerformer}
+                        {role.mostEffectiveAttendee}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-gray-600">Efficiency Score</p>
+                      <p className="text-lg font-semibold">
+                        {formatCurrency(role.roleEfficiencyScore)}
                       </p>
                     </div>
                   </div>
