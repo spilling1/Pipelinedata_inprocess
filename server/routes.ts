@@ -635,6 +635,7 @@ async function parseExcelData(buffer: Buffer, filename: string) {
     const stageDuration = normalizedRow.stage_duration || normalizedRow.duration || null;
     const stageBefore = normalizedRow.stage_before || normalizedRow.previous_stage || null;
     const homesBuilt = normalizedRow.homes_built || normalizedRow.homes || null;
+    const targetAccount = normalizedRow.target_account || normalizedRow.target_account_flag || normalizedRow.is_target_account || null;
 
     processedData.push({
       opportunityId: normalizedRow.opportunity_id,
@@ -666,6 +667,7 @@ async function parseExcelData(buffer: Buffer, filename: string) {
       lastModified,
       enteredPipeline,
       homesBuilt: homesBuilt ? parseInt(homesBuilt) || null : null,
+      targetAccount: targetAccount ? parseInt(targetAccount) || null : null,
       snapshotDate
     });
   }
@@ -937,7 +939,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               createdDate: row.createdDate,
               lastModified: row.lastModified,
               enteredPipeline: row.enteredPipeline,
-              homesBuilt: row.homesBuilt
+              homesBuilt: row.homesBuilt,
+              targetAccount: row.targetAccount
             });
 
             processedCount++;
@@ -981,7 +984,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         owner, 
         minValue, 
         maxValue,
-        search 
+        search,
+        targetAccount 
       } = req.query;
 
       let opportunities = await storage.opportunitiesStorage.getAllOpportunities();
