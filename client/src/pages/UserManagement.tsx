@@ -54,6 +54,7 @@ const ROLE_OPTIONS = [
 const AVAILABLE_PERMISSIONS = [
   { key: 'pipeline', label: 'Pipeline Analytics' },
   { key: 'marketing', label: 'Marketing Analytics' },
+  { key: 'marketing_comparative', label: 'Marketing Comparative Analytics' },
   { key: 'sales', label: 'Sales Analytics' },
   { key: 'people_ops', label: 'People Ops Analytics' },
   { key: 'database', label: 'Database Management' },

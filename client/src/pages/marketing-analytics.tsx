@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink } from "lucide-react";
+import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink, BarChart3 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CampaignForm from "../components/marketing/CampaignForm";
 import CustomerToCampaignForm from "../components/marketing/CustomerToCampaignForm";
@@ -244,10 +244,18 @@ export default function MarketingAnalyticsPage() {
             Marketing Analytics
           </h1>
         </div>
-        <Button onClick={() => setShowCreateForm(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Create Campaign
-        </Button>
+        <div className="flex items-center gap-2">
+          <Link href="/marketing-comparative">
+            <Button variant="outline" size="sm">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Comparative Analytics
+            </Button>
+          </Link>
+          <Button onClick={() => setShowCreateForm(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Create Campaign
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-4 gap-6">

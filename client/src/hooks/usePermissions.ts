@@ -22,6 +22,7 @@ interface UserPermissions {
 export const PERMISSIONS = {
   pipeline: 'Pipeline Analytics',
   marketing: 'Marketing Analytics', 
+  marketing_comparative: 'Marketing Comparative Analytics',
   sales: 'Sales Analytics',
   people_ops: 'People Ops Analytics',
   database: 'Database Management',

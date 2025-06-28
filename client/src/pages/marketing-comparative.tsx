@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart3, Users, Target, TrendingUp, Trophy } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { BarChart3, Users, Target, TrendingUp, Trophy, ArrowLeft, Home } from 'lucide-react';
 import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffectiveness';
 import CampaignEffectivenessRankings from '@/components/marketing/CampaignEffectivenessRankings';
 import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytics';
@@ -11,6 +13,25 @@ import CampaignTypeAnalysis from '@/components/marketing/CampaignTypeAnalysis';
 const MarketingComparativeAnalytics: React.FC = () => {
   return (
     <div className="container mx-auto p-6 space-y-6">
+      {/* Navigation Breadcrumbs */}
+      <div className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Link href="/">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <Home className="h-4 w-4" />
+            Dashboard
+          </Button>
+        </Link>
+        <span>/</span>
+        <Link href="/marketing-analytics">
+          <Button variant="ghost" size="sm" className="gap-2">
+            <ArrowLeft className="h-4 w-4" />
+            Marketing Analytics
+          </Button>
+        </Link>
+        <span>/</span>
+        <span className="font-medium text-foreground">Comparative Analytics</span>
+      </div>
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Marketing Comparative Analytics</h1>
