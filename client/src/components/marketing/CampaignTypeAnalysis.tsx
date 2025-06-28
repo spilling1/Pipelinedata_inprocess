@@ -55,40 +55,7 @@ const CampaignTypeAnalysis: React.FC = () => {
     queryKey: ['/api/marketing/comparative/campaign-comparison'],
   });
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Campaign Type Analysis</CardTitle>
-            <CardDescription>Loading campaign type performance data...</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {[...Array(3)].map((_, i) => (
-              <Skeleton key={i} className="h-20 w-full" />
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-red-600">Error Loading Campaign Type Data</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600">
-            Unable to load campaign type analysis. Please try again later.
-          </p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  // Group campaigns by type and calculate metrics
+  // Group campaigns by type and calculate metrics - must be before early returns
   const campaignTypeMetrics: CampaignTypeMetrics[] = React.useMemo(() => {
     if (!campaignData) return [];
 
@@ -133,6 +100,39 @@ const CampaignTypeAnalysis: React.FC = () => {
       };
     }).sort((a, b) => b.averageROI - a.averageROI);
   }, [campaignData]);
+
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Campaign Type Analysis</CardTitle>
+            <CardDescription>Loading campaign type performance data...</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-20 w-full" />
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-red-600">Error Loading Campaign Type Data</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-gray-600">
+            Unable to load campaign type analysis. Please try again later.
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {
