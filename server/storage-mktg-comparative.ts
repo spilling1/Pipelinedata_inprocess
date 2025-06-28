@@ -343,6 +343,189 @@ export class MarketingComparativeStorage {
   }
 
   /**
+   * Get team attendee effectiveness analysis
+   */
+  async getTeamAttendeeEffectiveness(): Promise<TeamAttendeeEffectiveness> {
+    // Get campaigns with team attendees and their associated opportunities
+    const campaignTeamData = await db
+      .select({
+        campaignId: campaigns.id,
+        campaignName: campaigns.name,
+        campaignType: campaigns.type,
+        teamAttendees: campaigns.teamAttendees,
+        opportunityId: campaignCustomers.opportunityId,
+        currentYear1Value: snapshots.year1Value,
+        currentStage: snapshots.stage,
+        targetAccount: snapshots.targetAccount,
+      })
+      .from(campaigns)
+      .leftJoin(campaignCustomers, eq(campaigns.id, campaignCustomers.campaignId))
+      .leftJoin(
+        snapshots,
+        eq(campaignCustomers.opportunityId, snapshots.opportunityId)
+      )
+      .where(
+        and(
+          isNotNull(campaigns.teamAttendees),
+          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
+        )
+      )
+      .orderBy(desc(snapshots.snapshotDate));
+
+    // Process team attendee performance
+    const attendeeMap = new Map();
+    const roleMap = new Map();
+
+    campaignTeamData.forEach(row => {
+      if (!row.teamAttendees) return;
+      
+      const attendees = Array.isArray(row.teamAttendees) ? row.teamAttendees : [];
+      attendees.forEach((attendee: any) => {
+        const key = `${attendee.name}_${attendee.role}`;
+        
+        if (!attendeeMap.has(key)) {
+          attendeeMap.set(key, {
+            attendeeName: attendee.name,
+            role: attendee.role,
+            campaignsAttended: new Set(),
+            opportunities: new Set(),
+            totalPipelineValue: 0,
+            closedWonDeals: 0,
+            closedWonValue: 0,
+            campaignTypes: new Set(),
+          });
+        }
+
+        const attendeeData = attendeeMap.get(key);
+        attendeeData.campaignsAttended.add(row.campaignId);
+        attendeeData.campaignTypes.add(row.campaignType);
+        
+        if (row.opportunityId) {
+          attendeeData.opportunities.add(row.opportunityId);
+          attendeeData.totalPipelineValue += row.currentYear1Value || 0;
+          
+          if (row.currentStage?.toLowerCase().includes('closed won')) {
+            attendeeData.closedWonDeals++;
+            attendeeData.closedWonValue += row.currentYear1Value || 0;
+          }
+        }
+
+        // Role aggregation
+        if (!roleMap.has(attendee.role)) {
+          roleMap.set(attendee.role, {
+            attendees: new Set(),
+            campaigns: new Set(),
+            totalPipeline: 0,
+            totalClosedWon: 0,
+            totalOpportunities: 0,
+          });
+        }
+        
+        const roleData = roleMap.get(attendee.role);
+        roleData.attendees.add(attendee.name);
+        roleData.campaigns.add(row.campaignId);
+        roleData.totalPipeline += row.currentYear1Value || 0;
+        if (row.currentStage?.toLowerCase().includes('closed won')) {
+          roleData.totalClosedWon += row.currentYear1Value || 0;
+        }
+        if (row.opportunityId) {
+          roleData.totalOpportunities++;
+        }
+      });
+    });
+
+    // Calculate attendee performance metrics
+    const attendeePerformance = Array.from(attendeeMap.values()).map(attendee => {
+      const totalOpportunities = attendee.opportunities.size;
+      const winRate = totalOpportunities > 0 ? (attendee.closedWonDeals / totalOpportunities) * 100 : 0;
+      const averageDealSize = totalOpportunities > 0 ? attendee.totalPipelineValue / totalOpportunities : 0;
+      const pipelinePerCampaign = attendee.campaignsAttended.size > 0 ? 
+        attendee.totalPipelineValue / attendee.campaignsAttended.size : 0;
+      const closeRate = attendee.campaignsAttended.size > 0 ? 
+        (attendee.closedWonDeals / attendee.campaignsAttended.size) * 100 : 0;
+
+      return {
+        attendeeName: attendee.attendeeName,
+        role: attendee.role,
+        campaignsAttended: attendee.campaignsAttended.size,
+        totalOpportunities,
+        totalPipelineValue: attendee.totalPipelineValue,
+        closedWonDeals: attendee.closedWonDeals,
+        closedWonValue: attendee.closedWonValue,
+        winRate,
+        averageDealSize,
+        pipelinePerCampaign,
+        closeRate,
+        campaignTypes: Array.from(attendee.campaignTypes),
+      };
+    });
+
+    // Calculate role analysis
+    const roleAnalysis = Array.from(roleMap.entries()).map(([role, data]) => {
+      const attendeeCount = data.attendees.size;
+      const averagePipelinePerAttendee = attendeeCount > 0 ? data.totalPipeline / attendeeCount : 0;
+      const averageWinRate = data.totalOpportunities > 0 ? (data.totalClosedWon / data.totalPipeline) * 100 : 0;
+      
+      const roleAttendees = attendeePerformance.filter(a => a.role === role);
+      const mostEffectiveAttendee = roleAttendees.reduce((best, current) => 
+        current.totalPipelineValue > best.totalPipelineValue ? current : best, 
+        roleAttendees[0] || { attendeeName: 'None' }
+      );
+
+      const roleEfficiencyScore = averagePipelinePerAttendee * (averageWinRate / 100);
+
+      return {
+        role,
+        attendeeCount,
+        totalCampaigns: data.campaigns.size,
+        averagePipelinePerAttendee,
+        averageWinRate,
+        mostEffectiveAttendee: mostEffectiveAttendee.attendeeName,
+        roleEfficiencyScore,
+      };
+    });
+
+    // Generate insights
+    const topPipelineCreator = attendeePerformance.reduce((best, current) => 
+      current.totalPipelineValue > best.totalPipelineValue ? current : best,
+      attendeePerformance[0] || { attendeeName: 'None', role: 'None', totalPipelineValue: 0 }
+    );
+
+    const topCloser = attendeePerformance.reduce((best, current) => 
+      current.winRate > best.winRate ? current : best,
+      attendeePerformance[0] || { attendeeName: 'None', role: 'None', winRate: 0, closedWonValue: 0 }
+    );
+
+    const mostVersatile = attendeePerformance.reduce((best, current) => 
+      current.campaignTypes.length > best.campaignTypes.length ? current : best,
+      attendeePerformance[0] || { attendeeName: 'None', role: 'None', campaignTypes: [] }
+    );
+
+    return {
+      attendeePerformance: attendeePerformance.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue),
+      roleAnalysis: roleAnalysis.sort((a, b) => b.roleEfficiencyScore - a.roleEfficiencyScore),
+      insights: {
+        topPipelineCreator: {
+          name: topPipelineCreator.attendeeName,
+          role: topPipelineCreator.role,
+          pipelineValue: topPipelineCreator.totalPipelineValue,
+        },
+        topCloser: {
+          name: topCloser.attendeeName,
+          role: topCloser.role,
+          winRate: topCloser.winRate,
+          closedValue: topCloser.closedWonValue,
+        },
+        mostVersatile: {
+          name: mostVersatile.attendeeName,
+          role: mostVersatile.role,
+          campaignTypesCount: mostVersatile.campaignTypes.length,
+        },
+      },
+    };
+  }
+
+  /**
    * Get strategic engagement matrix combining target accounts and attendee effectiveness
    */
   async getStrategicEngagementMatrix(): Promise<StrategicEngagementMatrix> {

@@ -17,6 +17,7 @@ export function registerComparativeRoutes(app: Express) {
     console.log('   GET /api/marketing/comparative/target-accounts');
     console.log('   GET /api/marketing/comparative/attendee-effectiveness');
     console.log('   GET /api/marketing/comparative/campaign-comparison');
+    console.log('   GET /api/marketing/comparative/team-attendee-effectiveness');
     console.log('   GET /api/marketing/comparative/strategic-matrix');
     console.log('   GET /api/marketing/comparative/campaign-types');
     console.log('   GET /api/marketing/comparative/dashboard-summary');
