@@ -8,6 +8,7 @@ export interface FilterState {
   search: string;
   valueType: string;
   clientName: string;
+  targetAccount?: string;
 }
 
 export interface OpportunityData {
