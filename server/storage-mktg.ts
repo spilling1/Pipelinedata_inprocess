@@ -238,20 +238,82 @@ export class MarketingStorage {
       );
   }
 
-  async updateCampaignCustomer(customerId: number, updates: { attendees?: number | null }): Promise<CampaignCustomer> {
+  async updateCampaignCustomer(customerId: number, updates: { attendees?: number | null; snapshotDate?: string }): Promise<CampaignCustomer> {
     console.log('📝 Updating campaign customer:', customerId, updates);
     
-    const [updatedCustomer] = await db.update(campaignCustomers)
-      .set(updates)
-      .where(eq(campaignCustomers.id, customerId))
-      .returning();
-    
-    if (!updatedCustomer) {
-      throw new Error('Campaign customer not found');
+    // If snapshot date is being updated, we need to fetch new snapshot data
+    if (updates.snapshotDate) {
+      const existingCustomer = await db.select()
+        .from(campaignCustomers)
+        .where(eq(campaignCustomers.id, customerId))
+        .limit(1);
+        
+      if (existingCustomer.length === 0) {
+        throw new Error('Campaign customer not found');
+      }
+      
+      const targetDate = new Date(updates.snapshotDate);
+      
+      // Get snapshot data from the specified date or the closest date after it
+      const snapshot = await db.select()
+        .from(snapshots)
+        .where(
+          and(
+            eq(snapshots.opportunityId, existingCustomer[0].opportunityId),
+            gte(snapshots.snapshotDate, targetDate)
+          )
+        )
+        .orderBy(asc(snapshots.snapshotDate))
+        .limit(1);
+
+      let snapshotData;
+      if (snapshot.length === 0) {
+        // Try to find closest before target date
+        const fallbackSnapshot = await db.select()
+          .from(snapshots)
+          .where(eq(snapshots.opportunityId, existingCustomer[0].opportunityId))
+          .orderBy(desc(snapshots.snapshotDate))
+          .limit(1);
+
+        if (fallbackSnapshot.length === 0) {
+          throw new Error('No snapshot data available for this opportunity');
+        }
+        snapshotData = fallbackSnapshot[0];
+      } else {
+        snapshotData = snapshot[0];
+      }
+      
+      // Update with snapshot data and new snapshot date
+      const updateData = {
+        ...updates,
+        snapshotDate: snapshotData.snapshotDate,
+        stage: snapshotData.stage || null,
+        year1Arr: snapshotData.year1Value || null,
+        tcv: snapshotData.totalContractValue || null,
+        closeDate: snapshotData.closeDate || null,
+      };
+      
+      const [updatedCustomer] = await db.update(campaignCustomers)
+        .set(updateData)
+        .where(eq(campaignCustomers.id, customerId))
+        .returning();
+        
+      console.log('✅ Successfully updated campaign customer with new snapshot:', updatedCustomer.id);
+      return updatedCustomer;
+    } else {
+      // Regular update without snapshot change
+      const [updatedCustomer] = await db.update(campaignCustomers)
+        .set(updates)
+        .where(eq(campaignCustomers.id, customerId))
+        .returning();
+      
+      if (!updatedCustomer) {
+        throw new Error('Campaign customer not found');
+      }
+      
+      console.log('✅ Successfully updated campaign customer:', updatedCustomer.id);
+      return updatedCustomer;
     }
-    
-    console.log('✅ Successfully updated campaign customer:', updatedCustomer.id);
-    return updatedCustomer;
   }
 
   async bulkImportCustomersToCampaign(campaignId: number, customerNames: string[], targetDate: Date): Promise<{

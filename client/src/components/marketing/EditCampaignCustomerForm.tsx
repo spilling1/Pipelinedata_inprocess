@@ -12,6 +12,7 @@ import { useToast } from "@/hooks/use-toast";
 
 const editCustomerSchema = z.object({
   attendees: z.string().optional(),
+  snapshotDate: z.string().optional(),
 });
 
 type EditCustomerData = z.infer<typeof editCustomerSchema>;
@@ -51,11 +52,13 @@ export default function EditCampaignCustomerForm({
   onSuccess,
 }: EditCampaignCustomerFormProps) {
   const { toast } = useToast();
+  const [snapshotPreview, setSnapshotPreview] = useState<any>(null);
   
   const form = useForm<EditCustomerData>({
     resolver: zodResolver(editCustomerSchema),
     defaultValues: {
       attendees: customer.attendees?.toString() || "",
+      snapshotDate: new Date(customer.snapshotDate).toISOString().split('T')[0],
     },
   });
 
@@ -63,8 +66,29 @@ export default function EditCampaignCustomerForm({
   useEffect(() => {
     form.reset({
       attendees: customer.attendees?.toString() || "",
+      snapshotDate: new Date(customer.snapshotDate).toISOString().split('T')[0],
     });
   }, [customer, form]);
+
+  // Preview mutation for snapshot data
+  const previewMutation = useMutation({
+    mutationFn: async ({ snapshotDate }: { snapshotDate: string }) => {
+      const response = await fetch(`/api/marketing/campaigns/${customer.campaignId}/customers/preview`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          customerId: customer.opportunityId.toString(),
+          snapshotDate,
+        }),
+      });
+      if (!response.ok) {
+        throw new Error('Failed to preview snapshot data');
+      }
+      return response.json();
+    },
+  });
 
   // Update customer mutation
   const updateCustomerMutation = useMutation({
@@ -76,6 +100,7 @@ export default function EditCampaignCustomerForm({
         },
         body: JSON.stringify({
           attendees: data.attendees ? parseInt(data.attendees) : null,
+          snapshotDate: data.snapshotDate,
         }),
       });
       if (!response.ok) {
@@ -108,6 +133,22 @@ export default function EditCampaignCustomerForm({
 
   const handleSubmit = (data: EditCustomerData) => {
     updateCustomerMutation.mutate(data);
+  };
+
+  // Function to update snapshot preview when date changes
+  const updateSnapshotPreview = async (snapshotDate: string) => {
+    if (!snapshotDate) {
+      setSnapshotPreview(null);
+      return;
+    }
+
+    try {
+      const previewResult = await previewMutation.mutateAsync({ snapshotDate });
+      setSnapshotPreview(previewResult);
+    } catch (error) {
+      console.log('Preview not available for this date');
+      setSnapshotPreview(null);
+    }
   };
 
   return (
@@ -153,6 +194,45 @@ export default function EditCampaignCustomerForm({
                 </FormItem>
               )}
             />
+
+            <FormField
+              control={form.control}
+              name="snapshotDate"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Snapshot Date</FormLabel>
+                  <FormControl>
+                    <input
+                      type="date"
+                      value={field.value || ''}
+                      onChange={(e) => {
+                        field.onChange(e.target.value);
+                        updateSnapshotPreview(e.target.value);
+                      }}
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {snapshotPreview && (
+              <div className="rounded-lg border p-3 bg-blue-50">
+                <h4 className="font-medium mb-2 text-blue-800">Preview for Selected Date</h4>
+                <div className="space-y-1 text-sm text-blue-700">
+                  <div><span className="font-medium">Stage:</span> {snapshotPreview.stage || 'N/A'}</div>
+                  <div><span className="font-medium">Year 1 ARR:</span> ${snapshotPreview.year1Arr?.toLocaleString() || 'N/A'}</div>
+                  <div><span className="font-medium">TCV:</span> ${snapshotPreview.tcv?.toLocaleString() || 'N/A'}</div>
+                  {snapshotPreview.closeDate && (
+                    <div><span className="font-medium">Close Date:</span> {new Date(snapshotPreview.closeDate).toLocaleDateString()}</div>
+                  )}
+                  <div className="text-xs text-blue-600 mt-1">
+                    Data from: {new Date(snapshotPreview.actualSnapshotDate).toLocaleDateString()}
+                  </div>
+                </div>
+              </div>
+            )}
 
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
