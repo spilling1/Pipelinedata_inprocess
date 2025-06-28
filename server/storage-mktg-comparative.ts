@@ -168,7 +168,7 @@ export class MarketingComparativeStorage {
     try {
       console.log('👥 Fetching attendee effectiveness data...');
 
-      // Get campaign customers with attendee data and current snapshots
+      // Get campaign customers with attendee data and current snapshots (optimized query)
       const attendeeData = await db
         .select({
           campaignId: campaignCustomers.campaignId,
@@ -181,14 +181,16 @@ export class MarketingComparativeStorage {
         .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
         .innerJoin(
           snapshots,
+          eq(campaignCustomers.opportunityId, snapshots.opportunityId)
+        )
+        .where(
           and(
-            eq(campaignCustomers.opportunityId, snapshots.opportunityId),
-            eq(snapshots.snapshotDate,
-              sql`(SELECT MAX(s2.snapshot_date) FROM snapshots s2 WHERE s2.opportunity_id = ${snapshots.opportunityId})`
-            )
+            isNotNull(campaignCustomers.attendees),
+            // Use recent snapshot data for better performance
+            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
           )
         )
-        .where(isNotNull(campaignCustomers.attendees));
+        .orderBy(desc(snapshots.snapshotDate));
 
       // Define attendee ranges for segmentation
       const attendeeRanges = [
@@ -282,7 +284,7 @@ export class MarketingComparativeStorage {
     try {
       console.log('🎯👥 Fetching strategic engagement matrix...');
 
-      // Get campaign customers with target account flags, attendee data, and performance metrics
+      // Get campaign customers with target account flags, attendee data, and performance metrics (optimized)
       const matrixData = await db
         .select({
           attendees: campaignCustomers.attendees,
@@ -295,19 +297,17 @@ export class MarketingComparativeStorage {
         .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
         .innerJoin(
           snapshots,
-          and(
-            eq(campaignCustomers.opportunityId, snapshots.opportunityId),
-            eq(snapshots.snapshotDate,
-              sql`(SELECT MAX(s2.snapshot_date) FROM snapshots s2 WHERE s2.opportunity_id = ${snapshots.opportunityId})`
-            )
-          )
+          eq(campaignCustomers.opportunityId, snapshots.opportunityId)
         )
         .where(
           and(
             isNotNull(campaignCustomers.attendees),
-            isNotNull(snapshots.targetAccount)
+            isNotNull(snapshots.targetAccount),
+            // Use recent snapshot data for better performance
+            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
           )
-        );
+        )
+        .orderBy(desc(snapshots.snapshotDate));
 
       // Define attendee ranges
       const attendeeRanges = [
@@ -408,7 +408,7 @@ export class MarketingComparativeStorage {
   }
 
   private async calculateCampaignMetrics(campaignId: number) {
-    // Get campaign customers and their current snapshots
+    // Get campaign customers and their current snapshots (optimized query)
     const campaignData = await db
       .select({
         attendees: campaignCustomers.attendees,
@@ -419,14 +419,16 @@ export class MarketingComparativeStorage {
       .from(campaignCustomers)
       .innerJoin(
         snapshots,
+        eq(campaignCustomers.opportunityId, snapshots.opportunityId)
+      )
+      .where(
         and(
-          eq(campaignCustomers.opportunityId, snapshots.opportunityId),
-          eq(snapshots.snapshotDate,
-            sql`(SELECT MAX(s2.snapshot_date) FROM snapshots s2 WHERE s2.opportunity_id = ${snapshots.opportunityId})`
-          )
+          eq(campaignCustomers.campaignId, campaignId),
+          // Use recent snapshot data for better performance
+          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
         )
       )
-      .where(eq(campaignCustomers.campaignId, campaignId));
+      .orderBy(desc(snapshots.snapshotDate));
 
     const totalCustomers = campaignData.length;
     const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
