@@ -575,62 +575,65 @@ export class MarketingComparativeStorage {
       console.log('🎯🛤️ Fetching customer journey analysis...');
 
       // Get all customers with their campaign associations
-      const customersQuery = `
-        SELECT DISTINCT
-          o.id as opportunity_id,
-          o.name as customer_name,
-          o.opportunity_id as opportunity_id_string,
-          cc.campaign_id,
-          c.name as campaign_name,
-          c.type as campaign_type,
-          c.cost_per_customer,
-          c.start_date,
-          cc.snapshot_date as first_touch_date
-        FROM opportunities o
-        INNER JOIN campaign_customers cc ON o.id = cc.opportunity_id
-        INNER JOIN campaigns c ON cc.campaign_id = c.id
-        ORDER BY o.name, c.start_date
-      `;
-
-      const customerCampaignData = await this.db.execute(customersQuery);
+      const customerCampaignData = await this.db
+        .select({
+          opportunityId: opportunities.id,
+          customerName: opportunities.name,
+          opportunityIdString: opportunities.opportunityId,
+          campaignId: campaignCustomers.campaignId,
+          campaignName: campaigns.name,
+          campaignType: campaigns.type,
+          costPerCustomer: campaigns.cost,
+          startDate: campaigns.startDate,
+          firstTouchDate: campaignCustomers.snapshotDate
+        })
+        .from(opportunities)
+        .innerJoin(campaignCustomers, eq(opportunities.id, campaignCustomers.opportunityId))
+        .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
+        .orderBy(opportunities.name, campaigns.startDate);
 
       // Get latest snapshot data for each customer
-      const snapshotQuery = `
-        SELECT DISTINCT ON (s.opportunity_id)
-          s.opportunity_id,
-          s.stage,
-          s.year1_arr,
-          s.snapshot_date,
-          s.close_date
-        FROM snapshots s
-        ORDER BY s.opportunity_id, s.snapshot_date DESC
-      `;
+      const latestSnapshots = await this.db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          stage: snapshots.stage,
+          year1Value: snapshots.year1Value,
+          snapshotDate: snapshots.snapshotDate,
+          closeDate: snapshots.closeDate
+        })
+        .from(snapshots)
+        .orderBy(snapshots.opportunityId, desc(snapshots.snapshotDate));
 
-      const latestSnapshots = await this.db.execute(snapshotQuery);
-      const snapshotMap = new Map(latestSnapshots.map(s => [s.opportunity_id, s]));
+      // Create snapshot map with latest data for each opportunity
+      const snapshotMap = new Map();
+      for (const snapshot of latestSnapshots) {
+        if (!snapshotMap.has(snapshot.opportunityId)) {
+          snapshotMap.set(snapshot.opportunityId, snapshot);
+        }
+      }
 
       // Group by customer and calculate metrics
       const customerMap = new Map();
 
       for (const row of customerCampaignData) {
-        const customerId = row.opportunity_id;
+        const customerId = row.opportunityId;
         const snapshot = snapshotMap.get(customerId);
         
         if (!customerMap.has(customerId)) {
           customerMap.set(customerId, {
-            customerName: row.customer_name,
+            customerName: row.customerName,
             opportunityId: customerId,
             campaigns: [],
             totalTouches: 0,
             totalCAC: 0,
             currentStage: snapshot?.stage || 'Unknown',
-            pipelineValue: snapshot?.year1_arr || 0,
-            closedWonValue: snapshot?.stage === 'Closed Won' ? (snapshot?.year1_arr || 0) : 0,
+            pipelineValue: snapshot?.year1Value || 0,
+            closedWonValue: snapshot?.stage === 'Closed Won' ? (snapshot?.year1Value || 0) : 0,
             isClosedWon: snapshot?.stage === 'Closed Won',
             isClosedLost: snapshot?.stage === 'Closed Lost',
-            firstTouchDate: row.first_touch_date,
-            lastTouchDate: row.first_touch_date,
-            closeDate: snapshot?.close_date
+            firstTouchDate: row.firstTouchDate,
+            lastTouchDate: row.firstTouchDate,
+            closeDate: snapshot?.closeDate
           });
         }
 
@@ -638,23 +641,23 @@ export class MarketingComparativeStorage {
         
         // Add campaign to customer
         customer.campaigns.push({
-          campaignId: row.campaign_id,
-          campaignName: row.campaign_name,
-          campaignType: row.campaign_type,
-          cost: row.cost_per_customer || 0,
-          startDate: row.start_date
+          campaignId: row.campaignId,
+          campaignName: row.campaignName,
+          campaignType: row.campaignType,
+          cost: row.costPerCustomer || 0,
+          startDate: row.startDate
         });
 
         // Update metrics
-        customer.totalCAC += (row.cost_per_customer || 0);
+        customer.totalCAC += (row.costPerCustomer || 0);
         customer.totalTouches = customer.campaigns.length;
         
         // Update touch date range
-        if (new Date(row.first_touch_date) < new Date(customer.firstTouchDate)) {
-          customer.firstTouchDate = row.first_touch_date;
+        if (new Date(row.firstTouchDate) < new Date(customer.firstTouchDate)) {
+          customer.firstTouchDate = row.firstTouchDate;
         }
-        if (new Date(row.first_touch_date) > new Date(customer.lastTouchDate)) {
-          customer.lastTouchDate = row.first_touch_date;
+        if (new Date(row.firstTouchDate) > new Date(customer.lastTouchDate)) {
+          customer.lastTouchDate = row.firstTouchDate;
         }
       }
 
