@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, Trash2, DollarSign, Calendar, Search, Filter } from "lucide-react";
+import { Users, Trash2, DollarSign, Calendar, Search, Filter, Edit } from "lucide-react";
 import { format } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
@@ -18,6 +18,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import EditCampaignCustomerForm from "./EditCampaignCustomerForm";
 
 interface CampaignCustomer {
   id: number;
@@ -28,6 +29,7 @@ interface CampaignCustomer {
   tcv: number;
   snapshotDate: string;
   closeDate: string | null;
+  attendees: number | null;
   createdAt: string;
   opportunity: {
     id: number;

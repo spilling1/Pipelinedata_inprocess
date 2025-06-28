@@ -120,6 +120,7 @@ export class MarketingStorage {
         year1Arr: campaignCustomers.year1Arr,
         tcv: campaignCustomers.tcv,
         closeDate: campaignCustomers.closeDate,
+        attendees: campaignCustomers.attendees,
         createdAt: campaignCustomers.createdAt,
         opportunity: {
           id: opportunities.id,
@@ -235,6 +236,22 @@ export class MarketingStorage {
           eq(campaignCustomers.opportunityId, opportunityId)
         )
       );
+  }
+
+  async updateCampaignCustomer(customerId: number, updates: { attendees?: number | null }): Promise<CampaignCustomer> {
+    console.log('📝 Updating campaign customer:', customerId, updates);
+    
+    const [updatedCustomer] = await db.update(campaignCustomers)
+      .set(updates)
+      .where(eq(campaignCustomers.id, customerId))
+      .returning();
+    
+    if (!updatedCustomer) {
+      throw new Error('Campaign customer not found');
+    }
+    
+    console.log('✅ Successfully updated campaign customer:', updatedCustomer.id);
+    return updatedCustomer;
   }
 
   async bulkImportCustomersToCampaign(campaignId: number, customerNames: string[], targetDate: Date): Promise<{

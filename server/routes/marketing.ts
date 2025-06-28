@@ -240,6 +240,23 @@ router.delete('/campaigns/:campaignId/customers/:opportunityId', isAuthenticated
   }
 });
 
+router.patch('/campaigns/:campaignId/customers/:customerId', isAuthenticated, async (req, res) => {
+  try {
+    const campaignId = parseInt(req.params.campaignId);
+    const customerId = parseInt(req.params.customerId);
+    
+    console.log('📝 PATCH /campaigns/:campaignId/customers/:customerId - Request body:', req.body);
+    
+    const updatedCustomer = await marketingStorage.updateCampaignCustomer(customerId, req.body);
+    
+    console.log('✅ Customer updated successfully:', updatedCustomer);
+    res.json(updatedCustomer);
+  } catch (error) {
+    console.error('❌ Error updating campaign customer:', error);
+    res.status(500).json({ error: 'Failed to update customer', message: error.message });
+  }
+});
+
 // Bulk import customers to campaign from 2/27/2025 or closest date
 router.post('/campaigns/:id/customers/bulk-import', isAuthenticated, async (req, res) => {
   try {
