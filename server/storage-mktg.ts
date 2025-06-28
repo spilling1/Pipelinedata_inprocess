@@ -893,6 +893,7 @@ export class MarketingStorage {
     snapshotDate: string;
     enteredPipeline: Date | null;
     closeDate: Date | null;
+    targetAccount: number | null;
     isOutdated?: boolean;
     outdatedNote?: string;
   }>> {
@@ -914,6 +915,7 @@ export class MarketingStorage {
       snapshotDate: string;
       enteredPipeline: Date | null;
       closeDate: Date | null;
+      targetAccount: number | null;
       isOutdated?: boolean;
       outdatedNote?: string;
     }> = [];
@@ -942,6 +944,7 @@ export class MarketingStorage {
           snapshotDate: snapshots.snapshotDate,
           closeDate: snapshots.expectedCloseDate,
           enteredPipeline: snapshots.enteredPipeline,
+          targetAccount: snapshots.targetAccount,
         })
         .from(snapshots)
         .where(eq(snapshots.opportunityId, customer.opportunityId))
@@ -985,6 +988,7 @@ export class MarketingStorage {
               snapshotDate: snapshots.snapshotDate,
               closeDate: snapshots.expectedCloseDate,
               enteredPipeline: snapshots.enteredPipeline,
+              targetAccount: snapshots.targetAccount,
             })
             .from(snapshots)
             .where(inArray(snapshots.opportunityId, newerOpportunities.map(o => o.id)))
@@ -1016,6 +1020,7 @@ export class MarketingStorage {
         snapshotDate: latestSnapshot.snapshotDate.toISOString(),
         enteredPipeline: latestSnapshot.enteredPipeline,
         closeDate: latestSnapshot.closeDate,
+        targetAccount: latestSnapshot.targetAccount,
         isOutdated,
         outdatedNote: isOutdated ? `No data after ${latestSnapshot.snapshotDate.toISOString().split('T')[0]}` : undefined
       });

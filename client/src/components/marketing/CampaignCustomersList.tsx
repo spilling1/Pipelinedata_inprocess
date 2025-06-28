@@ -47,6 +47,7 @@ interface CurrentSnapshot {
   snapshotDate: string;
   closeDate: string | null;
   enteredPipeline: string | null;
+  targetAccount: number | null;
   isOutdated?: boolean;
   outdatedNote?: string;
 }
@@ -87,6 +88,7 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
     snapshotDate: string;
     closeDate: string | null;
     enteredPipeline: string | null;
+    targetAccount: number | null;
     isOutdated?: boolean;
     outdatedNote?: string;
   }>>({
