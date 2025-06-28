@@ -452,3 +452,7 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 ## User Preferences
 
 Preferred communication style: Simple, everyday language.
+
+## Development Guidelines
+
+**Marketing Analytics Separation**: All marketing work must be completely separated from Pipeline analytics other than the shared database. Marketing pages can be updated but extreme care must be taken to avoid breaking existing pipeline functionality. Marketing analytics should remain in its dedicated module structure.
