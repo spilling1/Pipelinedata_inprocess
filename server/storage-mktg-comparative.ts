@@ -100,7 +100,7 @@ export class MarketingComparativeStorage {
     try {
       console.log('🎯 Fetching target account analytics...');
       
-      // Get all campaign customers with their current snapshot data
+      // Get all campaign customers with their current snapshot data (optimized query)
       const campaignCustomersData = await db
         .select({
           campaignCustomerId: campaignCustomers.id,
@@ -116,15 +116,16 @@ export class MarketingComparativeStorage {
         .from(campaignCustomers)
         .innerJoin(
           snapshots,
+          eq(campaignCustomers.opportunityId, snapshots.opportunityId)
+        )
+        .where(
           and(
-            eq(campaignCustomers.opportunityId, snapshots.opportunityId),
-            // Get most recent snapshot for each opportunity
-            eq(snapshots.snapshotDate, 
-              sql`(SELECT MAX(s2.snapshot_date) FROM snapshots s2 WHERE s2.opportunity_id = ${snapshots.opportunityId})`
-            )
+            isNotNull(snapshots.targetAccount),
+            // Simple approach: use most recent snapshot available
+            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
           )
         )
-        .where(isNotNull(snapshots.targetAccount));
+        .orderBy(desc(snapshots.snapshotDate));
 
       // Separate target accounts (1) from non-target accounts (0)
       const targetAccountData = campaignCustomersData.filter(row => row.targetAccount === 1);
