@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink, Settings } from "lucide-react";
+import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CampaignForm from "../components/marketing/CampaignForm";
 import CustomerToCampaignForm from "../components/marketing/CustomerToCampaignForm";
@@ -429,10 +429,9 @@ export default function MarketingAnalyticsPage() {
           <CardContent>
             {selectedCampaign ? (
               <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="analytics">Analytics</TabsTrigger>
                   <TabsTrigger value="customers">Customers ({campaignCustomers.length})</TabsTrigger>
-                  <TabsTrigger value="settings">Settings</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="analytics" className="space-y-6">
@@ -667,28 +666,7 @@ export default function MarketingAnalyticsPage() {
                   <CampaignCustomersList campaignId={selectedCampaign.id} />
                 </TabsContent>
 
-                <TabsContent value="settings" className="space-y-6">
-                  <div className="space-y-6">
-                    <Card>
-                      <CardHeader>
-                        <CardTitle>Marketing Settings</CardTitle>
-                        <CardDescription>
-                          Influence methods and other marketing configuration settings are managed here.
-                        </CardDescription>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-center py-8 text-muted-foreground">
-                          <Settings className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                          <p className="font-medium">Influence Methods Management</p>
-                          <p className="text-sm">
-                            Influence methods can be managed when creating or editing campaigns.
-                            Use the "Add New Method..." option in campaign forms to add new influence methods.
-                          </p>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </div>
-                </TabsContent>
+
               </Tabs>
             ) : (
               <div className="text-center py-12">
