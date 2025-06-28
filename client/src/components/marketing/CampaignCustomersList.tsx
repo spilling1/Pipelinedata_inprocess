@@ -505,7 +505,7 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
                           )}
                           {currentSnapshot?.enteredPipeline && (
                             <span className="text-blue-600 font-medium text-xs bg-blue-50 px-2 py-1 rounded">
-                              📊 Pipeline Entry: {format(new Date(currentSnapshot.enteredPipeline), 'MMM d, yyyy')}
+                              📊 Pipeline: {format(new Date(currentSnapshot.enteredPipeline), 'MMM d, yyyy')}
                             </span>
                           )}
                           {currentSnapshot?.targetAccount !== null && (
@@ -514,7 +514,7 @@ export default function CampaignCustomersList({ campaignId }: CampaignCustomersL
                                 ? 'text-emerald-600 bg-emerald-50' 
                                 : 'text-gray-600 bg-gray-50'
                             }`}>
-                              🎯 Target Account: {currentSnapshot.targetAccount === 1 ? 'Yes' : 'No'}
+                              🎯 Target: {currentSnapshot.targetAccount === 1 ? 'Yes' : 'No'}
                             </span>
                           )}
                           {customer.attendees && (
