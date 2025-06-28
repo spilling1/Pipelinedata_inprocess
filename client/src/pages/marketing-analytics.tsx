@@ -29,7 +29,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar } from "lucide-react";
+import { ArrowLeft, Plus, Target, TrendingUp, Users, DollarSign, MoreVertical, Edit, Trash2, UserPlus, ArrowUpDown, Filter, Calendar, ExternalLink } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import CampaignForm from "../components/marketing/CampaignForm";
 import CustomerToCampaignForm from "../components/marketing/CustomerToCampaignForm";
@@ -398,15 +398,32 @@ export default function MarketingAnalyticsPage() {
         {/* Analytics Panel - 3 columns */}
         <Card className="col-span-3">
           <CardHeader>
-            <CardTitle>
-              {selectedCampaign ? `${selectedCampaign.name}` : 'Campaign Management'}
-            </CardTitle>
-            <CardDescription>
-              {selectedCampaign 
-                ? 'Manage campaign performance and customer associations'
-                : 'Select a campaign from the left to view detailed analytics and manage customers'
-              }
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>
+                  {selectedCampaign ? `${selectedCampaign.name}` : 'Campaign Management'}
+                </CardTitle>
+                <CardDescription>
+                  {selectedCampaign 
+                    ? 'Manage campaign performance and customer associations'
+                    : 'Select a campaign from the left to view detailed analytics and manage customers'
+                  }
+                </CardDescription>
+              </div>
+              {selectedCampaign?.salesforceUrl && (
+                <Button variant="outline" size="sm" asChild>
+                  <a 
+                    href={selectedCampaign.salesforceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    View in Salesforce
+                  </a>
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             {selectedCampaign ? (
