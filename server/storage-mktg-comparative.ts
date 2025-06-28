@@ -526,6 +526,90 @@ export class MarketingComparativeStorage {
   }
 
   /**
+   * Calculate behavioral influence metrics for campaigns
+   * Tracks close date acceleration and stage progression within 30-day windows
+   */
+  private async calculateBehavioralInfluence(campaignId: number, campaignStartDate: Date): Promise<{
+    closeAcceleration: number;
+    stageProgression: number;
+    touchPointEffectiveness: number;
+  }> {
+    try {
+      // Define 30-day window after campaign start
+      const windowEndDate = new Date(campaignStartDate);
+      windowEndDate.setDate(windowEndDate.getDate() + 30);
+
+      // Get campaign customers with their snapshot timeline
+      const customerTimeline = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          snapshotDate: snapshots.snapshotDate,
+          stage: snapshots.stage,
+          closeDate: snapshots.closeDate,
+        })
+        .from(campaignCustomers)
+        .innerJoin(snapshots, eq(campaignCustomers.opportunityId, snapshots.opportunityId))
+        .where(
+          and(
+            eq(campaignCustomers.campaignId, campaignId),
+            gte(snapshots.snapshotDate, campaignStartDate),
+            lte(snapshots.snapshotDate, windowEndDate)
+          )
+        )
+        .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
+
+      // Group by opportunity and analyze behavioral changes
+      const opportunityGroups = new Map();
+      customerTimeline.forEach(row => {
+        if (!opportunityGroups.has(row.opportunityId)) {
+          opportunityGroups.set(row.opportunityId, []);
+        }
+        opportunityGroups.get(row.opportunityId).push(row);
+      });
+
+      let acceleratedCloses = 0;
+      let stageProgressions = 0;
+      let totalOpportunities = opportunityGroups.size;
+
+      // Define stage progression order
+      const stageOrder = ['Validation/Introduction', 'Demo/Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
+
+      for (const [opportunityId, timeline] of opportunityGroups) {
+        if (timeline.length < 2) continue;
+
+        const firstSnapshot = timeline[0];
+        const lastSnapshot = timeline[timeline.length - 1];
+
+        // Check for close date acceleration (close date moved earlier)
+        if (firstSnapshot.closeDate && lastSnapshot.closeDate) {
+          const originalCloseDate = new Date(firstSnapshot.closeDate);
+          const newCloseDate = new Date(lastSnapshot.closeDate);
+          if (newCloseDate < originalCloseDate) {
+            acceleratedCloses++;
+          }
+        }
+
+        // Check for stage progression (advancement to later stages)
+        const firstStageIndex = stageOrder.indexOf(firstSnapshot.stage || '');
+        const lastStageIndex = stageOrder.indexOf(lastSnapshot.stage || '');
+        if (firstStageIndex >= 0 && lastStageIndex > firstStageIndex) {
+          stageProgressions++;
+        }
+      }
+
+      return {
+        closeAcceleration: totalOpportunities > 0 ? (acceleratedCloses / totalOpportunities) * 100 : 0,
+        stageProgression: totalOpportunities > 0 ? (stageProgressions / totalOpportunities) * 100 : 0,
+        touchPointEffectiveness: totalOpportunities > 0 ? ((acceleratedCloses + stageProgressions) / (totalOpportunities * 2)) * 100 : 0,
+      };
+
+    } catch (error) {
+      console.error('❌ Error calculating behavioral influence:', error);
+      return { closeAcceleration: 0, stageProgression: 0, touchPointEffectiveness: 0 };
+    }
+  }
+
+  /**
    * Get strategic engagement matrix combining target accounts and attendee effectiveness
    */
   async getStrategicEngagementMatrix(): Promise<StrategicEngagementMatrix> {

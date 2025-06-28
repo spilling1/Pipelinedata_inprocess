@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Users, Target, TrendingUp } from 'lucide-react';
 import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffectiveness';
+import CampaignInfluenceAnalytics from '@/components/marketing/CampaignInfluenceAnalytics';
 
 const MarketingComparativeAnalytics: React.FC = () => {
   return (
@@ -41,56 +42,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="campaign-influence" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Campaign Influence Metrics
-              </CardTitle>
-              <CardDescription>
-                Behavioral influence tracking: close date acceleration, stage progression, and multi-touch attribution
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">72.4%</p>
-                        <p className="text-sm text-gray-600">Dallas Campaign Influence Rate</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">81.4%</p>
-                        <p className="text-sm text-gray-600">Raleigh Campaign Influence Rate</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-orange-600">33.46%</p>
-                        <p className="text-sm text-gray-600">Multi-touch Opportunities</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h4 className="font-semibold mb-2">Campaign Influence Insights</h4>
-                  <ul className="text-sm space-y-1">
-                    <li>• Close date acceleration tracking within 30-day campaign windows</li>
-                    <li>• Stage progression analysis for behavioral change measurement</li>
-                    <li>• Multi-touch attribution preserving all campaign interactions</li>
-                    <li>• Touch point effectiveness comparing single vs multi-touch correlations</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <CampaignInfluenceAnalytics />
         </TabsContent>
 
         <TabsContent value="target-accounts" className="space-y-6">
