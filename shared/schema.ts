@@ -22,6 +22,7 @@ export const users = pgTable("users", {
   profileImageUrl: varchar("profile_image_url"),
   role: varchar("role", { length: 50 }).default("Ops").notNull(), // Default role for new users
   isActive: integer("is_active").default(1).notNull(), // 1 = active, 0 = inactive
+  lastLogin: timestamp("last_login"),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

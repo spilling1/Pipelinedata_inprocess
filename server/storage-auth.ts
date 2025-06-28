@@ -22,19 +22,22 @@ export class PostgreSQLAuthStorage implements IAuthStorage {
   async upsertUser(userData: UpsertUser): Promise<User> {
     // Check if user already exists
     const existingUser = await this.getUser(userData.id);
+    const now = new Date();
     
     const [user] = await db
       .insert(users)
       .values({
         ...userData,
         // Only set Default role for new users, preserve existing users' roles
-        role: existingUser ? existingUser.role : 'Default'
+        role: existingUser ? existingUser.role : 'Default',
+        lastLogin: now
       })
       .onConflictDoUpdate({
         target: users.id,
         set: {
           ...userData,
-          updatedAt: new Date(),
+          updatedAt: now,
+          lastLogin: now, // Update last login time on every authentication
           // Don't update role for existing users
           role: sql`${users.role}`
         },
