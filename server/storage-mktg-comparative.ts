@@ -53,6 +53,9 @@ export interface CampaignComparison {
   status: string;
   metrics: {
     totalCustomers: number;
+    uniqueOpportunities: number;
+    sharedOpportunities: number;
+    influenceRate: number;
     targetAccountCustomers: number;
     totalAttendees: number;
     averageAttendees: number;
@@ -64,6 +67,7 @@ export interface CampaignComparison {
     pipelineEfficiency: number;
     targetAccountWinRate: number;
     attendeeEfficiency: number;
+    campaignInfluenceScore: number;
   };
 }
 
@@ -411,6 +415,7 @@ export class MarketingComparativeStorage {
     // Get campaign customers and their current snapshots (optimized query)
     const campaignData = await db
       .select({
+        opportunityId: campaignCustomers.opportunityId,
         attendees: campaignCustomers.attendees,
         targetAccount: snapshots.targetAccount,
         currentYear1Value: snapshots.year1Value,
@@ -429,6 +434,21 @@ export class MarketingComparativeStorage {
         )
       )
       .orderBy(desc(snapshots.snapshotDate));
+
+    // Get cross-campaign influence data for this campaign's opportunities
+    const crossCampaignData = await db
+      .select({
+        opportunityId: campaignCustomers.opportunityId,
+        campaignCount: sql`COUNT(DISTINCT ${campaignCustomers.campaignId})`.as('campaignCount'),
+      })
+      .from(campaignCustomers)
+      .where(
+        inArray(
+          campaignCustomers.opportunityId,
+          campaignData.map(row => row.opportunityId)
+        )
+      )
+      .groupBy(campaignCustomers.opportunityId);
 
     const totalCustomers = campaignData.length;
     const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
@@ -464,6 +484,19 @@ export class MarketingComparativeStorage {
     const campaign = await db.select({ cost: campaigns.cost }).from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
     const campaignCost = campaign[0]?.cost || 0;
     
+    // Multi-touch attribution calculations
+    const uniqueOpportunities = new Set(campaignData.map(row => row.opportunityId)).size;
+    const sharedOpportunities = campaignData.filter(row => {
+      const crossCampaignRecord = crossCampaignData.find(cc => cc.opportunityId === row.opportunityId);
+      return crossCampaignRecord && Number(crossCampaignRecord.campaignCount) > 1;
+    }).length;
+    
+    const influenceRate = totalCustomers > 0 ? (sharedOpportunities / totalCustomers) * 100 : 0;
+    
+    // Campaign influence score: weighs unique opportunities higher than shared ones
+    const campaignInfluenceScore = (uniqueOpportunities - sharedOpportunities) * 1.0 + 
+                                   (sharedOpportunities * 0.5); // Shared opportunities get 50% weight
+
     const cac = closedWonCustomers.length > 0 ? campaignCost / closedWonCustomers.length : 0;
     const roi = campaignCost > 0 ? (closedWonValue / campaignCost) * 100 : 0;
     const pipelineEfficiency = campaignCost > 0 ? pipelineValue / campaignCost : 0;
@@ -471,6 +504,9 @@ export class MarketingComparativeStorage {
 
     return {
       totalCustomers,
+      uniqueOpportunities,
+      sharedOpportunities,
+      influenceRate,
       targetAccountCustomers,
       totalAttendees,
       averageAttendees,
@@ -481,7 +517,8 @@ export class MarketingComparativeStorage {
       roi,
       pipelineEfficiency,
       targetAccountWinRate,
-      attendeeEfficiency
+      attendeeEfficiency,
+      campaignInfluenceScore
     };
   }
 
