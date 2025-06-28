@@ -950,8 +950,10 @@ export class MarketingStorage {
         .where(eq(snapshots.opportunityId, customer.opportunityId))
         .orderBy(desc(snapshots.snapshotDate), desc(snapshots.expectedCloseDate));
 
-      // If no recent snapshots found, try to find newer opportunity with suffixed ID
-      if (opportunitySnapshots.length === 0 || opportunitySnapshots[0].snapshotDate < cutoffDate) {
+      // If no recent snapshots found, OR if target account data is missing, try to find newer opportunity with suffixed ID
+      if (opportunitySnapshots.length === 0 || 
+          opportunitySnapshots[0].snapshotDate < cutoffDate ||
+          (opportunitySnapshots.length > 0 && opportunitySnapshots[0].targetAccount === null)) {
         console.log(`🔍 Searching for newer opportunity with suffixed ID for ${customer.opportunity.name}`);
         console.log(`   Original opportunityId: ${customer.opportunity.opportunityId}`);
         console.log(`   Has snapshots: ${opportunitySnapshots.length > 0}, Latest date: ${opportunitySnapshots[0]?.snapshotDate}`);
