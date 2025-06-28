@@ -122,6 +122,20 @@ export default function Home() {
               </Link>
             )}
 
+            {canAccessPage('marketing') && (
+              <Link href="/marketing-comparative">
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <Users className="h-8 w-8 text-purple-600 mb-2" />
+                    <CardTitle>Marketing Comparative Analytics</CardTitle>
+                    <CardDescription>
+                      Team performance tracking and campaign influence analysis
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </Link>
+            )}
+
             {canAccessPage('sales') && (
               <Link href="/sales">
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
