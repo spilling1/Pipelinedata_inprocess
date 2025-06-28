@@ -123,6 +123,16 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
+✓ Target Account Binary Field Implementation Complete (June 28, 2025)
+- Added target_account integer column to snapshots database table for binary 1/0 values
+- Updated CSV parser to extract "Target Account" field from uploaded files with normalized header matching
+- Enhanced Excel parser to process target account data from .xlsx uploads
+- Modified API endpoints to support targetAccount filtering (1 = Yes, 0 = No)
+- Applied database schema changes successfully - 179 target account records processed from recent upload
+- Extended FilterState type to include optional targetAccount parameter
+- Backend filtering logic operational: targetAccount=1 shows only target accounts, targetAccount=0 shows non-targets
+- System successfully processes binary target account data maintaining 1 = Yes, 0 = No convention
+
 ✓ Marketing Analytics Expansion Planning Complete (June 28, 2025)
 - Created comprehensive MARKETINGEXPANSION.md document with technical specifications
 - Developed detailed MKTGEXPCHECKLIST.md implementation roadmap with 7-week timeline
