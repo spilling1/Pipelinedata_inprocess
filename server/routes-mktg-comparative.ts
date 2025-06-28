@@ -96,22 +96,6 @@ router.get('/campaign-comparison', async (req, res) => {
 });
 
 /**
- * Get team attendee effectiveness analysis
- * Analyzes which team members create and close the most pipeline
- */
-router.get('/team-attendee-effectiveness', async (req, res) => {
-  try {
-    console.log('📊 API: Fetching team attendee effectiveness analysis...');
-    const effectiveness = await marketingComparativeStorage.getTeamAttendeeEffectiveness();
-    console.log('📊 Team attendee effectiveness analysis completed');
-    res.json(effectiveness);
-  } catch (error) {
-    console.error('❌ Error fetching team attendee effectiveness:', error);
-    res.status(500).json({ error: 'Failed to fetch team attendee effectiveness' });
-  }
-});
-
-/**
  * Get strategic engagement matrix
  * Combines target account and attendee analysis for optimal strategy recommendations
  */

@@ -53,9 +53,6 @@ export interface CampaignComparison {
   status: string;
   metrics: {
     totalCustomers: number;
-    uniqueOpportunities: number;
-    sharedOpportunities: number;
-    influenceRate: number;
     targetAccountCustomers: number;
     totalAttendees: number;
     averageAttendees: number;
@@ -67,24 +64,6 @@ export interface CampaignComparison {
     pipelineEfficiency: number;
     targetAccountWinRate: number;
     attendeeEfficiency: number;
-    campaignInfluenceScore: number;
-    // Campaign influence metrics
-    closeAcceleration: {
-      closedWithin30Days: number;
-      averageDaysToClose: number;
-      accelerationRate: number;
-    };
-    stageProgression: {
-      advancedStages: number;
-      stageAdvancementRate: number;
-      averageDaysToAdvance: number;
-    };
-    touchPointEffectiveness: {
-      averageTouchPoints: number;
-      touchPointCloseRate: number;
-      singleTouchCloseRate: number;
-      multiTouchCloseRate: number;
-    };
   };
 }
 
@@ -110,50 +89,6 @@ export interface StrategicEngagementMatrix {
     reasoning: string;
     expectedROI: number;
   }>;
-}
-
-export interface TeamAttendeeEffectiveness {
-  attendeePerformance: Array<{
-    attendeeName: string;
-    role: string;
-    campaignsAttended: number;
-    totalOpportunities: number;
-    totalPipelineValue: number;
-    closedWonDeals: number;
-    closedWonValue: number;
-    winRate: number;
-    averageDealSize: number;
-    pipelinePerCampaign: number;
-    closeRate: number;
-    campaignTypes: string[]; // Array of campaign types attended
-  }>;
-  roleAnalysis: Array<{
-    role: string;
-    attendeeCount: number;
-    totalCampaigns: number;
-    averagePipelinePerAttendee: number;
-    averageWinRate: number;
-    mostEffectiveAttendee: string;
-    roleEfficiencyScore: number;
-  }>;
-  insights: {
-    topPipelineCreator: {
-      name: string;
-      role: string;
-      pipelineValue: number;
-    };
-    topCloser: {
-      name: string;
-      role: string;
-      winRate: number;
-      closedValue: number;
-    };
-    mostVersatile: {
-      name: string;
-      role: string;
-      campaignTypesCount: number;
-    };
-  };
 }
 
 export class MarketingComparativeStorage {
@@ -343,273 +278,6 @@ export class MarketingComparativeStorage {
   }
 
   /**
-   * Get team attendee effectiveness analysis
-   */
-  async getTeamAttendeeEffectiveness(): Promise<TeamAttendeeEffectiveness> {
-    // Get campaigns with team attendees and their associated opportunities
-    const campaignTeamData = await db
-      .select({
-        campaignId: campaigns.id,
-        campaignName: campaigns.name,
-        campaignType: campaigns.type,
-        teamAttendees: campaigns.teamAttendees,
-        opportunityId: campaignCustomers.opportunityId,
-        currentYear1Value: snapshots.year1Value,
-        currentStage: snapshots.stage,
-        targetAccount: snapshots.targetAccount,
-      })
-      .from(campaigns)
-      .leftJoin(campaignCustomers, eq(campaigns.id, campaignCustomers.campaignId))
-      .leftJoin(
-        snapshots,
-        eq(campaignCustomers.opportunityId, snapshots.opportunityId)
-      )
-      .where(
-        and(
-          isNotNull(campaigns.teamAttendees),
-          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
-        )
-      )
-      .orderBy(desc(snapshots.snapshotDate));
-
-    // Process team attendee performance
-    const attendeeMap = new Map();
-    const roleMap = new Map();
-
-    campaignTeamData.forEach(row => {
-      if (!row.teamAttendees) return;
-      
-      const attendees = Array.isArray(row.teamAttendees) ? row.teamAttendees : [];
-      attendees.forEach((attendee: any) => {
-        const key = `${attendee.name}_${attendee.role}`;
-        
-        if (!attendeeMap.has(key)) {
-          attendeeMap.set(key, {
-            attendeeName: attendee.name,
-            role: attendee.role,
-            campaignsAttended: new Set(),
-            opportunities: new Set(),
-            totalPipelineValue: 0,
-            closedWonDeals: 0,
-            closedWonValue: 0,
-            campaignTypes: new Set(),
-          });
-        }
-
-        const attendeeData = attendeeMap.get(key);
-        attendeeData.campaignsAttended.add(row.campaignId);
-        attendeeData.campaignTypes.add(row.campaignType);
-        
-        if (row.opportunityId) {
-          attendeeData.opportunities.add(row.opportunityId);
-          attendeeData.totalPipelineValue += row.currentYear1Value || 0;
-          
-          if (row.currentStage?.toLowerCase().includes('closed won')) {
-            attendeeData.closedWonDeals++;
-            attendeeData.closedWonValue += row.currentYear1Value || 0;
-          }
-        }
-
-        // Role aggregation
-        if (!roleMap.has(attendee.role)) {
-          roleMap.set(attendee.role, {
-            attendees: new Set(),
-            campaigns: new Set(),
-            totalPipeline: 0,
-            totalClosedWon: 0,
-            totalOpportunities: 0,
-          });
-        }
-        
-        const roleData = roleMap.get(attendee.role);
-        roleData.attendees.add(attendee.name);
-        roleData.campaigns.add(row.campaignId);
-        roleData.totalPipeline += row.currentYear1Value || 0;
-        if (row.currentStage?.toLowerCase().includes('closed won')) {
-          roleData.totalClosedWon += row.currentYear1Value || 0;
-        }
-        if (row.opportunityId) {
-          roleData.totalOpportunities++;
-        }
-      });
-    });
-
-    // Calculate attendee performance metrics
-    const attendeePerformance = Array.from(attendeeMap.values()).map(attendee => {
-      const totalOpportunities = attendee.opportunities.size;
-      const winRate = totalOpportunities > 0 ? (attendee.closedWonDeals / totalOpportunities) * 100 : 0;
-      const averageDealSize = totalOpportunities > 0 ? attendee.totalPipelineValue / totalOpportunities : 0;
-      const pipelinePerCampaign = attendee.campaignsAttended.size > 0 ? 
-        attendee.totalPipelineValue / attendee.campaignsAttended.size : 0;
-      const closeRate = attendee.campaignsAttended.size > 0 ? 
-        (attendee.closedWonDeals / attendee.campaignsAttended.size) * 100 : 0;
-
-      return {
-        attendeeName: attendee.attendeeName,
-        role: attendee.role,
-        campaignsAttended: attendee.campaignsAttended.size,
-        totalOpportunities,
-        totalPipelineValue: attendee.totalPipelineValue,
-        closedWonDeals: attendee.closedWonDeals,
-        closedWonValue: attendee.closedWonValue,
-        winRate,
-        averageDealSize,
-        pipelinePerCampaign,
-        closeRate,
-        campaignTypes: Array.from(attendee.campaignTypes),
-      };
-    });
-
-    // Calculate role analysis
-    const roleAnalysis = Array.from(roleMap.entries()).map(([role, data]) => {
-      const attendeeCount = data.attendees.size;
-      const averagePipelinePerAttendee = attendeeCount > 0 ? data.totalPipeline / attendeeCount : 0;
-      const averageWinRate = data.totalOpportunities > 0 ? (data.totalClosedWon / data.totalPipeline) * 100 : 0;
-      
-      const roleAttendees = attendeePerformance.filter(a => a.role === role);
-      const mostEffectiveAttendee = roleAttendees.reduce((best, current) => 
-        current.totalPipelineValue > best.totalPipelineValue ? current : best, 
-        roleAttendees[0] || { attendeeName: 'None' }
-      );
-
-      const roleEfficiencyScore = averagePipelinePerAttendee * (averageWinRate / 100);
-
-      return {
-        role,
-        attendeeCount,
-        totalCampaigns: data.campaigns.size,
-        averagePipelinePerAttendee,
-        averageWinRate,
-        mostEffectiveAttendee: mostEffectiveAttendee.attendeeName,
-        roleEfficiencyScore,
-      };
-    });
-
-    // Generate insights
-    const topPipelineCreator = attendeePerformance.reduce((best, current) => 
-      current.totalPipelineValue > best.totalPipelineValue ? current : best,
-      attendeePerformance[0] || { attendeeName: 'None', role: 'None', totalPipelineValue: 0 }
-    );
-
-    const topCloser = attendeePerformance.reduce((best, current) => 
-      current.winRate > best.winRate ? current : best,
-      attendeePerformance[0] || { attendeeName: 'None', role: 'None', winRate: 0, closedWonValue: 0 }
-    );
-
-    const mostVersatile = attendeePerformance.reduce((best, current) => 
-      current.campaignTypes.length > best.campaignTypes.length ? current : best,
-      attendeePerformance[0] || { attendeeName: 'None', role: 'None', campaignTypes: [] }
-    );
-
-    return {
-      attendeePerformance: attendeePerformance.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue),
-      roleAnalysis: roleAnalysis.sort((a, b) => b.roleEfficiencyScore - a.roleEfficiencyScore),
-      insights: {
-        topPipelineCreator: {
-          name: topPipelineCreator.attendeeName,
-          role: topPipelineCreator.role,
-          pipelineValue: topPipelineCreator.totalPipelineValue,
-        },
-        topCloser: {
-          name: topCloser.attendeeName,
-          role: topCloser.role,
-          winRate: topCloser.winRate,
-          closedValue: topCloser.closedWonValue,
-        },
-        mostVersatile: {
-          name: mostVersatile.attendeeName,
-          role: mostVersatile.role,
-          campaignTypesCount: mostVersatile.campaignTypes.length,
-        },
-      },
-    };
-  }
-
-  /**
-   * Calculate behavioral influence metrics for campaigns
-   * Tracks close date acceleration and stage progression within 30-day windows
-   */
-  private async calculateBehavioralInfluence(campaignId: number, campaignStartDate: Date): Promise<{
-    closeAcceleration: number;
-    stageProgression: number;
-    touchPointEffectiveness: number;
-  }> {
-    try {
-      // Define 30-day window after campaign start
-      const windowEndDate = new Date(campaignStartDate);
-      windowEndDate.setDate(windowEndDate.getDate() + 30);
-
-      // Get campaign customers with their snapshot timeline
-      const customerTimeline = await db
-        .select({
-          opportunityId: campaignCustomers.opportunityId,
-          snapshotDate: snapshots.snapshotDate,
-          stage: snapshots.stage,
-          closeDate: snapshots.closeDate,
-        })
-        .from(campaignCustomers)
-        .innerJoin(snapshots, eq(campaignCustomers.opportunityId, snapshots.opportunityId))
-        .where(
-          and(
-            eq(campaignCustomers.campaignId, campaignId),
-            gte(snapshots.snapshotDate, campaignStartDate),
-            lte(snapshots.snapshotDate, windowEndDate)
-          )
-        )
-        .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
-
-      // Group by opportunity and analyze behavioral changes
-      const opportunityGroups = new Map();
-      customerTimeline.forEach(row => {
-        if (!opportunityGroups.has(row.opportunityId)) {
-          opportunityGroups.set(row.opportunityId, []);
-        }
-        opportunityGroups.get(row.opportunityId).push(row);
-      });
-
-      let acceleratedCloses = 0;
-      let stageProgressions = 0;
-      let totalOpportunities = opportunityGroups.size;
-
-      // Define stage progression order
-      const stageOrder = ['Validation/Introduction', 'Demo/Discovery', 'Proposal', 'Negotiation', 'Closed Won'];
-
-      for (const [opportunityId, timeline] of opportunityGroups) {
-        if (timeline.length < 2) continue;
-
-        const firstSnapshot = timeline[0];
-        const lastSnapshot = timeline[timeline.length - 1];
-
-        // Check for close date acceleration (close date moved earlier)
-        if (firstSnapshot.closeDate && lastSnapshot.closeDate) {
-          const originalCloseDate = new Date(firstSnapshot.closeDate);
-          const newCloseDate = new Date(lastSnapshot.closeDate);
-          if (newCloseDate < originalCloseDate) {
-            acceleratedCloses++;
-          }
-        }
-
-        // Check for stage progression (advancement to later stages)
-        const firstStageIndex = stageOrder.indexOf(firstSnapshot.stage || '');
-        const lastStageIndex = stageOrder.indexOf(lastSnapshot.stage || '');
-        if (firstStageIndex >= 0 && lastStageIndex > firstStageIndex) {
-          stageProgressions++;
-        }
-      }
-
-      return {
-        closeAcceleration: totalOpportunities > 0 ? (acceleratedCloses / totalOpportunities) * 100 : 0,
-        stageProgression: totalOpportunities > 0 ? (stageProgressions / totalOpportunities) * 100 : 0,
-        touchPointEffectiveness: totalOpportunities > 0 ? ((acceleratedCloses + stageProgressions) / (totalOpportunities * 2)) * 100 : 0,
-      };
-
-    } catch (error) {
-      console.error('❌ Error calculating behavioral influence:', error);
-      return { closeAcceleration: 0, stageProgression: 0, touchPointEffectiveness: 0 };
-    }
-  }
-
-  /**
    * Get strategic engagement matrix combining target accounts and attendee effectiveness
    */
   async getStrategicEngagementMatrix(): Promise<StrategicEngagementMatrix> {
@@ -740,24 +408,13 @@ export class MarketingComparativeStorage {
   }
 
   private async calculateCampaignMetrics(campaignId: number) {
-    // Get campaign start date for influence tracking
-    const campaignInfo = await db
-      .select({ startDate: campaigns.startDate })
-      .from(campaigns)
-      .where(eq(campaigns.id, campaignId))
-      .limit(1);
-    const campaignStartDate = campaignInfo[0]?.startDate;
-
-    // Get campaign customers with current and historical snapshots for influence tracking
+    // Get campaign customers and their current snapshots (optimized query)
     const campaignData = await db
       .select({
-        opportunityId: campaignCustomers.opportunityId,
         attendees: campaignCustomers.attendees,
         targetAccount: snapshots.targetAccount,
         currentYear1Value: snapshots.year1Value,
         currentStage: snapshots.stage,
-        snapshotDate: snapshots.snapshotDate,
-        closeDate: snapshots.closeDate,
       })
       .from(campaignCustomers)
       .innerJoin(
@@ -767,58 +424,11 @@ export class MarketingComparativeStorage {
       .where(
         and(
           eq(campaignCustomers.campaignId, campaignId),
-          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '60 days'`)
+          // Use recent snapshot data for better performance
+          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
         )
       )
       .orderBy(desc(snapshots.snapshotDate));
-
-    // Get cross-campaign touch point data
-    const touchPointData = await db
-      .select({
-        opportunityId: campaignCustomers.opportunityId,
-        campaignCount: sql`COUNT(DISTINCT ${campaignCustomers.campaignId})`.as('campaignCount'),
-        campaignNames: sql`STRING_AGG(DISTINCT ${campaigns.name}, ', ')`.as('campaignNames'),
-      })
-      .from(campaignCustomers)
-      .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
-      .where(
-        inArray(
-          campaignCustomers.opportunityId,
-          campaignData.map(row => row.opportunityId)
-        )
-      )
-      .groupBy(campaignCustomers.opportunityId);
-
-    // Get stage progression data for influence analysis
-    const stageProgressionData = await db
-      .select({
-        opportunityId: snapshots.opportunityId,
-        stage: snapshots.stage,
-        snapshotDate: snapshots.snapshotDate,
-        preCampaignStage: sql`
-          LAG(${snapshots.stage}) OVER (
-            PARTITION BY ${snapshots.opportunityId} 
-            ORDER BY ${snapshots.snapshotDate}
-          )
-        `.as('preCampaignStage'),
-        preCampaignDate: sql`
-          LAG(${snapshots.snapshotDate}) OVER (
-            PARTITION BY ${snapshots.opportunityId} 
-            ORDER BY ${snapshots.snapshotDate}
-          )
-        `.as('preCampaignDate'),
-      })
-      .from(snapshots)
-      .where(
-        and(
-          inArray(
-            snapshots.opportunityId,
-            campaignData.map(row => row.opportunityId)
-          ),
-          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '90 days'`)
-        )
-      )
-      .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
 
     const totalCustomers = campaignData.length;
     const targetAccountCustomers = campaignData.filter(row => row.targetAccount === 1).length;
@@ -854,75 +464,6 @@ export class MarketingComparativeStorage {
     const campaign = await db.select({ cost: campaigns.cost }).from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
     const campaignCost = campaign[0]?.cost || 0;
     
-    // Multi-touch attribution calculations
-    const uniqueOpportunities = new Set(campaignData.map(row => row.opportunityId)).size;
-    const sharedOpportunities = campaignData.filter(row => {
-      const touchPoint = touchPointData.find(tp => tp.opportunityId === row.opportunityId);
-      return touchPoint && Number(touchPoint.campaignCount) > 1;
-    }).length;
-    
-    const influenceRate = totalCustomers > 0 ? (sharedOpportunities / totalCustomers) * 100 : 0;
-    
-    // Campaign influence score: weighs unique opportunities higher than shared ones
-    const campaignInfluenceScore = (uniqueOpportunities - sharedOpportunities) * 1.0 + 
-                                   (sharedOpportunities * 0.5); // Shared opportunities get 50% weight
-
-    // Close Date Acceleration Analysis (within 30 days of campaign)
-    const closedWithin30Days = closedWonCustomers.filter(row => {
-      if (!row.closeDate || !campaignStartDate) return false;
-      const daysDiff = Math.abs(new Date(row.closeDate).getTime() - new Date(campaignStartDate).getTime()) / (1000 * 60 * 60 * 24);
-      return daysDiff <= 30;
-    }).length;
-
-    const closedWonWithDates = closedWonCustomers.filter(row => row.closeDate && campaignStartDate);
-    const averageDaysToClose = closedWonWithDates.length > 0 ? 
-      closedWonWithDates.reduce((sum, row) => {
-        const daysDiff = Math.abs(new Date(row.closeDate!).getTime() - new Date(campaignStartDate!).getTime()) / (1000 * 60 * 60 * 24);
-        return sum + daysDiff;
-      }, 0) / closedWonWithDates.length : 0;
-
-    const accelerationRate = closedWonCustomers.length > 0 ? (closedWithin30Days / closedWonCustomers.length) * 100 : 0;
-
-    // Stage Progression Analysis 
-    const stageAdvancedOpportunities = stageProgressionData.filter(row => {
-      if (!row.preCampaignStage || !campaignStartDate) return false;
-      const progressionDate = new Date(row.snapshotDate);
-      const campaignDate = new Date(campaignStartDate);
-      const daysSinceCampaign = (progressionDate.getTime() - campaignDate.getTime()) / (1000 * 60 * 60 * 24);
-      
-      // Check if stage changed within 30 days of campaign and progressed forward
-      return daysSinceCampaign <= 30 && daysSinceCampaign >= 0 && 
-             row.stage !== row.preCampaignStage && 
-             !row.stage?.toLowerCase().includes('closed lost');
-    });
-
-    const advancedStages = stageAdvancedOpportunities.length;
-    const stageAdvancementRate = totalCustomers > 0 ? (advancedStages / totalCustomers) * 100 : 0;
-    const averageDaysToAdvance = stageAdvancedOpportunities.length > 0 ?
-      stageAdvancedOpportunities.reduce((sum, row) => {
-        const daysDiff = Math.abs(new Date(row.snapshotDate).getTime() - new Date(campaignStartDate!).getTime()) / (1000 * 60 * 60 * 24);
-        return sum + daysDiff;
-      }, 0) / stageAdvancedOpportunities.length : 0;
-
-    // Touch Point Effectiveness Analysis
-    const averageTouchPoints = touchPointData.length > 0 ? 
-      touchPointData.reduce((sum, tp) => sum + Number(tp.campaignCount), 0) / touchPointData.length : 0;
-
-    const singleTouchOpportunities = touchPointData.filter(tp => Number(tp.campaignCount) === 1);
-    const multiTouchOpportunities = touchPointData.filter(tp => Number(tp.campaignCount) > 1);
-
-    const singleTouchClosed = singleTouchOpportunities.filter(st => {
-      return closedWonCustomers.some(closed => closed.opportunityId === st.opportunityId);
-    }).length;
-
-    const multiTouchClosed = multiTouchOpportunities.filter(mt => {
-      return closedWonCustomers.some(closed => closed.opportunityId === mt.opportunityId);
-    }).length;
-
-    const singleTouchCloseRate = singleTouchOpportunities.length > 0 ? (singleTouchClosed / singleTouchOpportunities.length) * 100 : 0;
-    const multiTouchCloseRate = multiTouchOpportunities.length > 0 ? (multiTouchClosed / multiTouchOpportunities.length) * 100 : 0;
-    const touchPointCloseRate = touchPointData.length > 0 ? ((singleTouchClosed + multiTouchClosed) / touchPointData.length) * 100 : 0;
-
     const cac = closedWonCustomers.length > 0 ? campaignCost / closedWonCustomers.length : 0;
     const roi = campaignCost > 0 ? (closedWonValue / campaignCost) * 100 : 0;
     const pipelineEfficiency = campaignCost > 0 ? pipelineValue / campaignCost : 0;
@@ -930,9 +471,6 @@ export class MarketingComparativeStorage {
 
     return {
       totalCustomers,
-      uniqueOpportunities,
-      sharedOpportunities,
-      influenceRate,
       targetAccountCustomers,
       totalAttendees,
       averageAttendees,
@@ -943,24 +481,7 @@ export class MarketingComparativeStorage {
       roi,
       pipelineEfficiency,
       targetAccountWinRate,
-      attendeeEfficiency,
-      campaignInfluenceScore,
-      closeAcceleration: {
-        closedWithin30Days,
-        averageDaysToClose,
-        accelerationRate
-      },
-      stageProgression: {
-        advancedStages,
-        stageAdvancementRate,
-        averageDaysToAdvance
-      },
-      touchPointEffectiveness: {
-        averageTouchPoints,
-        touchPointCloseRate,
-        singleTouchCloseRate,
-        multiTouchCloseRate
-      }
+      attendeeEfficiency
     };
   }
 
