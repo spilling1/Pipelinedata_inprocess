@@ -4,6 +4,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart3, Users, Target, TrendingUp } from 'lucide-react';
 import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffectiveness';
 import CampaignInfluenceAnalytics from '@/components/marketing/CampaignInfluenceAnalytics';
+import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytics';
+import StrategicEngagementMatrix from '@/components/marketing/StrategicEngagementMatrix';
 
 const MarketingComparativeAnalytics: React.FC = () => {
   return (
@@ -46,68 +48,11 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="target-accounts" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Target Account Analysis
-              </CardTitle>
-              <CardDescription>
-                Performance comparison between target accounts and regular prospects
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">153</p>
-                        <p className="text-sm text-gray-600">Target Accounts</p>
-                        <p className="text-xs text-gray-500">$38.5M Pipeline</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">$252K</p>
-                        <p className="text-sm text-gray-600">Avg Target Account Deal Size</p>
-                        <p className="text-xs text-gray-500">Advantage over regular prospects</p>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <TargetAccountAnalytics />
         </TabsContent>
 
         <TabsContent value="strategic-matrix" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Strategic Engagement Matrix
-              </CardTitle>
-              <CardDescription>
-                Optimal strategy recommendations combining target account and attendee analysis
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="bg-green-50 p-4 rounded-lg">
-                  <h4 className="font-semibold mb-2">Strategic Insights</h4>
-                  <ul className="text-sm space-y-1">
-                    <li>• Optimal attendee count: 3-5 team members for maximum efficiency</li>
-                    <li>• Target account engagement shows 714% ROI improvement</li>
-                    <li>• Multi-touch campaigns increase close rates by 33.46%</li>
-                    <li>• Sales team members consistently outperform across campaign types</li>
-                  </ul>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <StrategicEngagementMatrix />
         </TabsContent>
       </Tabs>
     </div>
