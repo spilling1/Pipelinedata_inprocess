@@ -222,13 +222,13 @@ const TargetAccountAnalytics: React.FC = () => {
               <div className="text-center">
                 <p className="text-sm text-gray-600">Closed Won</p>
                 <p className="text-lg font-bold text-green-600">
-                  {formatCurrency(data?.targetAccounts.closedWonValue || 0)}
+                  {formatCurrency(data?.targetAccounts?.closedWonValue || 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600">Avg Attendees</p>
                 <p className="text-lg font-bold">
-                  {data?.targetAccounts.averageAttendees.toFixed(1)}
+                  {(data?.targetAccounts?.averageAttendees || 0).toFixed(1)}
                 </p>
               </div>
             </div>
@@ -251,7 +251,7 @@ const TargetAccountAnalytics: React.FC = () => {
               <div className="space-y-2">
                 <p className="text-sm font-medium text-gray-600">Customer Count</p>
                 <p className="text-2xl font-bold text-gray-600">
-                  {data?.nonTargetAccounts.customerCount.toLocaleString()}
+                  {(data?.nonTargetAccounts?.customerCount || 0).toLocaleString()}
                 </p>
               </div>
               <div className="space-y-2">
@@ -298,13 +298,13 @@ const TargetAccountAnalytics: React.FC = () => {
               <div className="text-center">
                 <p className="text-sm text-gray-600">Closed Won</p>
                 <p className="text-lg font-bold text-green-600">
-                  {formatCurrency(data?.nonTargetAccounts.closedWonValue || 0)}
+                  {formatCurrency(data?.nonTargetAccounts?.closedWonValue || 0)}
                 </p>
               </div>
               <div className="text-center">
                 <p className="text-sm text-gray-600">Avg Attendees</p>
                 <p className="text-lg font-bold">
-                  {data?.nonTargetAccounts.averageAttendees.toFixed(1)}
+                  {(data?.nonTargetAccounts?.averageAttendees || 0).toFixed(1)}
                 </p>
               </div>
             </div>
@@ -358,21 +358,21 @@ const TargetAccountAnalytics: React.FC = () => {
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                 <div>
                   <p className="text-gray-600">Target Account Count</p>
-                  <p className="font-bold">{data?.targetAccounts.customerCount}</p>
+                  <p className="font-bold">{data?.targetAccounts?.customerCount || 0}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Total Pipeline</p>
-                  <p className="font-bold">{formatCurrency((data?.targetAccounts.totalPipelineValue || 0) + (data?.nonTargetAccounts.totalPipelineValue || 0))}</p>
+                  <p className="font-bold">{formatCurrency((data?.targetAccounts?.totalPipelineValue || 0) + (data?.nonTargetAccounts?.totalPipelineValue || 0))}</p>
                 </div>
                 <div>
                   <p className="text-gray-600">Target Share</p>
                   <p className="font-bold">
-                    {formatPercentage(((data?.targetAccounts.totalPipelineValue || 0) / ((data?.targetAccounts.totalPipelineValue || 0) + (data?.nonTargetAccounts.totalPipelineValue || 1))) * 100)}
+                    {formatPercentage(((data?.targetAccounts?.totalPipelineValue || 0) / ((data?.targetAccounts?.totalPipelineValue || 0) + (data?.nonTargetAccounts?.totalPipelineValue || 1))) * 100)}
                   </p>
                 </div>
                 <div>
                   <p className="text-gray-600">Efficiency Multiplier</p>
-                  <p className="font-bold">{data?.comparison.targetAccountAdvantage.attendeeEfficiency.toFixed(1)}x</p>
+                  <p className="font-bold">{(data?.comparison?.targetAccountAdvantage?.attendeeEfficiency || 0).toFixed(1)}x</p>
                 </div>
               </div>
             </div>
