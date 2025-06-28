@@ -41,23 +41,23 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="team-performance" className="space-y-6">
+      <Tabs defaultValue="campaign-types" className="space-y-6">
         <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="team-performance" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Team Performance
+          <TabsTrigger value="campaign-types" className="flex items-center gap-2">
+            <Trophy className="h-4 w-4" />
+            Campaign Types
           </TabsTrigger>
           <TabsTrigger value="campaign-influence" className="flex items-center gap-2">
             <TrendingUp className="h-4 w-4" />
             Campaign Influence
           </TabsTrigger>
-          <TabsTrigger value="campaign-types" className="flex items-center gap-2">
-            <Trophy className="h-4 w-4" />
-            Campaign Types
-          </TabsTrigger>
           <TabsTrigger value="target-accounts" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             Target Accounts
+          </TabsTrigger>
+          <TabsTrigger value="team-performance" className="flex items-center gap-2">
+            <Users className="h-4 w-4" />
+            Team Performance
           </TabsTrigger>
           <TabsTrigger value="strategic-matrix" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />

@@ -124,18 +124,20 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 ## Recent Changes
 
 ✓ Complete Marketing Comparative Analytics Platform with Behavioral Influence & Team Performance Tracking (June 28, 2025)
-- Built comprehensive marketing comparative analytics system with full frontend interface and 4 analytical dimensions
+- Built comprehensive marketing comparative analytics system with full frontend interface and 5 analytical dimensions
+- **Campaign Type Analysis**: Comprehensive ROI comparison charts and strategic insights for campaign type evaluation positioned as primary tab
 - **Team Performance Tracking**: Individual team member effectiveness analysis showing Sam Pilling ($128M pipeline, Event campaigns) and Alex Thompson ($36M pipeline, Roadshow campaigns) with role-based performance scoring across Sales, Marketing, and Engineering
 - **Behavioral Influence Analytics**: Complete campaign influence tracking with close date acceleration (within 30 days), stage progression analysis, and multi-touch attribution preserving all campaign interactions
 - **Target Account Analysis**: Performance comparison between target accounts vs non-target accounts with deal size advantage multipliers, win rate comparisons, and attendee efficiency measurements
 - **Strategic Engagement Matrix**: Optimal strategy recommendations combining target account status with attendee effectiveness for ROI optimization and resource allocation guidance
-- **Frontend Interface Complete**: 4-tab marketing comparative analytics page with TeamAttendeeEffectiveness, CampaignInfluenceAnalytics, TargetAccountAnalytics, and StrategicEngagementMatrix components
+- **Frontend Interface Complete**: 5-tab marketing comparative analytics page with CampaignTypeAnalysis (1st), CampaignInfluenceAnalytics (2nd), TargetAccountAnalytics (3rd), TeamAttendeeEffectiveness (4th), and StrategicEngagementMatrix (5th)
+- **Permission System**: Added "marketing_comparative" permission restricted to Admin users only with proper role-based access control
+- **Navigation Integration**: Complete breadcrumb navigation (Dashboard → Marketing Analytics → Comparative Analytics) and header links between marketing pages
 - **API Performance**: All 7 comparative analytics endpoints operational with sub-200ms response times - team effectiveness (185ms), target accounts (30ms), strategic matrix (31ms)
 - **Database Integration**: Enhanced campaigns table with team_attendees JSONB field for flexible team member tracking and comprehensive campaign attribution analysis
 - **Behavioral Analytics Framework**: Tracks stage progression, acceleration patterns, touch point effectiveness, and team member contribution analysis using authentic snapshot data within 30-day campaign windows
 - **Multi-Touch Attribution**: Advanced attribution system measuring campaign overlap (33.46% opportunities across multiple campaigns) with single-touch vs multi-touch effectiveness correlation
 - **Strategic Insights Generation**: Automated recommendations for optimal attendee allocation, target account engagement strategies, and campaign type effectiveness based on behavioral data patterns
-- **Navigation Integration**: Added "Marketing Comparative Analytics" card to home page with purple Users icon providing direct access to comprehensive team performance and campaign influence analytics
 - System successfully processes live campaign data identifying specific individuals who drive pipeline creation and deal closure success across different campaign types and account segments
 
 ✓ Smart Salesforce ID Matching System Fixed and Operational (June 28, 2025)
