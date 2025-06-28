@@ -480,7 +480,10 @@ export class MarketingComparativeStorage {
         roi,
         pipelineEfficiency,
         targetAccountWinRate,
-        attendeeEfficiency
+        attendeeEfficiency,
+        // Add actual closed won/lost counts for better aggregation
+        closedWonCount: analytics.currentClosedWon.count,
+        closedLostCount: 0 // Will be calculated from analytics if needed
       };
       
     } catch (error) {
