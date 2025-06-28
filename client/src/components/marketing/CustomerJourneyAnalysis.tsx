@@ -263,7 +263,7 @@ const CustomerJourneyAnalysis: React.FC = () => {
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
                   </Pie>
-                  <Tooltip formatter={(value) => [`${value.toFixed(1)}%`, 'Percentage']} />
+                  <Tooltip formatter={(value) => [`${Number(value).toFixed(1)}%`, 'Percentage']} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
