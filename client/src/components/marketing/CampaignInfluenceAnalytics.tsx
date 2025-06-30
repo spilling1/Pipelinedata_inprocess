@@ -3,8 +3,8 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { TrendingUp, DollarSign, Target, Users, Trophy, Zap } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { TrendingUp, DollarSign, Target, Users, Trophy, Zap, Clock } from 'lucide-react';
 
 interface CampaignComparisonData {
   campaignId: number;
@@ -29,7 +29,7 @@ interface CampaignComparisonData {
 }
 
 const CampaignInfluenceAnalytics: React.FC = () => {
-  const { data: campaignData, isLoading, error } = useQuery<CampaignInfluenceMetrics[]>({
+  const { data: campaignData, isLoading, error } = useQuery<CampaignComparisonData[]>({
     queryKey: ['/api/marketing/comparative/campaign-comparison'],
   });
 
@@ -39,7 +39,7 @@ const CampaignInfluenceAnalytics: React.FC = () => {
         <Card>
           <CardHeader>
             <CardTitle>Campaign Influence Analytics</CardTitle>
-            <CardDescription>Loading behavioral influence tracking data...</CardDescription>
+            <CardDescription>Loading campaign performance and influence data...</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {[...Array(3)].map((_, i) => (
@@ -67,17 +67,26 @@ const CampaignInfluenceAnalytics: React.FC = () => {
   }
 
   const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
-  const formatDays = (value: number) => `${value.toFixed(1)} days`;
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    }
+    if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}K`;
+    }
+    return `$${value.toLocaleString()}`;
+  };
 
-  // Calculate aggregate insights
+  // Calculate aggregate insights using available data
   const totalCampaigns = campaignData?.length || 0;
-  const avgInfluenceRate = campaignData?.reduce((sum, c) => sum + c.metrics.influenceRate, 0) / totalCampaigns || 0;
-  const avgAccelerationRate = campaignData?.reduce((sum, c) => sum + c.metrics.closeAcceleration.accelerationRate, 0) / totalCampaigns || 0;
-  const avgStageProgression = campaignData?.reduce((sum, c) => sum + c.metrics.stageProgression.stageAdvancementRate, 0) / totalCampaigns || 0;
+  const avgWinRate = campaignData?.reduce((sum, c) => sum + (c.metrics.winRate || 0), 0) / totalCampaigns || 0;
+  const avgROI = campaignData?.reduce((sum, c) => sum + (c.metrics.roi || 0), 0) / totalCampaigns || 0;
+  const avgTargetAccountPercentage = campaignData?.reduce((sum, c) => sum + (c.metrics.targetAccountPercentage || 0), 0) / totalCampaigns || 0;
 
-  // Multi-touch insights
-  const multiTouchCampaigns = campaignData?.filter(c => c.metrics.touchPointEffectiveness.multiTouchCloseRate > c.metrics.touchPointEffectiveness.singleTouchCloseRate) || [];
-  const multiTouchAdvantage = multiTouchCampaigns.length / totalCampaigns * 100;
+  // Campaign effectiveness insights
+  const highROICampaigns = campaignData?.filter(c => (c.metrics.roi || 0) > avgROI) || [];
+  const targetAccountFocusedCampaigns = campaignData?.filter(c => (c.metrics.targetAccountPercentage || 0) > 50) || [];
+  const highWinRateCampaigns = campaignData?.filter(c => (c.metrics.winRate || 0) > avgWinRate) || [];
 
   const getBadgeColor = (type: string) => {
     switch (type.toLowerCase()) {
@@ -94,11 +103,11 @@ const CampaignInfluenceAnalytics: React.FC = () => {
     }
   };
 
-  const getInfluenceLevel = (rate: number) => {
-    if (rate >= 80) return { level: 'Excellent', color: 'text-green-600' };
-    if (rate >= 60) return { level: 'Good', color: 'text-blue-600' };
-    if (rate >= 40) return { level: 'Moderate', color: 'text-yellow-600' };
-    return { level: 'Low', color: 'text-red-600' };
+  const getPerformanceLevel = (winRate: number) => {
+    if (winRate >= 40) return { level: 'Excellent', color: 'text-green-600' };
+    if (winRate >= 25) return { level: 'Good', color: 'text-blue-600' };
+    if (winRate >= 15) return { level: 'Average', color: 'text-yellow-600' };
+    return { level: 'Needs Improvement', color: 'text-red-600' };
   };
 
   return (
@@ -109,11 +118,11 @@ const CampaignInfluenceAnalytics: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Avg Influence Rate</p>
-                <p className="text-2xl font-bold text-blue-600">{formatPercentage(avgInfluenceRate)}</p>
-                <p className="text-xs text-gray-500">Multi-touch correlation</p>
+                <p className="text-sm font-medium text-gray-600">Avg Win Rate</p>
+                <p className="text-2xl font-bold text-blue-600">{formatPercentage(avgWinRate)}</p>
+                <p className="text-xs text-gray-500">Across all campaigns</p>
               </div>
-              <TrendingUp className="h-8 w-8 text-blue-600" />
+              <Trophy className="h-8 w-8 text-blue-600" />
             </div>
           </CardContent>
         </Card>
@@ -122,11 +131,11 @@ const CampaignInfluenceAnalytics: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Close Acceleration</p>
-                <p className="text-2xl font-bold text-green-600">{formatPercentage(avgAccelerationRate)}</p>
-                <p className="text-xs text-gray-500">Within 30 days</p>
+                <p className="text-sm font-medium text-gray-600">Avg ROI</p>
+                <p className="text-2xl font-bold text-green-600">{formatPercentage(avgROI)}</p>
+                <p className="text-xs text-gray-500">Return on investment</p>
               </div>
-              <Zap className="h-8 w-8 text-green-600" />
+              <DollarSign className="h-8 w-8 text-green-600" />
             </div>
           </CardContent>
         </Card>
@@ -135,9 +144,9 @@ const CampaignInfluenceAnalytics: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Stage Progression</p>
-                <p className="text-2xl font-bold text-purple-600">{formatPercentage(avgStageProgression)}</p>
-                <p className="text-xs text-gray-500">Stage advancement</p>
+                <p className="text-sm font-medium text-gray-600">Target Account Focus</p>
+                <p className="text-2xl font-bold text-purple-600">{formatPercentage(avgTargetAccountPercentage)}</p>
+                <p className="text-xs text-gray-500">Strategic targeting</p>
               </div>
               <Target className="h-8 w-8 text-purple-600" />
             </div>
@@ -148,31 +157,34 @@ const CampaignInfluenceAnalytics: React.FC = () => {
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Multi-Touch Advantage</p>
-                <p className="text-2xl font-bold text-orange-600">{formatPercentage(multiTouchAdvantage)}</p>
-                <p className="text-xs text-gray-500">Campaigns benefit</p>
+                <p className="text-sm font-medium text-gray-600">High Performers</p>
+                <p className="text-2xl font-bold text-orange-600">{highWinRateCampaigns.length}</p>
+                <p className="text-xs text-gray-500">Above average campaigns</p>
               </div>
-              <Users className="h-8 w-8 text-orange-600" />
+              <Zap className="h-8 w-8 text-orange-600" />
             </div>
           </CardContent>
         </Card>
       </div>
 
-      {/* Campaign-by-Campaign Analysis */}
+      {/* Campaign Performance Analysis */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="h-5 w-5" />
-            Campaign Behavioral Influence Analysis
+            Campaign Performance Analysis
           </CardTitle>
           <CardDescription>
-            Close date acceleration, stage progression, and touch point effectiveness within 30-day campaign windows
+            Individual campaign effectiveness and strategic impact analysis
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-6">
             {campaignData?.map((campaign, index) => {
-              const influence = getInfluenceLevel(campaign.metrics.influenceRate);
+              const performance = getPerformanceLevel(campaign.metrics.winRate);
+              const isHighROI = (campaign.metrics.roi || 0) > avgROI;
+              const isTargetFocused = (campaign.metrics.targetAccountPercentage || 0) > 50;
+              
               return (
                 <div key={index} className="border rounded-lg p-6 hover:bg-gray-50 transition-colors">
                   <div className="flex items-start justify-between mb-4">
@@ -182,123 +194,65 @@ const CampaignInfluenceAnalytics: React.FC = () => {
                         <Badge className={getBadgeColor(campaign.campaignType)}>
                           {campaign.campaignType}
                         </Badge>
-                        <span className={`text-sm font-medium ${influence.color}`}>
-                          {influence.level} Influence
+                        <span className={`text-sm font-medium ${performance.color}`}>
+                          {performance.level}
                         </span>
+                        {isTargetFocused && (
+                          <Badge className="bg-purple-100 text-purple-800">
+                            Target Focused
+                          </Badge>
+                        )}
+                        {isHighROI && (
+                          <Badge className="bg-green-100 text-green-800">
+                            High ROI
+                          </Badge>
+                        )}
                       </div>
                     </div>
                     <div className="text-right">
-                      <p className="text-sm text-gray-600">Influence Score</p>
-                      <p className="text-xl font-bold text-blue-600">
-                        {campaign.metrics.campaignInfluenceScore.toFixed(1)}
-                      </p>
+                      <p className="text-sm text-gray-600">Cost</p>
+                      <p className="text-lg font-bold">{formatCurrency(campaign.cost)}</p>
                     </div>
                   </div>
 
-                  {/* Behavioral Metrics Grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {/* Close Acceleration */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Zap className="h-4 w-4 text-green-600" />
-                        <span className="font-medium text-sm">Close Date Acceleration</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Acceleration Rate</span>
-                          <span className="font-semibold">
-                            {formatPercentage(campaign.metrics.closeAcceleration.accelerationRate)}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={Math.min(campaign.metrics.closeAcceleration.accelerationRate, 100)} 
-                          className="h-2"
-                        />
-                        <div className="text-xs text-gray-500">
-                          {campaign.metrics.closeAcceleration.closedWithin30Days} deals closed within 30 days
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Avg: {formatDays(campaign.metrics.closeAcceleration.averageDaysToClose)}
-                        </div>
-                      </div>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div>
+                      <p className="text-sm text-gray-600">Customers</p>
+                      <p className="text-xl font-semibold">{campaign.metrics.totalCustomers}</p>
                     </div>
-
-                    {/* Stage Progression */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Target className="h-4 w-4 text-purple-600" />
-                        <span className="font-medium text-sm">Stage Progression</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Advancement Rate</span>
-                          <span className="font-semibold">
-                            {formatPercentage(campaign.metrics.stageProgression.stageAdvancementRate)}
-                          </span>
-                        </div>
-                        <Progress 
-                          value={Math.min(campaign.metrics.stageProgression.stageAdvancementRate, 100)} 
-                          className="h-2"
-                        />
-                        <div className="text-xs text-gray-500">
-                          {campaign.metrics.stageProgression.advancedStages} opportunities advanced stages
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Avg: {formatDays(campaign.metrics.stageProgression.averageDaysToAdvance)}
-                        </div>
-                      </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Pipeline Value</p>
+                      <p className="text-xl font-semibold">{formatCurrency(campaign.metrics.totalPipelineValue)}</p>
                     </div>
-
-                    {/* Touch Point Effectiveness */}
-                    <div className="space-y-3">
-                      <div className="flex items-center gap-2">
-                        <Users className="h-4 w-4 text-orange-600" />
-                        <span className="font-medium text-sm">Touch Point Effectiveness</span>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Single-Touch</span>
-                          <span className="font-semibold">
-                            {formatPercentage(campaign.metrics.touchPointEffectiveness.singleTouchCloseRate)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-gray-600">Multi-Touch</span>
-                          <span className="font-semibold">
-                            {formatPercentage(campaign.metrics.touchPointEffectiveness.multiTouchCloseRate)}
-                          </span>
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Avg: {campaign.metrics.touchPointEffectiveness.averageTouchPoints.toFixed(1)} touch points
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          Overall: {formatPercentage(campaign.metrics.touchPointEffectiveness.touchPointCloseRate)}
-                        </div>
-                      </div>
+                    <div>
+                      <p className="text-sm text-gray-600">Win Rate</p>
+                      <p className="text-xl font-semibold">{formatPercentage(campaign.metrics.winRate)}</p>
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-600">ROI</p>
+                      <p className="text-xl font-semibold">{formatPercentage(campaign.metrics.roi)}</p>
                     </div>
                   </div>
 
-                  {/* Multi-Touch Attribution Summary */}
-                  <div className="mt-4 pt-4 border-t bg-gray-50 rounded p-3">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Total Customers</p>
-                        <p className="text-lg font-bold">{campaign.metrics.totalCustomers}</p>
+                  <div className="space-y-3">
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Target Account Coverage</span>
+                        <span className="text-sm font-bold">
+                          {formatPercentage(campaign.metrics.targetAccountPercentage)}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Unique Opportunities</p>
-                        <p className="text-lg font-bold text-blue-600">{campaign.metrics.uniqueOpportunities}</p>
+                      <Progress value={campaign.metrics.targetAccountPercentage} className="h-2" />
+                    </div>
+
+                    <div>
+                      <div className="flex justify-between mb-1">
+                        <span className="text-sm font-medium">Cost Efficiency</span>
+                        <span className="text-sm font-bold">
+                          {formatCurrency(campaign.metrics.costEfficiency)}
+                        </span>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Shared Opportunities</p>
-                        <p className="text-lg font-bold text-orange-600">{campaign.metrics.sharedOpportunities}</p>
-                      </div>
-                      <div>
-                        <p className="text-sm font-medium text-gray-600">Influence Rate</p>
-                        <p className={`text-lg font-bold ${influence.color}`}>
-                          {formatPercentage(campaign.metrics.influenceRate)}
-                        </p>
-                      </div>
+                      <Progress value={Math.min((campaign.metrics.costEfficiency / 10000) * 100, 100)} className="h-2" />
                     </div>
                   </div>
                 </div>
@@ -308,42 +262,42 @@ const CampaignInfluenceAnalytics: React.FC = () => {
         </CardContent>
       </Card>
 
-      {/* Key Insights Summary */}
+      {/* Strategic Insights */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
-            Behavioral Influence Insights
+            Strategic Campaign Insights
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
             <div className="bg-blue-50 p-4 rounded-lg">
-              <h4 className="font-semibold mb-2 text-blue-800">Campaign Influence Analysis</h4>
+              <h4 className="font-semibold mb-2 text-blue-800">Performance Analysis</h4>
               <ul className="text-sm space-y-1 text-blue-700">
-                <li>• Close date acceleration tracking within 30-day campaign windows</li>
-                <li>• Stage progression analysis for behavioral change measurement</li>
-                <li>• Multi-touch attribution preserving all campaign interactions</li>
-                <li>• Touch point effectiveness comparing single vs multi-touch correlations</li>
+                <li>• {totalCampaigns} campaigns analyzed with {formatPercentage(avgWinRate)} average win rate</li>
+                <li>• {highWinRateCampaigns.length} campaigns performing above average win rate</li>
+                <li>• {targetAccountFocusedCampaigns.length} campaigns focused on target accounts (&gt;50% coverage)</li>
+                <li>• {highROICampaigns.length} campaigns showing above-average ROI performance</li>
               </ul>
             </div>
             
-            {multiTouchAdvantage > 50 && (
+            {targetAccountFocusedCampaigns.length > totalCampaigns / 2 && (
               <div className="bg-green-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 text-green-800">Multi-Touch Strategy Recommendation</h4>
+                <h4 className="font-semibold mb-2 text-green-800">Target Account Strategy Success</h4>
                 <p className="text-sm text-green-700">
-                  {formatPercentage(multiTouchAdvantage)} of campaigns show higher close rates with multi-touch 
-                  engagement. Consider coordinated campaign strategies for maximum influence.
+                  {formatPercentage((targetAccountFocusedCampaigns.length / totalCampaigns) * 100)} of campaigns 
+                  show strong target account focus. This strategic approach appears to be driving pipeline success.
                 </p>
               </div>
             )}
 
-            {avgAccelerationRate > 20 && (
+            {highROICampaigns.length > totalCampaigns / 3 && (
               <div className="bg-yellow-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 text-yellow-800">Acceleration Opportunity</h4>
+                <h4 className="font-semibold mb-2 text-yellow-800">ROI Optimization Opportunity</h4>
                 <p className="text-sm text-yellow-700">
-                  Strong acceleration patterns detected ({formatPercentage(avgAccelerationRate)} average). 
-                  Focus on campaigns with proven ability to accelerate deal closure.
+                  {formatPercentage((highROICampaigns.length / totalCampaigns) * 100)} of campaigns show 
+                  strong ROI. Consider analyzing top performers to replicate successful strategies.
                 </p>
               </div>
             )}
