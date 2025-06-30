@@ -5,18 +5,28 @@ import { eq, and, sql, desc, asc, isNotNull, gte, lte, inArray } from 'drizzle-o
 // Type definitions for comparative analytics
 export interface TargetAccountAnalytics {
   targetAccounts: {
-    totalCustomers: number;
+    customerCount: number;
     totalPipelineValue: number;
+    closedWonValue: number;
     averageDealSize: number;
     winRate: number;
+    totalAttendees: number;
     averageAttendees: number;
+    cac: number;
+    roi: number;
+    pipelineEfficiency: number;
   };
   nonTargetAccounts: {
-    totalCustomers: number;
+    customerCount: number;
     totalPipelineValue: number;
+    closedWonValue: number;
     averageDealSize: number;
     winRate: number;
+    totalAttendees: number;
     averageAttendees: number;
+    cac: number;
+    roi: number;
+    pipelineEfficiency: number;
   };
   comparison: {
     targetAccountAdvantage: {
@@ -361,28 +371,40 @@ export class MarketingComparativeStorage {
   // Helper methods for calculations
 
   private calculateAccountTypeMetrics(data: any[]) {
-    const totalCustomers = data.length;
+    const customerCount = data.length;
     const totalPipelineValue = data.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
-    const averageDealSize = totalCustomers > 0 ? totalPipelineValue / totalCustomers : 0;
+    const averageDealSize = customerCount > 0 ? totalPipelineValue / customerCount : 0;
     
     const closedWonCustomers = data.filter(row => 
       row.currentStage && row.currentStage.toLowerCase().includes('closed won')
-    ).length;
+    );
     const closedLostCustomers = data.filter(row => 
       row.currentStage && row.currentStage.toLowerCase().includes('closed lost')
-    ).length;
-    const winRate = (closedWonCustomers + closedLostCustomers) > 0 ? 
-      (closedWonCustomers / (closedWonCustomers + closedLostCustomers)) * 100 : 0;
+    );
+    
+    const closedWonValue = closedWonCustomers.reduce((sum, row) => sum + (row.currentYear1Value || 0), 0);
+    const winRate = (closedWonCustomers.length + closedLostCustomers.length) > 0 ? 
+      (closedWonCustomers.length / (closedWonCustomers.length + closedLostCustomers.length)) * 100 : 0;
 
     const totalAttendees = data.reduce((sum, row) => sum + (row.attendees || 0), 0);
-    const averageAttendees = totalCustomers > 0 ? totalAttendees / totalCustomers : 0;
+    const averageAttendees = customerCount > 0 ? totalAttendees / customerCount : 0;
+
+    // Calculate additional metrics
+    const cac = 0; // Would need campaign cost data
+    const roi = closedWonValue > 0 ? (closedWonValue / (cac || 1)) * 100 : 0;
+    const pipelineEfficiency = totalAttendees > 0 ? totalPipelineValue / totalAttendees : 0;
 
     return {
-      totalCustomers,
+      customerCount,
       totalPipelineValue,
+      closedWonValue,
       averageDealSize,
       winRate,
-      averageAttendees
+      totalAttendees,
+      averageAttendees,
+      cac,
+      roi,
+      pipelineEfficiency
     };
   }
 
