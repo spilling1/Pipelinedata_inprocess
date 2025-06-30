@@ -122,21 +122,30 @@ export class MarketingComparativeStorage {
         .where(
           and(
             isNotNull(snapshots.targetAccount),
-            // Simple approach: use most recent snapshot available
-            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
+            // Get the most recent snapshots for each opportunity
+            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '7 days'`)
           )
         )
         .orderBy(desc(snapshots.snapshotDate));
 
+      console.log('🎯 Debug: Raw data retrieved:', campaignCustomersData.length, 'rows');
+      console.log('🎯 Debug: Sample data:', campaignCustomersData.slice(0, 3));
+      
       // Separate target accounts (1) from non-target accounts (0)
       const targetAccountData = campaignCustomersData.filter(row => row.targetAccount === 1);
       const nonTargetAccountData = campaignCustomersData.filter(row => row.targetAccount === 0);
+
+      console.log('🎯 Debug: Target account data:', targetAccountData.length, 'rows');
+      console.log('🎯 Debug: Non-target account data:', nonTargetAccountData.length, 'rows');
 
       // Calculate metrics for target accounts
       const targetMetrics = this.calculateAccountTypeMetrics(targetAccountData);
       
       // Calculate metrics for non-target accounts  
       const nonTargetMetrics = this.calculateAccountTypeMetrics(nonTargetAccountData);
+      
+      console.log('🎯 Debug: Target metrics:', targetMetrics);
+      console.log('🎯 Debug: Non-target metrics:', nonTargetMetrics);
 
       // Calculate comparison insights
       const comparison = {
