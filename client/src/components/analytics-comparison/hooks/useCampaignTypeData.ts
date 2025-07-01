@@ -51,9 +51,20 @@ export const useCampaignTypeData = (analysisType: 'influenced' | 'new-pipeline' 
   const processedData = useMemo(() => {
     if (!rawData || rawData.length === 0) return null;
 
+    // Filter out invalid or empty campaign types and normalize data
+    const filteredData = rawData.filter(item => 
+      item.campaignType && 
+      item.campaignType.trim() !== '' && 
+      item.campaignType !== 'Unknown' &&
+      item.totalCustomers > 0 // Only include types with actual customers
+    );
+
+    // Return null if no valid data after filtering
+    if (filteredData.length === 0) return null;
+
     // Normalize data to ensure all properties have default values
-    const normalizedData = rawData.map(item => ({
-      campaignType: item.campaignType || 'Unknown',
+    const normalizedData = filteredData.map(item => ({
+      campaignType: item.campaignType,
       totalCampaigns: item.totalCampaigns || 0,
       totalCost: item.totalCost || 0,
       totalCustomers: item.totalCustomers || 0,

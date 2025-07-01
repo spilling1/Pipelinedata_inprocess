@@ -95,7 +95,13 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
 
   const CustomBar = (props: any) => {
     const { x, y, width, height, payload } = props;
-    const color = getBarColor(payload.roi);
+    
+    // Ensure all values are valid numbers
+    if (isNaN(x) || isNaN(y) || isNaN(width) || isNaN(height) || !payload) {
+      return null;
+    }
+    
+    const color = getBarColor(payload.roi || 0);
     
     return (
       <rect
