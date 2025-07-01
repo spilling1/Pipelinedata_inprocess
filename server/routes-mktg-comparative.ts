@@ -8,6 +8,7 @@ let executiveSummaryCache: { data: any; timestamp: number } | null = null;
 let campaignTypesCache: { data: any; timestamp: number } | null = null;
 let newPipelineCache: { data: any; timestamp: number } | null = null;
 let stageAdvanceCache: { data: any; timestamp: number } | null = null;
+let customerJourneyCache: { data: any; timestamp: number } | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
 
 /**
@@ -408,11 +409,21 @@ router.get('/dashboard-summary', async (req, res) => {
  */
 router.get('/customer-journey', async (req, res) => {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (customerJourneyCache && (now - customerJourneyCache.timestamp) < CACHE_DURATION) {
+      console.log('📈 API: Returning cached customer journey data');
+      return res.json(customerJourneyCache.data);
+    }
+
     console.log('🎯🛤️ API: Fetching customer journey analysis...');
     
     const customerJourneyData = await marketingComparativeStorage.getCustomerJourneyAnalysis();
     
-    console.log(`🎯🛤️ Customer journey analysis completed - ${customerJourneyData.customers.length} customers analyzed`);
+    // Cache the result
+    customerJourneyCache = { data: customerJourneyData, timestamp: Date.now() };
+    console.log(`🎯🛤️ Customer journey analysis completed and cached - ${customerJourneyData.customers?.length || 0} customers analyzed`);
+    
     res.json(customerJourneyData);
     
   } catch (error) {
