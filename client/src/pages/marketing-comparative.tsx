@@ -61,10 +61,6 @@ const MarketingComparativeAnalytics: React.FC = () => {
             <Target className="h-4 w-4" />
             Target Accounts
           </TabsTrigger>
-          <TabsTrigger value="team-performance" className="flex items-center gap-2">
-            <Users className="h-4 w-4" />
-            Team Performance
-          </TabsTrigger>
           <TabsTrigger value="strategic-matrix" className="flex items-center gap-2">
             <BarChart3 className="h-4 w-4" />
             Strategic Matrix
@@ -79,9 +75,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
           <ExecutiveSummary />
         </TabsContent>
 
-        <TabsContent value="team-performance" className="space-y-6">
-          <TeamAttendeeEffectiveness />
-        </TabsContent>
+        
 
         <TabsContent value="campaign-influence" className="space-y-6">
           <CampaignEffectivenessRankings />
