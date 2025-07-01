@@ -23,7 +23,7 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
   const chartData = useMemo(() => {
     return data.map((item) => ({
       name: item.campaignType,
-      roi: isNaN(item.averageROI) ? 0 : Math.round(item.averageROI * 10) / 10, // Round to 1 decimal
+      roi: isNaN(item.averageROI) ? 0.1 : Math.max(0.1, Math.round(item.averageROI * 10) / 10), // Ensure minimum value for log scale
       cost: item.totalCost || 0,
       winRate: isNaN(item.averageWinRate) ? 0 : Math.round(item.averageWinRate * 10) / 10,
       pipelineCostRatio: isNaN(item.costEfficiency) ? 0 : Math.round(item.costEfficiency * 10) / 10,
@@ -111,6 +111,7 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
         height={height}
         fill={color}
         rx={4}
+        ry={4}
         className="hover:opacity-80 transition-opacity"
       />
     );
@@ -132,25 +133,28 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
             <BarChart
               data={chartData}
               margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
-              layout="horizontal"
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
-                type="number"
-                tickFormatter={(value) => `${value}%`}
+                dataKey="name"
+                angle={-45}
+                textAnchor="end"
+                height={80}
                 stroke="hsl(var(--muted-foreground))"
+                fontSize={12}
               />
               <YAxis 
-                type="category"
-                dataKey="name"
-                width={80}
+                scale="log"
+                domain={[0.1, 'dataMax']}
+                tickFormatter={(value) => `${value}%`}
                 stroke="hsl(var(--muted-foreground))"
+                allowDataOverflow={false}
               />
               <Tooltip content={<CustomTooltip />} />
               <Bar 
                 dataKey="roi" 
                 shape={<CustomBar />}
-                radius={[0, 4, 4, 0]}
+                radius={[4, 4, 0, 0]}
               />
             </BarChart>
           </ResponsiveContainer>
