@@ -120,7 +120,7 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
           <g>
             {/* Arrow pointing up to indicate value exceeds chart */}
             <polygon
-              points={`${x + width/2 - 6},${y - 5} ${x + width/2 + 6},${y - 5} ${x + width/2},${y - 15}`}
+              points={`${x + width/2 - 6},10 ${x + width/2 + 6},10 ${x + width/2},0`}
               fill={color}
               stroke="white"
               strokeWidth="1"
@@ -128,9 +128,9 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
             {/* Small text indicator */}
             <text
               x={x + width/2}
-              y={y - 18}
+              y={-3}
               textAnchor="middle"
-              fontSize="10"
+              fontSize="12"
               fill={color}
               fontWeight="bold"
             >
