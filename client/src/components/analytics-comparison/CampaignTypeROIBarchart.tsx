@@ -23,11 +23,11 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
   const chartData = useMemo(() => {
     return data.map((item) => ({
       name: item.campaignType,
-      roi: Math.round(item.averageROI * 10) / 10, // Round to 1 decimal
-      cost: item.totalCost,
-      winRate: Math.round(item.averageWinRate * 10) / 10,
-      pipelineCostRatio: Math.round(item.costEfficiency * 10) / 10,
-      campaigns: item.totalCampaigns,
+      roi: isNaN(item.averageROI) ? 0 : Math.round(item.averageROI * 10) / 10, // Round to 1 decimal
+      cost: item.totalCost || 0,
+      winRate: isNaN(item.averageWinRate) ? 0 : Math.round(item.averageWinRate * 10) / 10,
+      pipelineCostRatio: isNaN(item.costEfficiency) ? 0 : Math.round(item.costEfficiency * 10) / 10,
+      campaigns: item.totalCampaigns || 0,
       customers: item.totalCustomers,
       pipelineValue: item.totalPipelineValue,
       closedWonValue: item.totalClosedWonValue

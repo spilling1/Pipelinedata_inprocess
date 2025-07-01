@@ -773,7 +773,7 @@ export class MarketingComparativeStorage {
   }
 
   /**
-   * Get Executive Summary Data
+   * Get Executive Summary Data - Optimized Fast Version
    * Provides comprehensive marketing performance overview with metrics, trends, and insights
    * Filtered to current fiscal year (Feb 1, 2025 - Jan 31, 2026) with unique opportunity aggregation
    */

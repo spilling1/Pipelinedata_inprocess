@@ -3,17 +3,34 @@ import { marketingComparativeStorage } from './storage-mktg-comparative.js';
 
 const router = Router();
 
+// Simple cache for expensive queries (5 minutes)
+let executiveSummaryCache: { data: any; timestamp: number } | null = null;
+let campaignTypesCache: { data: any; timestamp: number } | null = null;
+let newPipelineCache: { data: any; timestamp: number } | null = null;
+let stageAdvanceCache: { data: any; timestamp: number } | null = null;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 /**
  * Executive Summary - Comprehensive marketing performance overview
  * Provides high-level metrics, trends, and strategic insights
  */
 router.get('/executive-summary', async (req, res) => {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (executiveSummaryCache && (now - executiveSummaryCache.timestamp) < CACHE_DURATION) {
+      console.log('📊 API: Returning cached executive summary');
+      return res.json(executiveSummaryCache.data);
+    }
+
     console.log('📊 API: Fetching executive summary data...');
     
-    const summary = await marketingComparativeStorage.getExecutiveSummary();
+    const summary = await marketingComparativeStorage.getExecutiveSummaryFast();
     
-    console.log('📊 API: Executive summary completed successfully');
+    // Cache the result
+    executiveSummaryCache = { data: summary, timestamp: now };
+    console.log('📊 API: Executive summary completed and cached');
+    
     res.json(summary);
     
   } catch (error) {
