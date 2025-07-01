@@ -1281,7 +1281,7 @@ export class MarketingComparativeStorage {
               s2.stage as after_stage,
               s1.snapshot_date as before_date,
               s2.snapshot_date as after_date,
-              s2.year1_arr,
+              s2.year1_value,
               s2.close_date
             FROM campaigns c
             JOIN campaign_customers cc ON c.id = cc.campaign_id
