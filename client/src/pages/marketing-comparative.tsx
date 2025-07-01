@@ -11,6 +11,7 @@ import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytic
 import StrategicEngagementMatrix from '@/components/marketing/StrategicEngagementMatrix';
 import CampaignTypeAnalysisEnhanced from '@/components/marketing/CampaignTypeAnalysisEnhanced';
 import CustomerJourneyAnalysis from '@/components/marketing/CustomerJourneyAnalysis';
+import CampaignInfluence from '@/components/analytics-comparison/CampaignInfluence';
 
 const MarketingComparativeAnalytics: React.FC = () => {
   return (
@@ -78,7 +79,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
         
 
         <TabsContent value="campaign-influence" className="space-y-6">
-          <CampaignEffectivenessRankings />
+          <CampaignInfluence />
         </TabsContent>
 
         <TabsContent value="campaign-types" className="space-y-6">
