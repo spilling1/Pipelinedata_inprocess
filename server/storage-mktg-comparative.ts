@@ -1133,6 +1133,258 @@ export class MarketingComparativeStorage {
 
     return summary;
   }
+
+  /**
+   * Get campaign type analysis for New Pipeline (30d)
+   * Shows opportunities that entered pipeline within 30 days of campaign events
+   */
+  async getCampaignTypeNewPipelineAnalysis(): Promise<any[]> {
+    try {
+      console.log('📈 Fetching new pipeline (30d) campaign type analysis...');
+
+      // Get campaigns with their customers and opportunities that entered pipeline within 30 days
+      const campaignData = await this.db.execute(
+        sql`
+          SELECT 
+            c.type as campaign_type,
+            c.id as campaign_id,
+            c.start_date,
+            c.budget as campaign_cost,
+            cc.opportunity_id,
+            o.name as opportunity_name,
+            o.client_name,
+            s.stage,
+            s.year1_arr,
+            s.entered_pipeline,
+            s.snapshot_date,
+            s.close_date
+          FROM campaigns c
+          JOIN campaign_customers cc ON c.id = cc.campaign_id
+          JOIN opportunities o ON cc.opportunity_id = o.id
+          LEFT JOIN snapshots s ON o.id = s.opportunity_id
+          WHERE s.entered_pipeline IS NOT NULL
+            AND s.entered_pipeline >= c.start_date
+            AND s.entered_pipeline <= c.start_date + INTERVAL '30 days'
+            AND s.snapshot_date = (
+              SELECT MAX(s2.snapshot_date) 
+              FROM snapshots s2 
+              WHERE s2.opportunity_id = o.id
+            )
+          ORDER BY c.type, s.entered_pipeline
+        `
+      );
+
+      // Group by campaign type and calculate metrics
+      const typeGroups = campaignData.rows.reduce((groups: any, row: any) => {
+        const type = row.campaignType;
+        if (!groups[type]) {
+          groups[type] = {
+            campaignType: type,
+            totalCampaigns: new Set(),
+            totalCost: 0,
+            newPipelineOpportunities: [],
+            totalNewPipelineValue: 0,
+            closedWonFromNew: 0,
+            activePipelineFromNew: 0
+          };
+        }
+
+        groups[type].totalCampaigns.add(row.campaignId);
+        groups[type].totalCost += row.campaignCost || 0;
+        
+        // Track new pipeline opportunities
+        groups[type].newPipelineOpportunities.push({
+          opportunityName: row.opportunityName,
+          clientName: row.clientName,
+          enteredPipeline: row.enteredPipeline,
+          stage: row.stage,
+          value: row.year1Arr || 0
+        });
+
+        const value = row.year1Arr || 0;
+        groups[type].totalNewPipelineValue += value;
+
+        if (row.stage === 'Closed Won') {
+          groups[type].closedWonFromNew += value;
+        } else if (row.stage !== 'Closed Lost') {
+          groups[type].activePipelineFromNew += value;
+        }
+
+        return groups;
+      }, {});
+
+      // Convert to array format with calculated metrics
+      const typeAnalytics = Object.values(typeGroups).map((group: any) => {
+        const totalCampaigns = group.totalCampaigns.size;
+        const newPipelineConversionRate = group.totalCost > 0 ? (group.closedWonFromNew / group.totalCost) * 100 : 0;
+        const newPipelineEfficiency = group.totalCost > 0 ? group.totalNewPipelineValue / group.totalCost : 0;
+        const newOpportunityCount = group.newPipelineOpportunities.length;
+
+        return {
+          campaignType: group.campaignType,
+          totalCampaigns,
+          totalCost: group.totalCost,
+          newOpportunityCount,
+          totalNewPipelineValue: group.totalNewPipelineValue,
+          closedWonFromNew: group.closedWonFromNew,
+          activePipelineFromNew: group.activePipelineFromNew,
+          newPipelineConversionRate,
+          newPipelineEfficiency,
+          averageNewPipelinePerCampaign: totalCampaigns > 0 ? group.totalNewPipelineValue / totalCampaigns : 0,
+          opportunities: group.newPipelineOpportunities
+        };
+      });
+
+      // Sort by total new pipeline value descending
+      typeAnalytics.sort((a, b) => b.totalNewPipelineValue - a.totalNewPipelineValue);
+
+      console.log(`📈 New pipeline (30d) analysis completed - ${typeAnalytics.length} types`);
+      return typeAnalytics;
+
+    } catch (error) {
+      console.error('❌ Error in getCampaignTypeNewPipelineAnalysis:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get campaign type analysis for Stage Advance (30d)
+   * Shows pipeline that moved positively through stages within 30 days of campaign events
+   */
+  async getCampaignTypeStageAdvanceAnalysis(): Promise<any[]> {
+    try {
+      console.log('📈 Fetching stage advance (30d) campaign type analysis...');
+
+      // Define stage progression order (higher index = more advanced)
+      const stageOrder = [
+        'Validation/Introduction',
+        'Discovery',
+        'Developing Champions', 
+        'ROI Analysis/Pricing',
+        'Negotiation/Commit',
+        'Closed Won'
+      ];
+
+      // Get campaigns with opportunities that showed stage progression within 30 days
+      const campaignData = await this.db.execute(
+        sql`
+          WITH stage_progression AS (
+            SELECT 
+              c.type as campaign_type,
+              c.id as campaign_id,
+              c.start_date,
+              c.budget as campaign_cost,
+              cc.opportunity_id,
+              o.name as opportunity_name,
+              o.client_name,
+              s1.stage as before_stage,
+              s2.stage as after_stage,
+              s1.snapshot_date as before_date,
+              s2.snapshot_date as after_date,
+              s2.year1_arr,
+              s2.close_date
+            FROM campaigns c
+            JOIN campaign_customers cc ON c.id = cc.campaign_id
+            JOIN opportunities o ON cc.opportunity_id = o.id
+            JOIN snapshots s1 ON o.id = s1.opportunity_id
+            JOIN snapshots s2 ON o.id = s2.opportunity_id
+            WHERE s1.snapshot_date < s2.snapshot_date
+              AND s2.snapshot_date >= c.start_date
+              AND s2.snapshot_date <= c.start_date + INTERVAL '30 days'
+              AND s1.stage != s2.stage
+              AND s2.snapshot_date = (
+                SELECT MAX(s3.snapshot_date) 
+                FROM snapshots s3 
+                WHERE s3.opportunity_id = o.id
+                  AND s3.snapshot_date <= c.start_date + INTERVAL '30 days'
+              )
+          )
+          SELECT * FROM stage_progression
+          ORDER BY campaign_type, after_date
+        `
+      );
+
+      // Helper function to determine if stage movement is positive
+      const isPositiveStageMovement = (beforeStage: string, afterStage: string): boolean => {
+        const beforeIndex = stageOrder.indexOf(beforeStage);
+        const afterIndex = stageOrder.indexOf(afterStage);
+        return afterIndex > beforeIndex && beforeIndex >= 0 && afterIndex >= 0;
+      };
+
+      // Group by campaign type and calculate stage advancement metrics
+      const typeGroups = campaignData.rows.reduce((groups: any, row: any) => {
+        const type = row.campaignType;
+        if (!groups[type]) {
+          groups[type] = {
+            campaignType: type,
+            totalCampaigns: new Set(),
+            totalCost: 0,
+            stageAdvancementOpportunities: [],
+            totalAdvancedPipelineValue: 0,
+            positiveMovements: 0,
+            closedWonFromAdvancement: 0
+          };
+        }
+
+        groups[type].totalCampaigns.add(row.campaignId);
+        groups[type].totalCost += row.campaignCost || 0;
+
+        // Check if this is a positive stage movement
+        if (isPositiveStageMovement(row.beforeStage, row.afterStage)) {
+          groups[type].positiveMovements++;
+          
+          const value = row.year1Arr || 0;
+          groups[type].totalAdvancedPipelineValue += value;
+
+          groups[type].stageAdvancementOpportunities.push({
+            opportunityName: row.opportunityName,
+            clientName: row.clientName,
+            beforeStage: row.beforeStage,
+            afterStage: row.afterStage,
+            movementDate: row.afterDate,
+            value: value
+          });
+
+          if (row.afterStage === 'Closed Won') {
+            groups[type].closedWonFromAdvancement += value;
+          }
+        }
+
+        return groups;
+      }, {});
+
+      // Convert to array format with calculated metrics
+      const typeAnalytics = Object.values(typeGroups).map((group: any) => {
+        const totalCampaigns = group.totalCampaigns.size;
+        const stageAdvancementEfficiency = group.totalCost > 0 ? group.totalAdvancedPipelineValue / group.totalCost : 0;
+        const conversionRate = group.totalAdvancedPipelineValue > 0 ? (group.closedWonFromAdvancement / group.totalAdvancedPipelineValue) * 100 : 0;
+
+        return {
+          campaignType: group.campaignType,
+          totalCampaigns,
+          totalCost: group.totalCost,
+          positiveMovements: group.positiveMovements,
+          totalAdvancedPipelineValue: group.totalAdvancedPipelineValue,
+          closedWonFromAdvancement: group.closedWonFromAdvancement,
+          stageAdvancementEfficiency,
+          conversionRate,
+          averageAdvancementPerCampaign: totalCampaigns > 0 ? group.positiveMovements / totalCampaigns : 0,
+          averageAdvancedValuePerCampaign: totalCampaigns > 0 ? group.totalAdvancedPipelineValue / totalCampaigns : 0,
+          opportunities: group.stageAdvancementOpportunities
+        };
+      });
+
+      // Sort by total advanced pipeline value descending
+      typeAnalytics.sort((a, b) => b.totalAdvancedPipelineValue - a.totalAdvancedPipelineValue);
+
+      console.log(`📈 Stage advance (30d) analysis completed - ${typeAnalytics.length} types`);
+      return typeAnalytics;
+
+    } catch (error) {
+      console.error('❌ Error in getCampaignTypeStageAdvanceAnalysis:', error);
+      throw error;
+    }
+  }
 }
 
 // Export singleton instance

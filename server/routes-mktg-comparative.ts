@@ -242,6 +242,50 @@ router.get('/campaign-types', async (req, res) => {
 });
 
 /**
+ * New Pipeline Analysis (30d) - Campaign types ranked by new pipeline creation
+ * Shows opportunities that entered pipeline within 30 days of campaign events
+ */
+router.get('/campaign-types-new-pipeline', async (req, res) => {
+  try {
+    console.log('📈 API: Fetching new pipeline (30d) campaign type analytics...');
+    
+    const campaignTypes = await marketingComparativeStorage.getCampaignTypeNewPipelineAnalysis();
+    
+    console.log(`📈 API: New pipeline analytics completed - ${campaignTypes.length} types`);
+    res.json(campaignTypes);
+    
+  } catch (error) {
+    console.error('❌ API Error in /campaign-types-new-pipeline:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch new pipeline campaign type analytics', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+
+/**
+ * Stage Advance Analysis (30d) - Campaign types ranked by stage progression
+ * Shows pipeline that moved positively through stages within 30 days of campaign events
+ */
+router.get('/campaign-types-stage-advance', async (req, res) => {
+  try {
+    console.log('📈 API: Fetching stage advance (30d) campaign type analytics...');
+    
+    const campaignTypes = await marketingComparativeStorage.getCampaignTypeStageAdvanceAnalysis();
+    
+    console.log(`📈 API: Stage advance analytics completed - ${campaignTypes.length} types`);
+    res.json(campaignTypes);
+    
+  } catch (error) {
+    console.error('❌ API Error in /campaign-types-stage-advance:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch stage advance campaign type analytics', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+
+/**
  * Get summary dashboard data
  * High-level overview combining all comparative analytics
  */

@@ -35,9 +35,15 @@ export interface CampaignTypeMetrics {
   mostEfficientType: CampaignTypeData | null;
 }
 
-export const useCampaignTypeData = () => {
+export const useCampaignTypeData = (analysisType: 'influenced' | 'new-pipeline' | 'stage-advance' = 'influenced') => {
+  const queryKey = analysisType === 'influenced' 
+    ? '/api/marketing/comparative/campaign-types'
+    : analysisType === 'new-pipeline'
+    ? '/api/marketing/comparative/campaign-types-new-pipeline' 
+    : '/api/marketing/comparative/campaign-types-stage-advance';
+
   const { data: rawData, isLoading, error, refetch } = useQuery<CampaignTypeData[]>({
-    queryKey: ['/api/marketing/comparative/campaign-types'],
+    queryKey: [queryKey],
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
