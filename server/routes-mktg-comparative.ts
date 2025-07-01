@@ -162,6 +162,13 @@ router.get('/strategic-matrix', async (req, res) => {
  */
 router.get('/campaign-types', async (req, res) => {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (campaignTypesCache && (now - campaignTypesCache.timestamp) < CACHE_DURATION) {
+      console.log('📈 API: Returning cached campaign types');
+      return res.json(campaignTypesCache.data);
+    }
+
     console.log('📈 API: Fetching campaign type analytics...');
     
     // Get campaign comparison data and aggregate by type
@@ -246,7 +253,10 @@ router.get('/campaign-types', async (req, res) => {
     // Sort by total pipeline value descending
     typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);
     
-    console.log(`📈 API: Campaign type analytics completed - ${typeAnalytics.length} types`);
+    // Cache the result
+    campaignTypesCache = { data: typeAnalytics, timestamp: Date.now() };
+    console.log(`📈 API: Campaign type analytics completed and cached - ${typeAnalytics.length} types`);
+    
     res.json(typeAnalytics);
     
   } catch (error) {
@@ -264,11 +274,21 @@ router.get('/campaign-types', async (req, res) => {
  */
 router.get('/campaign-types-new-pipeline', async (req, res) => {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (newPipelineCache && (now - newPipelineCache.timestamp) < CACHE_DURATION) {
+      console.log('📈 API: Returning cached new pipeline data');
+      return res.json(newPipelineCache.data);
+    }
+
     console.log('📈 API: Fetching new pipeline (30d) campaign type analytics...');
     
     const campaignTypes = await marketingComparativeStorage.getCampaignTypeNewPipelineAnalysis();
     
-    console.log(`📈 API: New pipeline analytics completed - ${campaignTypes.length} types`);
+    // Cache the result
+    newPipelineCache = { data: campaignTypes, timestamp: Date.now() };
+    console.log(`📈 API: New pipeline analytics completed and cached - ${campaignTypes.length} types`);
+    
     res.json(campaignTypes);
     
   } catch (error) {
@@ -286,6 +306,13 @@ router.get('/campaign-types-new-pipeline', async (req, res) => {
  */
 router.get('/campaign-types-stage-advance', async (req, res) => {
   try {
+    // Check cache first
+    const now = Date.now();
+    if (stageAdvanceCache && (now - stageAdvanceCache.timestamp) < CACHE_DURATION) {
+      console.log('📈 API: Returning cached stage advance data');
+      return res.json(stageAdvanceCache.data);
+    }
+
     console.log('📈 API: Fetching stage advance (30d) campaign type analytics...');
     
     const campaignTypes = await marketingComparativeStorage.getCampaignTypeStageAdvanceAnalysis();
