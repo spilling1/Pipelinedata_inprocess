@@ -144,7 +144,8 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
                 fontSize={12}
               />
               <YAxis 
-                domain={[0, 'dataMax']}
+                domain={[0, 2500]}
+                ticks={[0, 500, 1000, 1500, 2000, 2500]}
                 tickFormatter={(value) => `${value}%`}
                 stroke="hsl(var(--muted-foreground))"
               />
