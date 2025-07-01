@@ -190,53 +190,49 @@ const StrategicEngagementMatrix: React.FC = () => {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.matrix.map((range, index) => (
-                <React.Fragment key={index}>
-                  {/* Target Accounts Row */}
-                  <TableRow>
-                    <TableCell className="font-medium">{range.attendeeRange}</TableCell>
-                    <TableCell>
-                      <Badge className="bg-blue-100 text-blue-800">Target</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {range.targetAccounts.customerCount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatPercentage(range.targetAccounts.winRate)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(range.targetAccounts.averageDealSize)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${getROIColor(range.targetAccounts.roi)}`}>
-                        {formatPercentage(range.targetAccounts.roi)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                  
-                  {/* Non-Target Accounts Row */}
-                  <TableRow>
-                    <TableCell></TableCell>
-                    <TableCell>
-                      <Badge className="bg-gray-100 text-gray-800">Non-Target</Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {range.nonTargetAccounts.customerCount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatPercentage(range.nonTargetAccounts.winRate)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      {formatCurrency(range.nonTargetAccounts.averageDealSize)}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <span className={`px-2 py-1 rounded-full text-sm font-medium ${getROIColor(range.nonTargetAccounts.roi)}`}>
-                        {formatPercentage(range.nonTargetAccounts.roi)}
-                      </span>
-                    </TableCell>
-                  </TableRow>
-                </React.Fragment>
-              ))}
+              {data?.matrix.map((range, index) => [
+                <TableRow key={`target-${index}`}>
+                  <TableCell className="font-medium">{range.attendeeRange}</TableCell>
+                  <TableCell>
+                    <Badge className="bg-blue-100 text-blue-800">Target</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {range.targetAccounts.customerCount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatPercentage(range.targetAccounts.winRate)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(range.targetAccounts.averageDealSize)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${getROIColor(range.targetAccounts.roi)}`}>
+                      {formatPercentage(range.targetAccounts.roi)}
+                    </span>
+                  </TableCell>
+                </TableRow>,
+                
+                <TableRow key={`non-target-${index}`}>
+                  <TableCell></TableCell>
+                  <TableCell>
+                    <Badge className="bg-gray-100 text-gray-800">Non-Target</Badge>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {range.nonTargetAccounts.customerCount.toLocaleString()}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatPercentage(range.nonTargetAccounts.winRate)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    {formatCurrency(range.nonTargetAccounts.averageDealSize)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <span className={`px-2 py-1 rounded-full text-sm font-medium ${getROIColor(range.nonTargetAccounts.roi)}`}>
+                      {formatPercentage(range.nonTargetAccounts.roi)}
+                    </span>
+                  </TableCell>
+                </TableRow>
+              ]).flat()}
             </TableBody>
           </Table>
         </CardContent>

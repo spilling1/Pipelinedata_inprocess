@@ -9,7 +9,7 @@ import { useCustomerJourneyData } from './hooks/useCustomerJourneyData';
 import { Route, Users, Target, TrendingUp, BarChart3 } from 'lucide-react';
 
 const CustomerJourneyAnalysis: React.FC = () => {
-  const { data, insights, isLoading, error, metrics } = useCustomerJourneyData();
+  const { data, summary, isLoading, error } = useCustomerJourneyData();
 
   if (isLoading) {
     return (

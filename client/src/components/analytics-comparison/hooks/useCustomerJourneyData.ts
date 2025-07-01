@@ -73,7 +73,8 @@ export interface CustomerJourneyResponse {
 }
 
 export const useCustomerJourneyData = () => {
-  const [data, setData] = useState<CustomerJourneyResponse | null>(null);
+  const [data, setData] = useState<CustomerJourneyData[] | null>(null);
+  const [summary, setSummary] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -83,16 +84,15 @@ export const useCustomerJourneyData = () => {
         setLoading(true);
         setError(null);
         
-        const response = await apiRequest('/api/marketing/comparative/customer-journey', {
-          method: 'GET'
-        });
+        const response = await apiRequest('/api/marketing/comparative/customer-journey');
         
         if (!response.ok) {
           throw new Error(`Failed to fetch customer journey data: ${response.statusText}`);
         }
         
         const journeyData = await response.json();
-        setData(journeyData);
+        setData(journeyData.customers || []);
+        setSummary(journeyData.summary || null);
         
       } catch (err) {
         console.error('Error fetching customer journey data:', err);
@@ -105,5 +105,14 @@ export const useCustomerJourneyData = () => {
     fetchCustomerJourneyData();
   }, []);
 
-  return { data, loading, error };
+  return { 
+    data, 
+    summary, 
+    loading, 
+    error,
+    isLoading: loading,
+    // Backwards compatibility for other potential properties
+    insights: null,
+    metrics: summary
+  };
 };
