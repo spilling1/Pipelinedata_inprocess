@@ -80,15 +80,22 @@ const CampaignTypePerformanceTable: React.FC<CampaignTypePerformanceTableProps> 
     }
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined) => {
+    if (!value || value === 0) return '$0';
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
     return `$${value.toLocaleString()}`;
   };
 
-  const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
+  const formatPercentage = (value: number | undefined) => {
+    if (!value && value !== 0) return '0.0%';
+    return `${value.toFixed(1)}%`;
+  };
 
-  const formatNumber = (value: number) => value.toLocaleString();
+  const formatNumber = (value: number | undefined) => {
+    if (!value && value !== 0) return '0';
+    return value.toLocaleString();
+  };
 
   const exportToCSV = () => {
     const headers = [

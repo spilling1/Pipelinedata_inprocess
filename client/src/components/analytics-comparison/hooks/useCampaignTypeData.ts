@@ -51,26 +51,48 @@ export const useCampaignTypeData = (analysisType: 'influenced' | 'new-pipeline' 
   const processedData = useMemo(() => {
     if (!rawData || rawData.length === 0) return null;
 
+    // Normalize data to ensure all properties have default values
+    const normalizedData = rawData.map(item => ({
+      campaignType: item.campaignType || 'Unknown',
+      totalCampaigns: item.totalCampaigns || 0,
+      totalCost: item.totalCost || 0,
+      totalCustomers: item.totalCustomers || 0,
+      totalTargetCustomers: item.totalTargetCustomers || 0,
+      targetAccountPercentage: item.targetAccountPercentage || 0,
+      totalPipelineValue: item.totalPipelineValue || 0,
+      totalClosedWonValue: item.totalClosedWonValue || 0,
+      totalOpenOpportunities: item.totalOpenOpportunities || 0,
+      totalAttendees: item.totalAttendees || 0,
+      averageWinRate: item.averageWinRate || 0,
+      averageROI: item.averageROI || 0,
+      averageTargetAccountWinRate: item.averageTargetAccountWinRate || 0,
+      costEfficiency: item.costEfficiency || 0,
+      attendeeEfficiency: item.attendeeEfficiency || 0,
+      averageCostPerCampaign: item.averageCostPerCampaign || 0,
+      averageCustomersPerCampaign: item.averageCustomersPerCampaign || 0,
+      averageAttendeesPerCampaign: item.averageAttendeesPerCampaign || 0,
+    }));
+
     // Sort data by ROI descending
-    const sortedData = [...rawData].sort((a, b) => b.averageROI - a.averageROI);
+    const sortedData = [...normalizedData].sort((a, b) => b.averageROI - a.averageROI);
 
     // Calculate aggregate metrics
-    const totalInvestment = rawData.reduce((sum, item) => sum + item.totalCost, 0);
-    const totalPipeline = rawData.reduce((sum, item) => sum + item.totalPipelineValue, 0);
-    const totalClosedWon = rawData.reduce((sum, item) => sum + item.totalClosedWonValue, 0);
-    const totalCampaigns = rawData.reduce((sum, item) => sum + item.totalCampaigns, 0);
-    const totalCustomers = rawData.reduce((sum, item) => sum + item.totalCustomers, 0);
+    const totalInvestment = normalizedData.reduce((sum, item) => sum + item.totalCost, 0);
+    const totalPipeline = normalizedData.reduce((sum, item) => sum + item.totalPipelineValue, 0);
+    const totalClosedWon = normalizedData.reduce((sum, item) => sum + item.totalClosedWonValue, 0);
+    const totalCampaigns = normalizedData.reduce((sum, item) => sum + item.totalCampaigns, 0);
+    const totalCustomers = normalizedData.reduce((sum, item) => sum + item.totalCustomers, 0);
 
     // Calculate weighted averages
     const averageROI = totalInvestment > 0 ? (totalClosedWon / totalInvestment) * 100 : 0;
-    const averageWinRate = rawData.reduce((sum, item, index, arr) => 
+    const averageWinRate = normalizedData.reduce((sum, item, index, arr) => 
       sum + (item.averageWinRate / arr.length), 0
     );
 
     // Find best/worst/most efficient
     const bestPerformingType = sortedData[0] || null;
     const worstPerformingType = sortedData[sortedData.length - 1] || null;
-    const mostEfficientType = [...rawData].sort((a, b) => b.costEfficiency - a.costEfficiency)[0] || null;
+    const mostEfficientType = [...normalizedData].sort((a, b) => b.costEfficiency - a.costEfficiency)[0] || null;
 
     const metrics: CampaignTypeMetrics = {
       totalInvestment,
