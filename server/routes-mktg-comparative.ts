@@ -11,7 +11,7 @@ router.get('/executive-summary', async (req, res) => {
   try {
     console.log('📊 API: Fetching executive summary data...');
     
-    const summary = await marketingComparativeStorage.getExecutiveSummary();
+    const summary = await marketingComparativeStorage.getExecutiveSummaryFast();
     
     console.log('📊 API: Executive summary completed successfully');
     res.json(summary);
