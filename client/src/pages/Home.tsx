@@ -168,37 +168,41 @@ export default function Home() {
               </a>
             )}
 
-            <a 
-              href="https://ws.planhat.com/login/higharc" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <Activity className="h-8 w-8 text-teal-600 mb-2" />
-                  <CardTitle>Customer Adoption Status</CardTitle>
-                  <CardDescription>
-                    Monitor customer adoption and engagement metrics
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </a>
+            {canAccessPage('customer-adoption') && (
+              <a 
+                href="https://ws.planhat.com/login/higharc" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <Activity className="h-8 w-8 text-teal-600 mb-2" />
+                    <CardTitle>Customer Adoption Status</CardTitle>
+                    <CardDescription>
+                      Monitor customer adoption and engagement metrics
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </a>
+            )}
 
-            <a 
-              href="https://lookerstudio.google.com/reporting/1950976e-8e22-4cc0-be97-7772ccef5f38" 
-              target="_blank" 
-              rel="noopener noreferrer"
-            >
-              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <CheckCircle className="h-8 w-8 text-emerald-600 mb-2" />
-                  <CardTitle>Implementation Status</CardTitle>
-                  <CardDescription>
-                    Track project implementation progress and milestones
-                  </CardDescription>
-                </CardHeader>
-              </Card>
-            </a>
+            {canAccessPage('implementation-status') && (
+              <a 
+                href="https://lookerstudio.google.com/reporting/1950976e-8e22-4cc0-be97-7772ccef5f38" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <CheckCircle className="h-8 w-8 text-emerald-600 mb-2" />
+                    <CardTitle>Implementation Status</CardTitle>
+                    <CardDescription>
+                      Track project implementation progress and milestones
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </a>
+            )}
           </div>
         </div>
 
