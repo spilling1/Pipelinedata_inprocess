@@ -317,7 +317,10 @@ router.get('/campaign-types-stage-advance', async (req, res) => {
     
     const campaignTypes = await marketingComparativeStorage.getCampaignTypeStageAdvanceAnalysis();
     
-    console.log(`📈 API: Stage advance analytics completed - ${campaignTypes.length} types`);
+    // Cache the result
+    stageAdvanceCache = { data: campaignTypes, timestamp: Date.now() };
+    console.log(`📈 API: Stage advance analytics completed and cached - ${campaignTypes.length} types`);
+    
     res.json(campaignTypes);
     
   } catch (error) {
