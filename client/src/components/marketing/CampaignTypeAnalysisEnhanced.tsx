@@ -1,14 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CampaignTypeROIBarchart from '../analytics-comparison/CampaignTypeROIBarchart';
 import CampaignTypePerformanceTable from '../analytics-comparison/CampaignTypePerformanceTable';
 import CampaignTypeInsights from '../analytics-comparison/CampaignTypeInsights';
 import useCampaignTypeData from '../analytics-comparison/hooks/useCampaignTypeData';
-import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3 } from 'lucide-react';
+import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3, GitBranch, Clock, Activity } from 'lucide-react';
+
+type AnalysisView = 'influenced' | 'new-pipeline' | 'stage-advance';
 
 const CampaignTypeAnalysisEnhanced: React.FC = () => {
+  const [activeView, setActiveView] = useState<AnalysisView>('influenced');
+  
   const { 
     data, 
     metrics, 
@@ -93,8 +98,27 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
         </Badge>
       </div>
 
-      {/* Key Metrics Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Analysis View Toggle */}
+      <Tabs value={activeView} onValueChange={(value) => setActiveView(value as AnalysisView)} className="w-full">
+        <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="influenced" className="flex items-center gap-2">
+            <Target className="h-4 w-4" />
+            Influenced Pipeline
+          </TabsTrigger>
+          <TabsTrigger value="new-pipeline" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" />
+            New Pipeline (30d)
+          </TabsTrigger>
+          <TabsTrigger value="stage-advance" className="flex items-center gap-2">
+            <Activity className="h-4 w-4" />
+            Stage Advance (30d)
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="influenced" className="space-y-6">
+          {/* Current Influenced Pipeline Analysis */}
+          {/* Key Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
@@ -200,33 +224,55 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
       {/* Strategic Insights */}
       <CampaignTypeInsights data={data} />
 
-      {/* Budget Reallocation Alert */}
-      {reallocationAnalysis && reallocationAnalysis.inefficientTypes.length > 0 && (
-        <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
-          <CardHeader>
-            <CardTitle className="text-orange-800 dark:text-orange-200">
-              Budget Optimization Opportunity
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 text-sm">
-              <div>
-                <strong>Potential Reallocation:</strong> {formatCurrency(reallocationAnalysis.reallocationAmount)} 
-                ({reallocationAnalysis.reallocationPercentage.toFixed(1)}% of total budget)
+          {/* Budget Reallocation Alert */}
+          {reallocationAnalysis && reallocationAnalysis.inefficientTypes.length > 0 && (
+            <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
+              <CardHeader>
+                <CardTitle className="text-orange-800 dark:text-orange-200">
+                  Budget Optimization Opportunity
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2 text-sm">
+                  <div>
+                    <strong>Potential Reallocation:</strong> {formatCurrency(reallocationAnalysis.reallocationAmount)} 
+                    ({reallocationAnalysis.reallocationPercentage.toFixed(1)}% of total budget)
+                  </div>
+                  <div>
+                    <strong>From:</strong> {reallocationAnalysis.inefficientTypes.map(t => t.campaignType).join(', ')}
+                  </div>
+                  <div>
+                    <strong>To:</strong> {reallocationAnalysis.recommendedTarget}
+                  </div>
+                  <div>
+                    <strong>Potential Additional Return:</strong> {formatCurrency(reallocationAnalysis.potentialGain)}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        <TabsContent value="new-pipeline" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center text-muted-foreground">
+                New Pipeline (30d) analysis coming soon...
               </div>
-              <div>
-                <strong>From:</strong> {reallocationAnalysis.inefficientTypes.map(t => t.campaignType).join(', ')}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="stage-advance" className="space-y-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center text-muted-foreground">
+                Stage Advance (30d) analysis coming soon...
               </div>
-              <div>
-                <strong>To:</strong> {reallocationAnalysis.recommendedTarget}
-              </div>
-              <div>
-                <strong>Potential Additional Return:</strong> {formatCurrency(reallocationAnalysis.potentialGain)}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
