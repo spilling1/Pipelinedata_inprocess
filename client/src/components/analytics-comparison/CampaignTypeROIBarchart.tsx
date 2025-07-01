@@ -23,7 +23,7 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
   const chartData = useMemo(() => {
     return data.map((item) => ({
       name: item.campaignType,
-      roi: isNaN(item.averageROI) ? 0.1 : Math.max(0.1, Math.round(item.averageROI * 10) / 10), // Ensure minimum value for log scale
+      roi: isNaN(item.averageROI) ? 1 : Math.max(1, Math.round(item.averageROI * 10) / 10), // Ensure minimum value for log scale
       cost: item.totalCost || 0,
       winRate: isNaN(item.averageWinRate) ? 0 : Math.round(item.averageWinRate * 10) / 10,
       pipelineCostRatio: isNaN(item.costEfficiency) ? 0 : Math.round(item.costEfficiency * 10) / 10,
@@ -145,7 +145,8 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
               />
               <YAxis 
                 scale="log"
-                domain={[0.1, 'dataMax']}
+                domain={[1, 'dataMax']}
+                ticks={[1, 10, 100, 1000, 10000]}
                 tickFormatter={(value) => `${value}%`}
                 stroke="hsl(var(--muted-foreground))"
                 allowDataOverflow={false}
