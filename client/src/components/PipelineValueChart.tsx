@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -132,6 +132,8 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
   const [customStartDate, setCustomStartDate] = useState('');
   const [customEndDate, setCustomEndDate] = useState('');
   const [showCustomPicker, setShowCustomPicker] = useState(false);
+  const [showFallback, setShowFallback] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
   
   // Create filters with the selected time period
   const getChartFilters = () => {
@@ -167,6 +169,22 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
         : `$${(item.value / 1000).toFixed(0)}K`
     }));
   }, [pipelineData]);
+
+  // Detect if chart failed to render (common on Safari/Mac)
+  useEffect(() => {
+    if (chartData.length > 0 && !showFallback) {
+      const timer = setTimeout(() => {
+        if (chartRef.current && chartRef.current.children.length > 0) {
+          const svg = chartRef.current.querySelector('svg');
+          if (!svg || svg.children.length === 0) {
+            setShowFallback(true);
+          }
+        }
+      }, 2000); // Check after 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [chartData, showFallback]);
 
   // Generate monthly ticks for time-based axis
   const generateMonthlyTicks = useMemo(() => {
@@ -299,61 +317,88 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
       <CardContent>
         <div className="h-64" style={{ width: '100%', height: '256px' }}>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={200}>
-              <LineChart data={chartData} width={600} height={256}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis 
-                  dataKey="dateTimestamp"
-                  type="number"
-                  scale="time"
-                  domain={['dataMin', 'dataMax']}
-                  ticks={generateMonthlyTicks}
-                  tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
-                  stroke="#666"
-                  fontSize={12}
-                />
-                <YAxis 
-                  stroke="#666"
-                  fontSize={12}
-                  tickFormatter={(value) => {
-                    if (value >= 1000000) {
-                      return `$${(value / 1000000).toFixed(1)}M`;
-                    } else if (value >= 1000) {
-                      return `$${(value / 1000).toFixed(0)}K`;
-                    } else {
-                      return `$${value}`;
-                    }
-                  }}
-                />
-                <Tooltip 
-                  formatter={(value: number) => [formatTooltipValue(value), "Pipeline Value"]}
-                  labelFormatter={(timestamp: number) => {
-                    return new Date(timestamp).toLocaleDateString('en-US', { 
-                      year: 'numeric',
-                      month: 'short', 
-                      day: 'numeric',
-                      timeZone: 'UTC'
-                    });
-                  }}
-                  labelStyle={{ color: '#666' }}
-                  contentStyle={{ 
-                    backgroundColor: 'white', 
-                    border: '1px solid #ccc', 
-                    borderRadius: '6px' 
-                  }}
-                />
-                <Line 
-                  type="monotone" 
-                  dataKey="value" 
-                  stroke="hsl(var(--primary))" 
-                  strokeWidth={3}
-                  dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                  activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
-                  animationBegin={0}
-                  animationDuration={800}
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            showFallback ? (
+              // Fallback table view for when charts don't render (common on Safari/Mac)
+              <div className="h-full overflow-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Date</th>
+                      <th className="text-right p-2">Pipeline Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartData.slice(-10).map((item, index) => (
+                      <tr key={`row-${index}`} className="border-b">
+                        <td className="p-2">{item.date}</td>
+                        <td className="text-right p-2">{item.formattedValue}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-4 text-sm text-gray-500 text-center">
+                  Chart view not available - showing table format (last 10 entries)
+                </div>
+              </div>
+            ) : (
+              <div ref={chartRef}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={200}>
+                  <LineChart data={chartData} width={600} height={256}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis 
+                      dataKey="dateTimestamp"
+                      type="number"
+                      scale="time"
+                      domain={['dataMin', 'dataMax']}
+                      ticks={generateMonthlyTicks}
+                      tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
+                      stroke="#666"
+                      fontSize={12}
+                    />
+                    <YAxis 
+                      stroke="#666"
+                      fontSize={12}
+                      tickFormatter={(value) => {
+                        if (value >= 1000000) {
+                          return `$${(value / 1000000).toFixed(1)}M`;
+                        } else if (value >= 1000) {
+                          return `$${(value / 1000).toFixed(0)}K`;
+                        } else {
+                          return `$${value}`;
+                        }
+                      }}
+                    />
+                    <Tooltip 
+                      formatter={(value: number) => [formatTooltipValue(value), "Pipeline Value"]}
+                      labelFormatter={(timestamp: number) => {
+                        return new Date(timestamp).toLocaleDateString('en-US', { 
+                          year: 'numeric',
+                          month: 'short', 
+                          day: 'numeric',
+                          timeZone: 'UTC'
+                        });
+                      }}
+                      labelStyle={{ color: '#666' }}
+                      contentStyle={{ 
+                        backgroundColor: 'white', 
+                        border: '1px solid #ccc', 
+                        borderRadius: '6px' 
+                      }}
+                    />
+                    <Line 
+                      type="monotone" 
+                      dataKey="value" 
+                      stroke="hsl(var(--primary))" 
+                      strokeWidth={3}
+                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                      activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                      animationBegin={0}
+                      animationDuration={800}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              </div>
+            )
           ) : (
             <div className="h-full flex items-center justify-center text-gray-500">
               <div className="text-center">

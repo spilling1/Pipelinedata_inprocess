@@ -27,20 +27,6 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     queryKey: ['/api/analytics/stage-distribution'],
   });
 
-  // Detect if chart failed to render (common on Safari/Mac)
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (chartRef.current && chartRef.current.children.length > 0) {
-        const svg = chartRef.current.querySelector('svg');
-        if (!svg || svg.children.length === 0) {
-          setShowFallback(true);
-        }
-      }
-    }, 2000); // Check after 2 seconds
-
-    return () => clearTimeout(timer);
-  }, [chartData]);
-
   // Memoize stage order for consistent sorting (must be before early return)
   const stageOrder = useMemo(() => [
     'Validation/Introduction',
@@ -82,6 +68,22 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
         : `$${item.value}`
     }));
   }, [stageData, viewMode, stageOrder]);
+
+  // Detect if chart failed to render (common on Safari/Mac)
+  useEffect(() => {
+    if (chartData.length > 0 && !showFallback) {
+      const timer = setTimeout(() => {
+        if (chartRef.current && chartRef.current.children.length > 0) {
+          const svg = chartRef.current.querySelector('svg');
+          if (!svg || svg.children.length === 0) {
+            setShowFallback(true);
+          }
+        }
+      }, 2000); // Check after 2 seconds
+
+      return () => clearTimeout(timer);
+    }
+  }, [chartData, showFallback]);
 
   // Memoize tooltip formatting function (must be before early return)
   const formatTooltipValue = useCallback((value: number, name: string) => {
@@ -161,35 +163,70 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
       <CardContent>
         <div className="h-96" style={{ width: '100%', height: '384px' }}>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
-              <PieChart width={400} height={400}>
-                <Pie
-                  data={chartData}
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={60}
-                  outerRadius={120}
-                  paddingAngle={2}
-                  dataKey="displayValue"
-                  animationBegin={0}
-                  animationDuration={800}
-                >
-                  {chartData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Tooltip content={<CustomTooltip />} />
-                <Legend 
-                  verticalAlign="bottom" 
-                  height={36}
-                  iconType="circle"
-                  wrapperStyle={{ 
-                    paddingTop: '20px',
-                    fontSize: '12px'
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+            showFallback ? (
+              // Fallback table view for when charts don't render (common on Safari/Mac)
+              <div className="h-full overflow-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left p-2">Stage</th>
+                      <th className="text-right p-2">Count</th>
+                      <th className="text-right p-2">Value</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {chartData.map((item, index) => (
+                      <tr key={`row-${index}`} className="border-b">
+                        <td className="p-2 flex items-center">
+                          <div 
+                            className="w-3 h-3 rounded-full mr-2" 
+                            style={{ backgroundColor: item.color }}
+                          ></div>
+                          {item.name}
+                        </td>
+                        <td className="text-right p-2">{item.count}</td>
+                        <td className="text-right p-2">{item.formattedValue}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                <div className="mt-4 text-sm text-gray-500 text-center">
+                  Chart view not available - showing table format
+                </div>
+              </div>
+            ) : (
+              <div ref={chartRef}>
+                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
+                  <PieChart width={400} height={400}>
+                    <Pie
+                      data={chartData}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={60}
+                      outerRadius={120}
+                      paddingAngle={2}
+                      dataKey="displayValue"
+                      animationBegin={0}
+                      animationDuration={800}
+                    >
+                      {chartData.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip content={<CustomTooltip />} />
+                    <Legend 
+                      verticalAlign="bottom" 
+                      height={36}
+                      iconType="circle"
+                      wrapperStyle={{ 
+                        paddingTop: '20px',
+                        fontSize: '12px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            )
           ) : (
             <div className="h-full flex items-center justify-center text-gray-500">
               <div className="text-center">
