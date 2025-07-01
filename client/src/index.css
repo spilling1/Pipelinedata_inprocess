@@ -2,6 +2,27 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Fix for Safari/WebKit SVG rendering issues on Mac */
+.recharts-wrapper {
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.recharts-wrapper svg {
+  overflow: visible !important;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure responsive containers work properly on Safari */
+.recharts-responsive-container {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
 :root {
   --background: 250 50% 98%; /* #FAFAFA */
   --foreground: 210 11% 15%; /* #222222 */

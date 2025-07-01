@@ -297,10 +297,10 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-64">
+        <div className="h-64" style={{ width: '100%', height: '256px' }}>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartData}>
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={200}>
+              <LineChart data={chartData} width={600} height={256}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis 
                   dataKey="dateTimestamp"
@@ -349,6 +349,8 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
                   strokeWidth={3}
                   dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
                   activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+                  animationBegin={0}
+                  animationDuration={800}
                 />
               </LineChart>
             </ResponsiveContainer>

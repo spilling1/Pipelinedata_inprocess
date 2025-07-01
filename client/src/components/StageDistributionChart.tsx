@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
 import { FilterState } from "@/types/pipeline";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect, useRef } from "react";
 
 interface StageDistributionChartProps {
   filters: FilterState;
@@ -20,10 +20,26 @@ const COLORS = [
 
 export default function StageDistributionChart({ filters }: StageDistributionChartProps) {
   const [viewMode, setViewMode] = useState<'count' | 'value'>('count');
+  const [showFallback, setShowFallback] = useState(false);
+  const chartRef = useRef<HTMLDivElement>(null);
   
   const { data: stageData, isLoading } = useQuery({
     queryKey: ['/api/analytics/stage-distribution'],
   });
+
+  // Detect if chart failed to render (common on Safari/Mac)
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (chartRef.current && chartRef.current.children.length > 0) {
+        const svg = chartRef.current.querySelector('svg');
+        if (!svg || svg.children.length === 0) {
+          setShowFallback(true);
+        }
+      }
+    }, 2000); // Check after 2 seconds
+
+    return () => clearTimeout(timer);
+  }, [chartData]);
 
   // Memoize stage order for consistent sorting (must be before early return)
   const stageOrder = useMemo(() => [
@@ -143,10 +159,10 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-96">
+        <div className="h-96" style={{ width: '100%', height: '384px' }}>
           {chartData.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
+            <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
+              <PieChart width={400} height={400}>
                 <Pie
                   data={chartData}
                   cx="50%"
@@ -155,6 +171,8 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
                   outerRadius={120}
                   paddingAngle={2}
                   dataKey="displayValue"
+                  animationBegin={0}
+                  animationDuration={800}
                 >
                   {chartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
