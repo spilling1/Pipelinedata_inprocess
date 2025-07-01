@@ -67,12 +67,12 @@ const CampaignInfluenceSimple: React.FC = () => {
   }
 
   const totalCampaigns = data.length;
-  const totalPipeline = data.reduce((sum, c) => sum + c.pipelineValue, 0);
-  const totalCost = data.reduce((sum, c) => sum + c.cost, 0);
-  const avgROI = data.reduce((sum, c) => sum + c.roi, 0) / totalCampaigns;
+  const totalPipeline = data.reduce((sum, c) => sum + (c.pipelineValue || 0), 0);
+  const totalCost = data.reduce((sum, c) => sum + (c.cost || 0), 0);
+  const avgROI = data.reduce((sum, c) => sum + (c.roi || 0), 0) / totalCampaigns;
 
   const topCampaigns = data
-    .sort((a, b) => b.roi - a.roi)
+    .sort((a, b) => (b.roi || 0) - (a.roi || 0))
     .slice(0, 5);
 
   return (
@@ -106,7 +106,7 @@ const CampaignInfluenceSimple: React.FC = () => {
             <div className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5 text-green-600" />
               <div>
-                <div className="text-2xl font-bold">${(totalPipeline / 1000000).toFixed(1)}M</div>
+                <div className="text-2xl font-bold">${((totalPipeline || 0) / 1000000).toFixed(1)}M</div>
                 <div className="text-sm text-muted-foreground">Total Pipeline</div>
               </div>
             </div>
@@ -118,7 +118,7 @@ const CampaignInfluenceSimple: React.FC = () => {
             <div className="flex items-center gap-2">
               <Target className="h-5 w-5 text-purple-600" />
               <div>
-                <div className="text-2xl font-bold">${(totalCost / 1000).toFixed(0)}K</div>
+                <div className="text-2xl font-bold">${((totalCost || 0) / 1000).toFixed(0)}K</div>
                 <div className="text-sm text-muted-foreground">Total Cost</div>
               </div>
             </div>
@@ -130,7 +130,7 @@ const CampaignInfluenceSimple: React.FC = () => {
             <div className="flex items-center gap-2">
               <Users className="h-5 w-5 text-orange-600" />
               <div>
-                <div className="text-2xl font-bold">{avgROI.toFixed(0)}%</div>
+                <div className="text-2xl font-bold">{(avgROI || 0).toFixed(0)}%</div>
                 <div className="text-sm text-muted-foreground">Average ROI</div>
               </div>
             </div>
@@ -160,8 +160,8 @@ const CampaignInfluenceSimple: React.FC = () => {
                   </div>
                 </div>
                 <div className="text-right">
-                  <div className="font-semibold">{campaign.roi.toFixed(0)}% ROI</div>
-                  <div className="text-sm text-muted-foreground">${(campaign.pipelineValue / 1000).toFixed(0)}K pipeline</div>
+                  <div className="font-semibold">{(campaign.roi || 0).toFixed(0)}% ROI</div>
+                  <div className="text-sm text-muted-foreground">${((campaign.pipelineValue || 0) / 1000).toFixed(0)}K pipeline</div>
                 </div>
               </div>
             ))}
@@ -198,10 +198,10 @@ const CampaignInfluenceSimple: React.FC = () => {
                     <td className="p-2 font-medium">{campaign.campaignName}</td>
                     <td className="p-2">{campaign.campaignType}</td>
                     <td className="p-2">{campaign.totalCustomers}</td>
-                    <td className="p-2">${(campaign.pipelineValue / 1000).toFixed(0)}K</td>
-                    <td className="p-2">${(campaign.closedWonValue / 1000).toFixed(0)}K</td>
-                    <td className="p-2">{campaign.winRate.toFixed(1)}%</td>
-                    <td className="p-2">${(campaign.cost / 1000).toFixed(0)}K</td>
+                    <td className="p-2">${((campaign.pipelineValue || 0) / 1000).toFixed(0)}K</td>
+                    <td className="p-2">${((campaign.closedWonValue || 0) / 1000).toFixed(0)}K</td>
+                    <td className="p-2">{(campaign.winRate || 0).toFixed(1)}%</td>
+                    <td className="p-2">${((campaign.cost || 0) / 1000).toFixed(0)}K</td>
                     <td className="p-2">
                       <span className={`px-2 py-1 rounded-full text-xs ${
                         campaign.roi >= 500 ? 'bg-green-100 text-green-800' :
@@ -209,7 +209,7 @@ const CampaignInfluenceSimple: React.FC = () => {
                         campaign.roi >= 100 ? 'bg-yellow-100 text-yellow-800' :
                         'bg-red-100 text-red-800'
                       }`}>
-                        {campaign.roi.toFixed(0)}%
+                        {(campaign.roi || 0).toFixed(0)}%
                       </span>
                     </td>
                   </tr>
