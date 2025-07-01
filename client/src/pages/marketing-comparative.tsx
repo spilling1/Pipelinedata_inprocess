@@ -13,7 +13,7 @@ import CampaignTypeAnalysisEnhanced from '@/components/marketing/CampaignTypeAna
 import CustomerJourneyAnalysis from '@/components/marketing/CustomerJourneyAnalysis';
 import CampaignInfluence from '@/components/analytics-comparison/CampaignInfluence';
 import TargetAccountStrategy from '@/components/analytics-comparison/TargetAccountStrategy';
-import CustomerJourneyAnalysisEnhanced from '@/components/analytics-comparison/CustomerJourneyAnalysis';
+import CustomerJourneyAnalysisSimple from '@/components/analytics-comparison/CustomerJourneyAnalysisSimple';
 
 const MarketingComparativeAnalytics: React.FC = () => {
   return (
@@ -97,7 +97,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="customer-journey" className="space-y-6">
-          <CustomerJourneyAnalysisEnhanced />
+          <CustomerJourneyAnalysisSimple />
         </TabsContent>
       </Tabs>
     </div>

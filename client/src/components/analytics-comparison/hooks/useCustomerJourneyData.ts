@@ -1,5 +1,4 @@
-import { useState, useEffect } from 'react';
-import { apiRequest } from '@/lib/queryClient';
+import { useQuery } from '@tanstack/react-query';
 
 export interface CustomerJourneyData {
   customerName: string;
@@ -72,47 +71,33 @@ export interface CustomerJourneyResponse {
   insights: CustomerJourneyInsights;
 }
 
+interface CustomerJourneyApiResponse {
+  customers: CustomerJourneyData[];
+  summary: {
+    averageTouchesPerCustomer: number;
+    totalCustomersWithMultipleTouches: number;
+    totalUniqueCustomers: number;
+    touchDistribution: Array<{
+      touches: number;
+      customerCount: number;
+      percentage: number;
+    }>;
+  };
+}
+
 export const useCustomerJourneyData = () => {
-  const [data, setData] = useState<CustomerJourneyData[] | null>(null);
-  const [summary, setSummary] = useState<any | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchCustomerJourneyData = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        
-        const response = await apiRequest('/api/marketing/comparative/customer-journey');
-        
-        if (!response.ok) {
-          throw new Error(`Failed to fetch customer journey data: ${response.statusText}`);
-        }
-        
-        const journeyData = await response.json();
-        setData(journeyData.customers || []);
-        setSummary(journeyData.summary || null);
-        
-      } catch (err) {
-        console.error('Error fetching customer journey data:', err);
-        setError(err instanceof Error ? err.message : 'Failed to fetch customer journey data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCustomerJourneyData();
-  }, []);
+  const { data, isLoading, error } = useQuery<CustomerJourneyApiResponse>({
+    queryKey: ['/api/marketing/comparative/customer-journey'],
+  });
 
   return { 
-    data, 
-    summary, 
-    loading, 
-    error,
-    isLoading: loading,
+    data: data?.customers || [], 
+    summary: data?.summary || null, 
+    loading: isLoading, 
+    error: error?.message || null,
+    isLoading,
     // Backwards compatibility for other potential properties
     insights: null,
-    metrics: summary
+    metrics: data?.summary || null
   };
 };
