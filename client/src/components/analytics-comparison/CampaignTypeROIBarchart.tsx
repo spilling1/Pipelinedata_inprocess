@@ -102,18 +102,43 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
     }
     
     const color = getBarColor(payload.roi || 0);
+    const isOverMax = (payload.roi || 0) > 2500;
     
     return (
-      <rect
-        x={x}
-        y={y}
-        width={width}
-        height={height}
-        fill={color}
-        rx={4}
-        ry={4}
-        className="hover:opacity-80 transition-opacity"
-      />
+      <g>
+        <rect
+          x={x}
+          y={y}
+          width={width}
+          height={height}
+          fill={color}
+          rx={4}
+          ry={4}
+          className="hover:opacity-80 transition-opacity"
+        />
+        {isOverMax && (
+          <g>
+            {/* Arrow pointing up to indicate value exceeds chart */}
+            <polygon
+              points={`${x + width/2 - 6},${y - 5} ${x + width/2 + 6},${y - 5} ${x + width/2},${y - 15}`}
+              fill={color}
+              stroke="white"
+              strokeWidth="1"
+            />
+            {/* Small text indicator */}
+            <text
+              x={x + width/2}
+              y={y - 18}
+              textAnchor="middle"
+              fontSize="10"
+              fill={color}
+              fontWeight="bold"
+            >
+              {Math.round(payload.roi)}%
+            </text>
+          </g>
+        )}
+      </g>
     );
   };
 
@@ -128,11 +153,11 @@ const CampaignTypeROIBarchart: React.FC<CampaignTypeROIBarchartProps> = ({ data 
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-80">
+        <div className="h-96">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={chartData}
-              margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              margin={{ top: 40, right: 30, left: 20, bottom: 60 }}
             >
               <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
               <XAxis 
