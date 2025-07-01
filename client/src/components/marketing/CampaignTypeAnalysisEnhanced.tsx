@@ -252,47 +252,145 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="new-pipeline" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                New Pipeline Created Within 30 Days
-              </CardTitle>
-              <CardDescription>
-                Analysis of new opportunities that entered the pipeline within 30 days of campaign events
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="text-center text-muted-foreground">
-                <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">New Pipeline Analysis</h3>
-                <p>This view will show campaign types ranked by their ability to generate new pipeline opportunities within 30 days of events.</p>
-                <p className="mt-2 text-sm">Implementation coming in next phase...</p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* New Pipeline Key Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">New Opportunities</CardTitle>
+                <Clock className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.reduce((sum, ct: any) => sum + (ct.newOpportunityCount || 0), 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Within 30 days of campaigns
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">New Pipeline Value</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.totalNewPipelineValue || 0), 0))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  From new opportunities
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Closed Won</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.closedWonFromNew || 0), 0))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  From new pipeline
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Efficiency</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {data.length > 0 ? formatCurrency(data.reduce((sum, ct: any) => sum + (ct.newPipelineEfficiency || 0), 0) / data.length) : '$0'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  New pipeline per $ spent
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* New Pipeline ROI Chart */}
+          <CampaignTypeROIBarchart data={data} />
+
+          {/* New Pipeline Performance Table */}
+          <CampaignTypePerformanceTable data={data} />
         </TabsContent>
 
         <TabsContent value="stage-advance" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5" />
-                Stage Advancement Within 30 Days
-              </CardTitle>
-              <CardDescription>
-                Analysis of pipeline opportunities that moved positively through stages within 30 days of campaign events
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="text-center text-muted-foreground">
-                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <h3 className="text-lg font-semibold mb-2">Stage Advancement Analysis</h3>
-                <p>This view will show campaign types ranked by their ability to accelerate opportunities through the sales pipeline.</p>
-                <p className="mt-2 text-sm">Implementation coming in next phase...</p>
-              </div>
-            </CardContent>
-          </Card>
+          {/* Stage Advance Key Metrics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Positive Movements</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {data.reduce((sum, ct: any) => sum + (ct.positiveMovements || 0), 0)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Stage advancements within 30d
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Advanced Pipeline</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.totalAdvancedPipelineValue || 0), 0))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Value that moved forward
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Closed Won</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.closedWonFromAdvancement || 0), 0))}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  From stage advancement
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Advancement Efficiency</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {data.length > 0 ? formatCurrency(data.reduce((sum, ct: any) => sum + (ct.stageAdvancementEfficiency || 0), 0) / data.length) : '$0'}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Advanced pipeline per $ spent
+                </p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Stage Advance ROI Chart */}
+          <CampaignTypeROIBarchart data={data} />
+
+          {/* Stage Advance Performance Table */}
+          <CampaignTypePerformanceTable data={data} />
         </TabsContent>
       </Tabs>
     </div>

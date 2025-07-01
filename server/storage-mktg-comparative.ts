@@ -1154,7 +1154,7 @@ export class MarketingComparativeStorage {
             o.name as opportunity_name,
             o.client_name,
             s.stage,
-            s.year1_arr,
+            s.year1_value,
             s.entered_pipeline,
             s.snapshot_date,
             s.close_date
@@ -1198,10 +1198,10 @@ export class MarketingComparativeStorage {
           clientName: row.clientName,
           enteredPipeline: row.enteredPipeline,
           stage: row.stage,
-          value: row.year1Arr || 0
+          value: row.year1Value || 0
         });
 
-        const value = row.year1Arr || 0;
+        const value = row.year1Value || 0;
         groups[type].totalNewPipelineValue += value;
 
         if (row.stage === 'Closed Won') {
@@ -1333,7 +1333,7 @@ export class MarketingComparativeStorage {
         if (isPositiveStageMovement(row.beforeStage, row.afterStage)) {
           groups[type].positiveMovements++;
           
-          const value = row.year1Arr || 0;
+          const value = row.year1Value || 0;
           groups[type].totalAdvancedPipelineValue += value;
 
           groups[type].stageAdvancementOpportunities.push({
