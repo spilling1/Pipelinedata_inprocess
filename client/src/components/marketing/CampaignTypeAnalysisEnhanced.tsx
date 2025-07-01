@@ -35,7 +35,6 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
   if (isLoading) {
     return (
       <div className="space-y-6">
-        {/* Loading skeletons */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
@@ -116,113 +115,112 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
         </TabsList>
 
         <TabsContent value="influenced" className="space-y-6">
-          {/* Current Influenced Pipeline Analysis */}
           {/* Key Metrics Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalInvestment)}</div>
-            <p className="text-xs text-muted-foreground">
-              Across {metrics.totalCampaigns} campaigns
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(metrics.totalInvestment)}</div>
+                <p className="text-xs text-muted-foreground">
+                  Across {metrics.totalCampaigns} campaigns
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Pipeline</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
-            <p className="text-xs text-muted-foreground">
-              {metrics.totalCustomers} customers engaged
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Pipeline</CardTitle>
+                <Target className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.totalCustomers} customers engaged
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Closed Won</CardTitle>
-            <Trophy className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(metrics.totalClosedWon)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {formatPercentage(metrics.averageROI)} weighted ROI
-            </p>
-          </CardContent>
-        </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Total Closed Won</CardTitle>
+                <Trophy className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-green-600">
+                  {formatCurrency(metrics.totalClosedWon)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  {formatPercentage(metrics.averageROI)} weighted ROI
+                </p>
+              </CardContent>
+            </Card>
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Average Win Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {formatPercentage(metrics.averageWinRate)}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Across all campaign types
-            </p>
-          </CardContent>
-        </Card>
-      </div>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Average Win Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-blue-600">
+                  {formatPercentage(metrics.averageWinRate)}
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Across all campaign types
+                </p>
+              </CardContent>
+            </Card>
+          </div>
 
-      {/* Performance Distribution */}
-      {categorizedData && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <BarChart3 className="h-5 w-5" />
-              Performance Distribution
-            </CardTitle>
-            <CardDescription>
-              Campaign types categorized by ROI performance levels
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-green-600">{categorizedData.excellent.length}</div>
-                <div className="text-sm text-muted-foreground">Excellent</div>
-                <div className="text-xs text-muted-foreground">≥500% ROI</div>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-blue-600">{categorizedData.good.length}</div>
-                <div className="text-sm text-muted-foreground">Good</div>
-                <div className="text-xs text-muted-foreground">200-499% ROI</div>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-yellow-600">{categorizedData.moderate.length}</div>
-                <div className="text-sm text-muted-foreground">Moderate</div>
-                <div className="text-xs text-muted-foreground">100-199% ROI</div>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <div className="text-2xl font-bold text-red-600">{categorizedData.poor.length}</div>
-                <div className="text-sm text-muted-foreground">Poor</div>
-                <div className="text-xs text-muted-foreground">&lt;100% ROI</div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+          {/* Performance Distribution */}
+          {categorizedData && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5" />
+                  Performance Distribution
+                </CardTitle>
+                <CardDescription>
+                  Campaign types categorized by ROI performance levels
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-green-600">{categorizedData.excellent.length}</div>
+                    <div className="text-sm text-muted-foreground">Excellent</div>
+                    <div className="text-xs text-muted-foreground">≥500% ROI</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-blue-600">{categorizedData.good.length}</div>
+                    <div className="text-sm text-muted-foreground">Good</div>
+                    <div className="text-xs text-muted-foreground">200-499% ROI</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-yellow-600">{categorizedData.moderate.length}</div>
+                    <div className="text-sm text-muted-foreground">Moderate</div>
+                    <div className="text-xs text-muted-foreground">100-199% ROI</div>
+                  </div>
+                  <div className="text-center p-4 border rounded-lg">
+                    <div className="text-2xl font-bold text-red-600">{categorizedData.poor.length}</div>
+                    <div className="text-sm text-muted-foreground">Poor</div>
+                    <div className="text-xs text-muted-foreground">&lt;100% ROI</div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
-      {/* ROI Bar Chart */}
-      <CampaignTypeROIBarchart data={data} />
+          {/* ROI Bar Chart */}
+          <CampaignTypeROIBarchart data={data} />
 
-      {/* Performance Table */}
-      <CampaignTypePerformanceTable data={data} />
+          {/* Performance Table */}
+          <CampaignTypePerformanceTable data={data} />
 
-      {/* Strategic Insights */}
-      <CampaignTypeInsights data={data} />
+          {/* Strategic Insights */}
+          <CampaignTypeInsights data={data} />
 
           {/* Budget Reallocation Alert */}
           {reallocationAnalysis && reallocationAnalysis.inefficientTypes.length > 0 && (
@@ -255,9 +253,21 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
         <TabsContent value="new-pipeline" className="space-y-6">
           <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Clock className="h-5 w-5" />
+                New Pipeline Created Within 30 Days
+              </CardTitle>
+              <CardDescription>
+                Analysis of new opportunities that entered the pipeline within 30 days of campaign events
+              </CardDescription>
+            </CardHeader>
             <CardContent className="p-6">
               <div className="text-center text-muted-foreground">
-                New Pipeline (30d) analysis coming soon...
+                <GitBranch className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">New Pipeline Analysis</h3>
+                <p>This view will show campaign types ranked by their ability to generate new pipeline opportunities within 30 days of events.</p>
+                <p className="mt-2 text-sm">Implementation coming in next phase...</p>
               </div>
             </CardContent>
           </Card>
@@ -265,9 +275,21 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
         <TabsContent value="stage-advance" className="space-y-6">
           <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5" />
+                Stage Advancement Within 30 Days
+              </CardTitle>
+              <CardDescription>
+                Analysis of pipeline opportunities that moved positively through stages within 30 days of campaign events
+              </CardDescription>
+            </CardHeader>
             <CardContent className="p-6">
               <div className="text-center text-muted-foreground">
-                Stage Advance (30d) analysis coming soon...
+                <Activity className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <h3 className="text-lg font-semibold mb-2">Stage Advancement Analysis</h3>
+                <p>This view will show campaign types ranked by their ability to accelerate opportunities through the sales pipeline.</p>
+                <p className="mt-2 text-sm">Implementation coming in next phase...</p>
               </div>
             </CardContent>
           </Card>
