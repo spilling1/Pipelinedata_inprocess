@@ -3,7 +3,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, Users, LogOut, Target, Database, UserCheck, Settings, Activity } from "lucide-react";
+import { BarChart3, TrendingUp, Users, LogOut, Target, Database, UserCheck, Settings, Activity, CheckCircle } from "lucide-react";
 import { Link } from "wouter";
 import { User } from "@shared/schema";
 
@@ -179,6 +179,22 @@ export default function Home() {
                   <CardTitle>Customer Adoption Status</CardTitle>
                   <CardDescription>
                     Monitor customer adoption and engagement metrics
+                  </CardDescription>
+                </CardHeader>
+              </Card>
+            </a>
+
+            <a 
+              href="https://lookerstudio.google.com/reporting/1950976e-8e22-4cc0-be97-7772ccef5f38" 
+              target="_blank" 
+              rel="noopener noreferrer"
+            >
+              <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <CheckCircle className="h-8 w-8 text-emerald-600 mb-2" />
+                  <CardTitle>Implementation Status</CardTitle>
+                  <CardDescription>
+                    Track project implementation progress and milestones
                   </CardDescription>
                 </CardHeader>
               </Card>
