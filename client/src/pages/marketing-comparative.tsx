@@ -3,7 +3,8 @@ import { Link } from 'wouter';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Users, Target, TrendingUp, Trophy, ArrowLeft, Home, Route } from 'lucide-react';
+import { BarChart3, Users, Target, TrendingUp, Trophy, ArrowLeft, Home, Route, PieChart } from 'lucide-react';
+import ExecutiveSummary from '@/components/analytics-comparison/ExecutiveSummary';
 import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffectiveness';
 import CampaignEffectivenessRankings from '@/components/marketing/CampaignEffectivenessRankings';
 import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytics';
@@ -42,8 +43,12 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </div>
       </div>
 
-      <Tabs defaultValue="campaign-types" className="space-y-6">
+      <Tabs defaultValue="executive-summary" className="space-y-6">
         <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="executive-summary" className="flex items-center gap-2">
+            <PieChart className="h-4 w-4" />
+            Executive Summary
+          </TabsTrigger>
           <TabsTrigger value="campaign-types" className="flex items-center gap-2">
             <Trophy className="h-4 w-4" />
             Campaign Types
@@ -69,6 +74,10 @@ const MarketingComparativeAnalytics: React.FC = () => {
             Customer Journey
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="executive-summary" className="space-y-6">
+          <ExecutiveSummary />
+        </TabsContent>
 
         <TabsContent value="team-performance" className="space-y-6">
           <TeamAttendeeEffectiveness />
