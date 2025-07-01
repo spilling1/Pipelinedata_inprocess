@@ -9,7 +9,7 @@ import TeamAttendeeEffectiveness from '@/components/marketing/TeamAttendeeEffect
 import CampaignEffectivenessRankings from '@/components/marketing/CampaignEffectivenessRankings';
 import TargetAccountAnalytics from '@/components/marketing/TargetAccountAnalytics';
 import StrategicEngagementMatrix from '@/components/marketing/StrategicEngagementMatrix';
-import CampaignTypeAnalysis from '@/components/marketing/CampaignTypeAnalysis';
+import CampaignTypeAnalysisEnhanced from '@/components/marketing/CampaignTypeAnalysisEnhanced';
 import CustomerJourneyAnalysis from '@/components/marketing/CustomerJourneyAnalysis';
 
 const MarketingComparativeAnalytics: React.FC = () => {
@@ -82,7 +82,7 @@ const MarketingComparativeAnalytics: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="campaign-types" className="space-y-6">
-          <CampaignTypeAnalysis />
+          <CampaignTypeAnalysisEnhanced />
         </TabsContent>
 
         <TabsContent value="target-accounts" className="space-y-6">
