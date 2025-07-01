@@ -61,10 +61,16 @@ export function usePermissions() {
         return hasPermission('pipeline');
       case 'marketing':
         return hasPermission('marketing');
+      case 'marketing_comparative':
+        return hasPermission('marketing_comparative');
       case 'sales':
         return hasPermission('sales');
       case 'people-ops':
         return hasPermission('people_ops');
+      case 'customer-adoption':
+        return hasPermission('customer_adoption');
+      case 'implementation-status':
+        return hasPermission('implementation_status');
       case 'database':
         return hasPermission('database');
       case 'settings':

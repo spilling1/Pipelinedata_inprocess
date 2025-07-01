@@ -57,6 +57,8 @@ const AVAILABLE_PERMISSIONS = [
   { key: 'marketing_comparative', label: 'Marketing Comparative Analytics' },
   { key: 'sales', label: 'Sales Analytics' },
   { key: 'people_ops', label: 'People Ops Analytics' },
+  { key: 'customer_adoption', label: 'Customer Adoption Status' },
+  { key: 'implementation_status', label: 'Implementation Status' },
   { key: 'database', label: 'Database Management' },
   { key: 'settings', label: 'System Settings' },
   { key: 'user_management', label: 'User Management' },
