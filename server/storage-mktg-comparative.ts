@@ -967,8 +967,8 @@ export class MarketingComparativeStorage {
 
       const typeMetrics = Object.entries(typeGroups).map(([type, campaigns]) => {
         const typeCost = campaigns.reduce((sum, c) => sum + c.cost, 0);
-        const typeClosedWon = campaigns.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
-        const typePipeline = campaigns.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
+        const typeClosedWon = campaigns.reduce((sum, c) => sum + (c.metrics?.closedWonValue || 0), 0);
+        const typePipeline = campaigns.reduce((sum, c) => sum + (c.metrics?.pipelineValue || 0), 0);
         const typeROI = typeCost > 0 ? (typeClosedWon / typeCost) * 100 : 0;
         const pipelineEfficiency = typeCost > 0 ? typePipeline / typeCost : 0;
         
@@ -984,18 +984,18 @@ export class MarketingComparativeStorage {
       });
 
       // Generate insights
-      const bestPerformingType = typeMetrics.reduce((best, current) => 
-        current.roi > best.roi ? current : best
-      );
+      const bestPerformingType = typeMetrics.length > 0 
+        ? typeMetrics.reduce((best, current) => current.roi > best.roi ? current : best)
+        : null;
       
       const inefficientTypes = typeMetrics.filter(type => type.costPercentage > 10);
       const mostInefficientType = inefficientTypes.length > 0 
         ? inefficientTypes.reduce((worst, current) => current.roi < worst.roi ? current : worst)
         : null;
       
-      const bestPipelineEfficiency = typeMetrics.reduce((best, current) => 
-        current.pipelineEfficiency > best.pipelineEfficiency ? current : best
-      );
+      const bestPipelineEfficiency = typeMetrics.length > 0
+        ? typeMetrics.reduce((best, current) => current.pipelineEfficiency > best.pipelineEfficiency ? current : best)
+        : null;
 
       // Generate executive summary text
       const summaryText = this.generateExecutiveSummaryText(
