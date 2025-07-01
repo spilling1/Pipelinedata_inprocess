@@ -1,217 +1,109 @@
-import { useQuery } from '@tanstack/react-query';
-import { useMemo } from 'react';
+import { useState, useEffect } from 'react';
+import { apiRequest } from '@/lib/queryClient';
 
 export interface CustomerJourneyData {
-  customerId: number;
   customerName: string;
-  touches: number;
-  totalCAC: number;
-  pipelineValue: number;
-  closedWonValue: number;
-  currentStage: string;
-  campaignTypes: string[];
-  journeyPeriod: number; // days
-  firstTouchDate: Date;
-  lastTouchDate: Date;
-  campaignDetails: Array<{
-    campaignId: number;
+  totalTouches: number;
+  lastTouchDate: string;
+  enteredPipelineDate: string | null;
+  campaigns: Array<{
     campaignName: string;
     campaignType: string;
-    touchDate: Date;
-    cost: number;
+    eventDate: string;
+    touchCount: number;
   }>;
+  currentStage: string;
+  pipelineValue: number;
+  isClosedWon: boolean;
+  closedWonValue: number;
+  daysFromFirstTouchToPipeline: number | null;
+  daysFromFirstTouchToClose: number | null;
 }
 
 export interface CustomerJourneyMetrics {
   totalCustomers: number;
-  averageTouches: number;
-  multiTouchPercentage: number;
-  averageJourneyCAC: number;
-  totalJourneyValue: number;
-  averageJourneyPeriod: number;
-  conversionByTouches: Record<number, { customers: number; conversionRate: number }>;
-}
-
-export interface CustomerJourneyInsights {
-  multiTouchImpact: {
-    percentage: number;
-    value: number;
-    description: string;
-  };
-  journeyBottlenecks: Array<{
-    stage: string;
-    dropOffRate: number;
-    impact: string;
+  avgTouchesPerCustomer: number;
+  avgDaysToEnterPipeline: number;
+  avgDaysToClose: number;
+  pipelineConversionRate: number;
+  closeConversionRate: number;
+  totalCampaignCosts: number;
+  totalPipelineValue: number;
+  totalClosedWonValue: number;
+  averageCACByTouches: Array<{
+    touchCount: number;
+    customers: number;
+    cumulativeCAC: number;
+    pipelineValue: number;
+    closedWonValue: number;
+    efficiency: number;
   }>;
   optimalTouchCount: {
     touches: number;
-    conversionRate: number;
-    reasoning: string;
+    efficiency: number;
+    recommendation: string;
   };
-  topJourneyPatterns: Array<{
-    pattern: string;
-    frequency: number;
-    conversionRate: number;
-    averageValue: number;
+}
+
+export interface CustomerJourneyInsights {
+  journeyBottlenecks: Array<{
+    stage: string;
+    issue: string;
+    impact: string;
+    recommendation: string;
   }>;
+  touchEfficiency: {
+    mostEfficient: { touches: number; cac: number; efficiency: number };
+    leastEfficient: { touches: number; cac: number; efficiency: number };
+    recommendation: string;
+  };
+  conversionInsights: {
+    bestPerformingPath: string;
+    averageJourneyLength: number;
+    quickestConversion: number;
+    longestConversion: number;
+  };
+  strategicRecommendations: string[];
+}
+
+export interface CustomerJourneyResponse {
+  customers: CustomerJourneyData[];
+  metrics: CustomerJourneyMetrics;
+  insights: CustomerJourneyInsights;
 }
 
 export const useCustomerJourneyData = () => {
-  const { data: rawData, isLoading, error, refetch } = useQuery<CustomerJourneyData[]>({
-    queryKey: ['/api/marketing/comparative/customer-journey'],
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: false,
-  });
+  const [data, setData] = useState<CustomerJourneyResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const processedData = useMemo(() => {
-    if (!rawData || rawData.length === 0) return null;
-
-    // Calculate metrics
-    const totalCustomers = rawData.length;
-    const totalTouches = rawData.reduce((sum, customer) => sum + customer.touches, 0);
-    const averageTouches = totalTouches / totalCustomers;
-    
-    const multiTouchCustomers = rawData.filter(customer => customer.touches > 1);
-    const multiTouchPercentage = (multiTouchCustomers.length / totalCustomers) * 100;
-    
-    const totalCAC = rawData.reduce((sum, customer) => sum + customer.totalCAC, 0);
-    const averageJourneyCAC = totalCAC / totalCustomers;
-    
-    const totalJourneyValue = rawData.reduce((sum, customer) => 
-      sum + customer.pipelineValue + customer.closedWonValue, 0
-    );
-    
-    const totalJourneyPeriod = rawData.reduce((sum, customer) => sum + customer.journeyPeriod, 0);
-    const averageJourneyPeriod = totalJourneyPeriod / totalCustomers;
-
-    // Conversion by touches analysis
-    const touchGroups = rawData.reduce((acc, customer) => {
-      const touchCount = customer.touches;
-      if (!acc[touchCount]) {
-        acc[touchCount] = [];
+  useEffect(() => {
+    const fetchCustomerJourneyData = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        
+        const response = await apiRequest('/api/marketing/comparative/customer-journey', {
+          method: 'GET'
+        });
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch customer journey data: ${response.statusText}`);
+        }
+        
+        const journeyData = await response.json();
+        setData(journeyData);
+        
+      } catch (err) {
+        console.error('Error fetching customer journey data:', err);
+        setError(err instanceof Error ? err.message : 'Failed to fetch customer journey data');
+      } finally {
+        setLoading(false);
       }
-      acc[touchCount].push(customer);
-      return acc;
-    }, {} as Record<number, CustomerJourneyData[]>);
-
-    const conversionByTouches = Object.entries(touchGroups).reduce((acc, [touches, customers]) => {
-      const touchNumber = parseInt(touches);
-      const convertedCustomers = customers.filter(c => c.closedWonValue > 0);
-      const conversionRate = (convertedCustomers.length / customers.length) * 100;
-      
-      acc[touchNumber] = {
-        customers: customers.length,
-        conversionRate
-      };
-      return acc;
-    }, {} as Record<number, { customers: number; conversionRate: number }>);
-
-    const metrics: CustomerJourneyMetrics = {
-      totalCustomers,
-      averageTouches,
-      multiTouchPercentage,
-      averageJourneyCAC,
-      totalJourneyValue,
-      averageJourneyPeriod,
-      conversionByTouches
     };
 
-    return { data: rawData, metrics };
-  }, [rawData]);
+    fetchCustomerJourneyData();
+  }, []);
 
-  // Customer journey insights
-  const insights = useMemo(() => {
-    if (!processedData) return null;
-
-    const { data, metrics } = processedData;
-
-    // Multi-touch impact analysis
-    const singleTouchCustomers = data.filter(c => c.touches === 1);
-    const multiTouchCustomers = data.filter(c => c.touches > 1);
-    
-    const singleTouchValue = singleTouchCustomers.reduce((sum, c) => 
-      sum + c.pipelineValue + c.closedWonValue, 0
-    );
-    const multiTouchValue = multiTouchCustomers.reduce((sum, c) => 
-      sum + c.pipelineValue + c.closedWonValue, 0
-    );
-
-    const multiTouchImpact = {
-      percentage: metrics.multiTouchPercentage,
-      value: multiTouchValue,
-      description: `Multi-touch customers represent ${metrics.multiTouchPercentage.toFixed(1)}% of customers but generate ${((multiTouchValue / metrics.totalJourneyValue) * 100).toFixed(1)}% of total value`
-    };
-
-    // Journey bottlenecks (simplified analysis)
-    const stageAnalysis = data.reduce((acc, customer) => {
-      const stage = customer.currentStage;
-      if (!acc[stage]) {
-        acc[stage] = { total: 0, converted: 0 };
-      }
-      acc[stage].total++;
-      if (customer.closedWonValue > 0) {
-        acc[stage].converted++;
-      }
-      return acc;
-    }, {} as Record<string, { total: number; converted: number }>);
-
-    const journeyBottlenecks = Object.entries(stageAnalysis)
-      .map(([stage, stats]) => ({
-        stage,
-        dropOffRate: ((stats.total - stats.converted) / stats.total) * 100,
-        impact: stats.total > 5 ? 'high' : 'low'
-      }))
-      .sort((a, b) => b.dropOffRate - a.dropOffRate)
-      .slice(0, 3);
-
-    // Optimal touch count analysis
-    const touchAnalysis = Object.entries(metrics.conversionByTouches)
-      .sort((a, b) => b[1].conversionRate - a[1].conversionRate);
-    
-    const optimalTouchCount = {
-      touches: parseInt(touchAnalysis[0]?.[0] || '2'),
-      conversionRate: touchAnalysis[0]?.[1].conversionRate || 0,
-      reasoning: `${touchAnalysis[0]?.[0] || 2} touches shows highest conversion rate at ${(touchAnalysis[0]?.[1].conversionRate || 0).toFixed(1)}%`
-    };
-
-    // Top journey patterns
-    const campaignTypePatterns = data.reduce((acc, customer) => {
-      const pattern = customer.campaignTypes.sort().join(' → ');
-      if (!acc[pattern]) {
-        acc[pattern] = { customers: [], totalValue: 0 };
-      }
-      acc[pattern].customers.push(customer);
-      acc[pattern].totalValue += customer.pipelineValue + customer.closedWonValue;
-      return acc;
-    }, {} as Record<string, { customers: CustomerJourneyData[]; totalValue: number }>);
-
-    const topJourneyPatterns = Object.entries(campaignTypePatterns)
-      .map(([pattern, stats]) => ({
-        pattern,
-        frequency: stats.customers.length,
-        conversionRate: (stats.customers.filter(c => c.closedWonValue > 0).length / stats.customers.length) * 100,
-        averageValue: stats.totalValue / stats.customers.length
-      }))
-      .sort((a, b) => b.frequency - a.frequency)
-      .slice(0, 5);
-
-    const journeyInsights: CustomerJourneyInsights = {
-      multiTouchImpact,
-      journeyBottlenecks,
-      optimalTouchCount,
-      topJourneyPatterns
-    };
-
-    return journeyInsights;
-  }, [processedData]);
-
-  return {
-    data: processedData?.data || [],
-    metrics: processedData?.metrics || null,
-    insights,
-    isLoading,
-    error,
-    refetch,
-    isEmpty: !rawData || rawData.length === 0
-  };
+  return { data, loading, error };
 };
