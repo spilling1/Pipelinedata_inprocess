@@ -775,51 +775,131 @@ export class MarketingComparativeStorage {
   /**
    * Get Executive Summary Data
    * Provides comprehensive marketing performance overview with metrics, trends, and insights
+   * Filtered to current fiscal year (Feb 1, 2025 - Jan 31, 2026) with unique opportunity aggregation
    */
   async getExecutiveSummary(): Promise<ExecutiveSummaryData> {
     try {
-      console.log('📊 Fetching executive summary data...');
+      console.log('📊 Fetching executive summary data for fiscal year Feb 2025 - Jan 2026...');
 
-      // Get all campaign data for aggregation
-      const campaignData = await this.getCampaignComparisonData();
+      // Define fiscal year boundaries
+      const fiscalYearStart = new Date('2025-02-01');
+      const fiscalYearEnd = new Date('2026-01-31');
+
+      // Get unique opportunities from campaigns within fiscal year with latest snapshots
+      const uniqueOpportunityData = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          campaignId: campaignCustomers.campaignId,
+          campaignCost: campaigns.cost,
+          campaignType: campaigns.type,
+          currentStage: snapshots.stage,
+          currentYear1Value: snapshots.year1Value,
+          enteredPipeline: snapshots.enteredPipeline,
+          closeDate: snapshots.closeDate,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(campaignCustomers)
+        .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
+        .innerJoin(
+          snapshots,
+          eq(campaignCustomers.opportunityId, snapshots.opportunityId)
+        )
+        .where(
+          and(
+            gte(campaigns.startDate, fiscalYearStart),
+            lte(campaigns.startDate, fiscalYearEnd),
+            // Get only the most recent snapshot for each opportunity
+            sql`${snapshots.snapshotDate} = (
+              SELECT MAX(s2.snapshot_date) 
+              FROM ${snapshots} s2 
+              WHERE s2.opportunity_id = ${snapshots.opportunityId}
+            )`
+          )
+        );
+
+      console.log(`📊 Found ${uniqueOpportunityData.length} unique opportunities in fiscal year campaigns`);
+
+      // Group by unique opportunity to avoid double counting
+      const uniqueOpportunities = new Map();
       
-      // Calculate overall metrics
-      const totalPipeline = campaignData.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
-      const totalClosedWon = campaignData.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
-      const totalCost = campaignData.reduce((sum, c) => sum + c.cost, 0);
-      const totalCustomers = campaignData.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
+      uniqueOpportunityData.forEach(row => {
+        const oppId = row.opportunityId;
+        if (!uniqueOpportunities.has(oppId)) {
+          uniqueOpportunities.set(oppId, {
+            ...row,
+            campaigns: [{ id: row.campaignId, cost: row.campaignCost, type: row.campaignType }]
+          });
+        } else {
+          // Add campaign to existing opportunity
+          const existing = uniqueOpportunities.get(oppId);
+          existing.campaigns.push({ id: row.campaignId, cost: row.campaignCost, type: row.campaignType });
+        }
+      });
+
+      const uniqueOpportunitiesArray = Array.from(uniqueOpportunities.values());
       
+      // Calculate fiscal year metrics from unique opportunities
+      let totalPipeline = 0;
+      let totalClosedWon = 0;
+      let totalCost = 0;
+      let totalCustomers = uniqueOpportunitiesArray.length;
+      let totalClosedDeals = 0;
+      let totalWonDeals = 0;
+
+      // Track campaigns to avoid double-counting costs
+      const uniqueCampaigns = new Map();
+      
+      uniqueOpportunitiesArray.forEach(opp => {
+        const value = opp.currentYear1Value || 0;
+        const stage = opp.currentStage;
+        
+        // Add to appropriate totals
+        if (stage === 'Closed Won') {
+          totalClosedWon += value;
+          totalClosedDeals++;
+          totalWonDeals++;
+        } else if (stage === 'Closed Lost') {
+          totalClosedDeals++;
+        } else if (opp.enteredPipeline) {
+          // Active pipeline opportunity
+          totalPipeline += value;
+        }
+        
+        // Track campaign costs (avoid double counting)
+        opp.campaigns.forEach((campaign: any) => {
+          if (!uniqueCampaigns.has(campaign.id)) {
+            uniqueCampaigns.set(campaign.id, campaign.cost);
+            totalCost += campaign.cost;
+          }
+        });
+      });
+
+      console.log(`📊 Fiscal year metrics: ${totalCustomers} unique opportunities, $${totalPipeline} pipeline, $${totalClosedWon} closed won`);
+
       // Calculate weighted averages
       const weightedROI = totalCost > 0 ? (totalClosedWon / totalCost) * 100 : 0;
-      let weightedWinRate = 0;
-      
-      if (totalCustomers > 0) {
-        let totalWeight = 0;
-        let weightedSum = 0;
-        
-        campaignData.forEach(campaign => {
-          const weight = campaign.metrics.totalCustomers;
-          totalWeight += weight;
-          weightedSum += (campaign.metrics.winRate * weight);
-        });
-        
-        weightedWinRate = totalWeight > 0 ? weightedSum / totalWeight : 0;
-      }
+      const weightedWinRate = totalClosedDeals > 0 ? (totalWonDeals / totalClosedDeals) * 100 : 0;
 
-      // Get time-series data for trends (last 12 months)
-      const timeSeriesData = await this.getTimeSeriesData();
+      // Get time-series data for trends (fiscal year)
+      const timeSeriesData = await this.getFiscalYearTimeSeriesData(fiscalYearStart, fiscalYearEnd);
       
-      // Campaign type analysis for insights
-      const typeGroups = campaignData.reduce((groups, campaign) => {
+      // For insights, use existing campaign comparison data but filter to fiscal year
+      const allCampaignData = await this.getCampaignComparisonData();
+      const fiscalYearCampaigns = allCampaignData.filter(campaign => {
+        const campaignStart = new Date(campaign.startDate);
+        return campaignStart >= fiscalYearStart && campaignStart <= fiscalYearEnd;
+      });
+
+      // Calculate type-level metrics for insights
+      const typeGroups = fiscalYearCampaigns.reduce((groups, campaign) => {
         const type = campaign.campaignType;
         if (!groups[type]) {
           groups[type] = [];
         }
         groups[type].push(campaign);
         return groups;
-      }, {} as Record<string, typeof campaignData>);
+      }, {} as Record<string, any[]>);
 
-      // Calculate type-level metrics for insights
       const typeMetrics = Object.entries(typeGroups).map(([type, campaigns]) => {
         const typeCost = campaigns.reduce((sum, c) => sum + c.cost, 0);
         const typeClosedWon = campaigns.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
@@ -860,7 +940,7 @@ export class MarketingComparativeStorage {
         weightedROI
       );
 
-      console.log('📊 Executive summary data compiled successfully');
+      console.log('📊 Executive summary data compiled successfully for fiscal year');
 
       return {
         metrics: {
@@ -924,6 +1004,43 @@ export class MarketingComparativeStorage {
 
     } catch (error) {
       console.error('❌ Error fetching time series data:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get fiscal year time-series data for pipeline and closed won trends
+   */
+  private async getFiscalYearTimeSeriesData(startDate: Date, endDate: Date): Promise<TimeSeriesDataPoint[]> {
+    try {
+      // Get monthly aggregated data from snapshots within fiscal year
+      const monthlyData = await db
+        .select({
+          month: sql<string>`DATE_TRUNC('month', ${snapshots.snapshotDate})::text`,
+          pipelineValue: sql<number>`SUM(CASE WHEN ${snapshots.stage} NOT IN ('Closed Won', 'Closed Lost') AND ${snapshots.enteredPipeline} IS NOT NULL THEN ${snapshots.year1Value} ELSE 0 END)`,
+          closedWonValue: sql<number>`SUM(CASE WHEN ${snapshots.stage} = 'Closed Won' THEN ${snapshots.year1Value} ELSE 0 END)`
+        })
+        .from(snapshots)
+        .innerJoin(campaignCustomers, eq(snapshots.opportunityId, campaignCustomers.opportunityId))
+        .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
+        .where(
+          and(
+            gte(campaigns.startDate, startDate),
+            lte(campaigns.startDate, endDate),
+            gte(snapshots.snapshotDate, startDate)
+          )
+        )
+        .groupBy(sql`DATE_TRUNC('month', ${snapshots.snapshotDate})`)
+        .orderBy(sql`DATE_TRUNC('month', ${snapshots.snapshotDate})`);
+
+      return monthlyData.map(row => ({
+        date: row.month,
+        pipelineValue: row.pipelineValue,
+        closedWonValue: row.closedWonValue
+      }));
+
+    } catch (error) {
+      console.error('❌ Error fetching fiscal year time series data:', error);
       return [];
     }
   }
