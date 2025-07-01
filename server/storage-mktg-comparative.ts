@@ -3,6 +3,40 @@ import { campaigns, campaignCustomers, snapshots, opportunities } from '../share
 import { eq, and, sql, desc, asc, isNotNull, gte, lte, inArray } from 'drizzle-orm';
 
 // Type definitions for comparative analytics
+export interface ExecutiveSummaryData {
+  metrics: {
+    totalPipeline: number;
+    totalClosedWon: number;
+    averageROI: number;
+    averageWinRate: number;
+  };
+  timeSeriesData: TimeSeriesDataPoint[];
+  insights: {
+    bestPerformingCampaignType: {
+      name: string;
+      roi: number;
+      value: number;
+    };
+    mostInefficientCampaignType: {
+      name: string;
+      roi: number;
+      costPercentage: number;
+    } | null;
+    bestPipelineEfficiency: {
+      name: string;
+      efficiency: number;
+      value: number;
+    };
+  };
+  summaryText: string;
+}
+
+export interface TimeSeriesDataPoint {
+  date: string;
+  pipelineValue: number;
+  closedWonValue: number;
+}
+
 export interface TargetAccountAnalytics {
   targetAccounts: {
     customerCount: number;
@@ -736,6 +770,186 @@ export class MarketingComparativeStorage {
       console.error('❌ Error in getCustomerJourneyAnalysis:', error);
       throw error;
     }
+  }
+
+  /**
+   * Get Executive Summary Data
+   * Provides comprehensive marketing performance overview with metrics, trends, and insights
+   */
+  async getExecutiveSummary(): Promise<ExecutiveSummaryData> {
+    try {
+      console.log('📊 Fetching executive summary data...');
+
+      // Get all campaign data for aggregation
+      const campaignData = await this.getCampaignComparisonData();
+      
+      // Calculate overall metrics
+      const totalPipeline = campaignData.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
+      const totalClosedWon = campaignData.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
+      const totalCost = campaignData.reduce((sum, c) => sum + c.cost, 0);
+      const totalCustomers = campaignData.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
+      
+      // Calculate weighted averages
+      const weightedROI = totalCost > 0 ? (totalClosedWon / totalCost) * 100 : 0;
+      let weightedWinRate = 0;
+      
+      if (totalCustomers > 0) {
+        let totalWeight = 0;
+        let weightedSum = 0;
+        
+        campaignData.forEach(campaign => {
+          const weight = campaign.metrics.totalCustomers;
+          totalWeight += weight;
+          weightedSum += (campaign.metrics.winRate * weight);
+        });
+        
+        weightedWinRate = totalWeight > 0 ? weightedSum / totalWeight : 0;
+      }
+
+      // Get time-series data for trends (last 12 months)
+      const timeSeriesData = await this.getTimeSeriesData();
+      
+      // Campaign type analysis for insights
+      const typeGroups = campaignData.reduce((groups, campaign) => {
+        const type = campaign.campaignType;
+        if (!groups[type]) {
+          groups[type] = [];
+        }
+        groups[type].push(campaign);
+        return groups;
+      }, {} as Record<string, typeof campaignData>);
+
+      // Calculate type-level metrics for insights
+      const typeMetrics = Object.entries(typeGroups).map(([type, campaigns]) => {
+        const typeCost = campaigns.reduce((sum, c) => sum + c.cost, 0);
+        const typeClosedWon = campaigns.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
+        const typePipeline = campaigns.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
+        const typeROI = typeCost > 0 ? (typeClosedWon / typeCost) * 100 : 0;
+        const pipelineEfficiency = typeCost > 0 ? typePipeline / typeCost : 0;
+        
+        return {
+          campaignType: type,
+          totalCost: typeCost,
+          closedWonValue: typeClosedWon,
+          pipelineValue: typePipeline,
+          roi: typeROI,
+          pipelineEfficiency,
+          costPercentage: totalCost > 0 ? (typeCost / totalCost) * 100 : 0
+        };
+      });
+
+      // Generate insights
+      const bestPerformingType = typeMetrics.reduce((best, current) => 
+        current.roi > best.roi ? current : best
+      );
+      
+      const inefficientTypes = typeMetrics.filter(type => type.costPercentage > 10);
+      const mostInefficientType = inefficientTypes.length > 0 
+        ? inefficientTypes.reduce((worst, current) => current.roi < worst.roi ? current : worst)
+        : null;
+      
+      const bestPipelineEfficiency = typeMetrics.reduce((best, current) => 
+        current.pipelineEfficiency > best.pipelineEfficiency ? current : best
+      );
+
+      // Generate executive summary text
+      const summaryText = this.generateExecutiveSummaryText(
+        bestPerformingType,
+        mostInefficientType,
+        bestPipelineEfficiency,
+        weightedROI
+      );
+
+      console.log('📊 Executive summary data compiled successfully');
+
+      return {
+        metrics: {
+          totalPipeline,
+          totalClosedWon,
+          averageROI: weightedROI,
+          averageWinRate: weightedWinRate
+        },
+        timeSeriesData,
+        insights: {
+          bestPerformingCampaignType: {
+            name: bestPerformingType.campaignType,
+            roi: bestPerformingType.roi,
+            value: bestPerformingType.closedWonValue
+          },
+          mostInefficientCampaignType: mostInefficientType ? {
+            name: mostInefficientType.campaignType,
+            roi: mostInefficientType.roi,
+            costPercentage: mostInefficientType.costPercentage
+          } : null,
+          bestPipelineEfficiency: {
+            name: bestPipelineEfficiency.campaignType,
+            efficiency: bestPipelineEfficiency.pipelineEfficiency,
+            value: bestPipelineEfficiency.pipelineValue
+          }
+        },
+        summaryText
+      };
+
+    } catch (error) {
+      console.error('❌ Error in getExecutiveSummary:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get time-series data for pipeline and closed won trends
+   */
+  private async getTimeSeriesData(): Promise<TimeSeriesDataPoint[]> {
+    try {
+      // Get monthly aggregated data from snapshots
+      const monthlyData = await db
+        .select({
+          month: sql<string>`DATE_TRUNC('month', ${snapshots.snapshotDate})::text`,
+          pipelineValue: sql<number>`SUM(CASE WHEN ${snapshots.stage} NOT IN ('Closed Won', 'Closed Lost') THEN ${snapshots.year1Value} ELSE 0 END)`,
+          closedWonValue: sql<number>`SUM(CASE WHEN ${snapshots.stage} = 'Closed Won' THEN ${snapshots.year1Value} ELSE 0 END)`
+        })
+        .from(snapshots)
+        .innerJoin(campaignCustomers, eq(snapshots.opportunityId, campaignCustomers.opportunityId))
+        .where(
+          gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '12 months'`)
+        )
+        .groupBy(sql`DATE_TRUNC('month', ${snapshots.snapshotDate})`)
+        .orderBy(sql`DATE_TRUNC('month', ${snapshots.snapshotDate})`);
+
+      return monthlyData.map(row => ({
+        date: row.month,
+        pipelineValue: row.pipelineValue,
+        closedWonValue: row.closedWonValue
+      }));
+
+    } catch (error) {
+      console.error('❌ Error fetching time series data:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Generate executive summary text based on insights
+   */
+  private generateExecutiveSummaryText(
+    bestType: any,
+    worstType: any,
+    bestEfficiency: any,
+    overallROI: number
+  ): string {
+    const roiText = overallROI > 100 ? 'strong' : overallROI > 50 ? 'moderate' : 'developing';
+    
+    let summary = `Marketing campaigns are delivering ${roiText} returns with ${bestType.campaignType} showing the highest ROI at ${bestType.roi.toFixed(1)}%.`;
+    
+    if (worstType && worstType.roi < bestType.roi * 0.5) {
+      summary += ` Consider optimizing ${worstType.campaignType} campaigns (${worstType.roi.toFixed(1)}% ROI) or reallocating budget to higher-performing campaign types.`;
+    }
+    
+    if (bestEfficiency.campaignType !== bestType.campaignType) {
+      summary += ` ${bestEfficiency.campaignType} shows excellent pipeline efficiency, generating $${bestEfficiency.pipelineEfficiency.toFixed(2)} of pipeline per dollar invested.`;
+    }
+
+    return summary;
   }
 }
 

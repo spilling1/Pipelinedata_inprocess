@@ -4,6 +4,28 @@ import { marketingComparativeStorage } from './storage-mktg-comparative.js';
 const router = Router();
 
 /**
+ * Executive Summary - Comprehensive marketing performance overview
+ * Provides high-level metrics, trends, and strategic insights
+ */
+router.get('/executive-summary', async (req, res) => {
+  try {
+    console.log('📊 API: Fetching executive summary data...');
+    
+    const summary = await marketingComparativeStorage.getExecutiveSummary();
+    
+    console.log('📊 API: Executive summary completed successfully');
+    res.json(summary);
+    
+  } catch (error) {
+    console.error('❌ API Error in /executive-summary:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch executive summary data',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
  * Get target account vs non-target account analytics
  * Provides comparative analysis of target accounts vs regular accounts
  */
