@@ -79,9 +79,9 @@ const CampaignInfluenceAnalytics: React.FC = () => {
 
   // Calculate aggregate insights using available data
   const totalCampaigns = campaignData?.length || 0;
-  const avgWinRate = campaignData?.reduce((sum, c) => sum + (c.metrics.winRate || 0), 0) / totalCampaigns || 0;
-  const avgROI = campaignData?.reduce((sum, c) => sum + (c.metrics.roi || 0), 0) / totalCampaigns || 0;
-  const avgTargetAccountPercentage = campaignData?.reduce((sum, c) => sum + (c.metrics.targetAccountPercentage || 0), 0) / totalCampaigns || 0;
+  const avgWinRate = totalCampaigns > 0 && campaignData ? campaignData.reduce((sum, c) => sum + (c.metrics.winRate || 0), 0) / totalCampaigns : 0;
+  const avgROI = totalCampaigns > 0 && campaignData ? campaignData.reduce((sum, c) => sum + (c.metrics.roi || 0), 0) / totalCampaigns : 0;
+  const avgTargetAccountPercentage = totalCampaigns > 0 && campaignData ? campaignData.reduce((sum, c) => sum + (c.metrics.targetAccountPercentage || 0), 0) / totalCampaigns : 0;
 
   // Campaign effectiveness insights
   const highROICampaigns = campaignData?.filter(c => (c.metrics.roi || 0) > avgROI) || [];
@@ -277,7 +277,7 @@ const CampaignInfluenceAnalytics: React.FC = () => {
               <ul className="text-sm space-y-1 text-blue-700">
                 <li>• {totalCampaigns} campaigns analyzed with {formatPercentage(avgWinRate)} average win rate</li>
                 <li>• {highWinRateCampaigns.length} campaigns performing above average win rate</li>
-                <li>• {targetAccountFocusedCampaigns.length} campaigns focused on target accounts (&gt;50% coverage)</li>
+                <li>• {targetAccountFocusedCampaigns.length} campaigns focused on target accounts (over 50% coverage)</li>
                 <li>• {highROICampaigns.length} campaigns showing above-average ROI performance</li>
               </ul>
             </div>
