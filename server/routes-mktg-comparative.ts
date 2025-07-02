@@ -1,5 +1,8 @@
 import { Router } from 'express';
 import { marketingComparativeStorage } from './storage-mktg-comparative.js';
+import { db } from './db.js';
+import { campaigns, campaignCustomers, snapshots, opportunities } from '../shared/schema.js';
+import { eq, and, sql, desc, inArray, gte } from 'drizzle-orm';
 
 const router = Router();
 
@@ -185,42 +188,56 @@ router.get('/campaign-types', async (req, res) => {
       return groups;
     }, {} as Record<string, typeof campaignData>);
     
-    // Calculate aggregated metrics for each type
+    // Calculate aggregated metrics for each type with unique customer deduplication
     const typeAnalytics = Object.entries(typeGroups).map(([type, campaigns]) => {
       const totalCampaigns = campaigns.length;
       const totalCost = campaigns.reduce((sum, c) => sum + c.cost, 0);
-      const totalCustomers = campaigns.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
-      const totalTargetCustomers = campaigns.reduce((sum, c) => sum + c.metrics.targetAccountCustomers, 0);
-      const totalPipelineValue = campaigns.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
-      const totalClosedWonValue = campaigns.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
-      const totalOpenOpportunities = campaigns.reduce((sum, c) => sum + (c.metrics.pipelineValue > 0 ? 1 : 0), 0);
-      const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
       
-      // Calculate aggregate win rate using actual closed won/lost counts
-      const totalClosedWonCount = campaigns.reduce((sum, c) => sum + (c.metrics.closedWonValue > 0 ? 1 : 0), 0);
-      const totalCustomersInType = campaigns.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
+      // Collect all unique opportunity IDs across campaigns of this type
+      const allOpportunityIds = new Set<number>();
+      const opportunityMetrics = new Map<number, any>();
       
-      // For Spring 20 Club, calculate actual win rate from our database query
-      let aggregateWinRate = 0;
-      if (type === 'Spring 20 Club') {
-        // Use our known accurate calculation: 14 closed won / (14 + 38) = 26.9%
-        aggregateWinRate = 26.9;
-      } else {
-        // For other campaign types, use weighted average approach
-        const validCampaigns = campaigns.filter(c => c.metrics.totalCustomers > 0);
-        if (validCampaigns.length > 0) {
-          let totalWeight = 0;
-          let weightedWinRate = 0;
-          
-          validCampaigns.forEach(campaign => {
-            const weight = campaign.metrics.totalCustomers;
-            totalWeight += weight;
-            weightedWinRate += (campaign.metrics.winRate * weight);
+      campaigns.forEach(campaign => {
+        // Extract opportunity IDs from campaign data, ensuring we don't double-count
+        if (campaign.campaignCustomers && Array.isArray(campaign.campaignCustomers)) {
+          campaign.campaignCustomers.forEach((customer: any) => {
+            const oppId = customer.opportunityId;
+            allOpportunityIds.add(oppId);
+            
+            // Store the latest/best metrics for each opportunity
+            if (!opportunityMetrics.has(oppId) || customer.currentSnapshotDate > opportunityMetrics.get(oppId).currentSnapshotDate) {
+              opportunityMetrics.set(oppId, {
+                stage: customer.currentStage,
+                year1Arr: customer.currentYear1Value || 0,
+                targetAccount: customer.targetAccount || 0,
+                closeDate: customer.currentCloseDate
+              });
+            }
           });
-          
-          aggregateWinRate = totalWeight > 0 ? weightedWinRate / totalWeight : 0;
         }
-      }
+      });
+      
+      // Calculate metrics based on unique customers only
+      const uniqueCustomerMetrics = Array.from(opportunityMetrics.values());
+      const totalCustomers = uniqueCustomerMetrics.length;
+      const totalTargetCustomers = uniqueCustomerMetrics.filter(m => m.targetAccount === 1).length;
+      const totalPipelineValue = uniqueCustomerMetrics
+        .filter(m => m.stage !== 'Closed Lost')
+        .reduce((sum, m) => sum + m.year1Arr, 0);
+      const totalClosedWonValue = uniqueCustomerMetrics
+        .filter(m => m.stage === 'Closed Won')
+        .reduce((sum, m) => sum + m.year1Arr, 0);
+      const totalOpenOpportunities = uniqueCustomerMetrics
+        .filter(m => m.stage !== 'Closed Won' && m.stage !== 'Closed Lost').length;
+      
+      // Calculate win rate based on unique customers
+      const closedWonCustomers = uniqueCustomerMetrics.filter(m => m.stage === 'Closed Won').length;
+      const closedLostCustomers = uniqueCustomerMetrics.filter(m => m.stage === 'Closed Lost').length;
+      const totalClosedDeals = closedWonCustomers + closedLostCustomers;
+      const aggregateWinRate = totalClosedDeals > 0 ? (closedWonCustomers / totalClosedDeals) * 100 : 0;
+      
+      // Calculate total attendees (still sum across campaigns since attendees are per campaign)
+      const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
       // Calculate ROI as Closed Won Value / Total Cost (not average of individual ROIs)
       const aggregateROI = totalCost > 0 ? (totalClosedWonValue / totalCost) * 100 : 0;
       const avgTargetAccountWinRate = campaigns.reduce((sum, c) => sum + c.metrics.targetAccountWinRate, 0) / totalCampaigns;
