@@ -207,86 +207,9 @@ const CampaignTypeInsights: React.FC<CampaignTypeInsightsProps> = ({ data }) => 
         </Card>
       </div>
 
-      {/* Reallocation Recommendations */}
-      {insights.inefficientTypes.length > 0 && (
-        <Alert>
-          <AlertTriangle className="h-4 w-4" />
-          <AlertDescription>
-            <div className="space-y-2">
-              <div className="font-semibold">Budget Reallocation Opportunity</div>
-              <div>
-                Consider reallocating {formatCurrency(insights.reallocationOpportunity)} ({((insights.reallocationOpportunity / insights.totalCost) * 100).toFixed(1)}% of total budget) 
-                from underperforming types to {insights.bestPerformer.campaignType}.
-              </div>
-              <div className="text-sm">
-                <strong>Underperforming types:</strong> {insights.inefficientTypes.map(type => type.campaignType).join(', ')}
-              </div>
-              <div className="text-sm">
-                <strong>Potential additional return:</strong> {formatCurrency(insights.potentialGain)} 
-                (based on {insights.bestPerformer.campaignType}'s {formatPercentage(insights.bestPerformer.averageROI)} ROI)
-              </div>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
 
-      {/* Strategic Insights */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Lightbulb className="h-5 w-5" />
-            Strategic Insights
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg">
-                <div className="font-semibold mb-2">Cost Efficiency Analysis</div>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <div>• {insights.mostEfficient.campaignType} generates {insights.mostEfficient.costEfficiency.toFixed(1)}x pipeline per dollar</div>
-                  <div>• Average efficiency across all types: {(insights.totalPipeline / insights.totalCost).toFixed(1)}x</div>
-                  <div>• Total pipeline generated: {formatCurrency(insights.totalPipeline)}</div>
-                </div>
-              </div>
-              
-              <div className="p-4 border rounded-lg">
-                <div className="font-semibold mb-2">Performance Distribution</div>
-                <div className="text-sm text-muted-foreground space-y-1">
-                  <div>• Average ROI: {formatPercentage(insights.averageROI)}</div>
-                  <div>• Performance spread: {formatPercentage(insights.bestPerformer.averageROI - insights.worstPerformer.averageROI)}</div>
-                  <div>• Total investment: {formatCurrency(insights.totalCost)}</div>
-                </div>
-              </div>
-            </div>
 
-            {/* Action Items */}
-            <div className="p-4 bg-muted rounded-lg">
-              <div className="font-semibold mb-2">Recommended Actions</div>
-              <div className="space-y-2 text-sm">
-                {insights.excellentTypes.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <Badge variant="default" className="bg-green-100 text-green-800 mt-0.5">Expand</Badge>
-                    <div>Increase investment in {insights.excellentTypes.map(t => t.campaignType).join(', ')} - consistently high ROI</div>
-                  </div>
-                )}
-                
-                {insights.inefficientTypes.length > 0 && (
-                  <div className="flex items-start gap-2">
-                    <Badge variant="destructive" className="mt-0.5">Optimize</Badge>
-                    <div>Review and optimize {insights.inefficientTypes.map(t => t.campaignType).join(', ')} - high cost, low return</div>
-                  </div>
-                )}
-                
-                <div className="flex items-start gap-2">
-                  <Badge variant="secondary" className="mt-0.5">Monitor</Badge>
-                  <div>Track win rate improvements for {insights.worstPerformer.campaignType} - focus on conversion optimization</div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import CampaignTypeROIBarchart from '../analytics-comparison/CampaignTypeROIBarchart';
 import CampaignTypePerformanceTable from '../analytics-comparison/CampaignTypePerformanceTable';
-import CampaignTypeInsights from '../analytics-comparison/CampaignTypeInsights';
+
 import useCampaignTypeData from '../analytics-comparison/hooks/useCampaignTypeData';
 import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3, GitBranch, Clock, Activity } from 'lucide-react';
 
@@ -219,36 +219,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
           {/* Performance Table */}
           <CampaignTypePerformanceTable data={data} />
 
-          {/* Strategic Insights */}
-          <CampaignTypeInsights data={data} />
 
-          {/* Budget Reallocation Alert */}
-          {reallocationAnalysis && reallocationAnalysis.inefficientTypes.length > 0 && (
-            <Card className="border-orange-200 bg-orange-50 dark:border-orange-800 dark:bg-orange-950">
-              <CardHeader>
-                <CardTitle className="text-orange-800 dark:text-orange-200">
-                  Budget Optimization Opportunity
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <strong>Potential Reallocation:</strong> {formatCurrency(reallocationAnalysis.reallocationAmount)} 
-                    ({reallocationAnalysis.reallocationPercentage.toFixed(1)}% of total budget)
-                  </div>
-                  <div>
-                    <strong>From:</strong> {reallocationAnalysis.inefficientTypes.map(t => t.campaignType).join(', ')}
-                  </div>
-                  <div>
-                    <strong>To:</strong> {reallocationAnalysis.recommendedTarget}
-                  </div>
-                  <div>
-                    <strong>Potential Additional Return:</strong> {formatCurrency(reallocationAnalysis.potentialGain)}
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
         </TabsContent>
 
         <TabsContent value="new-pipeline" className="space-y-6">

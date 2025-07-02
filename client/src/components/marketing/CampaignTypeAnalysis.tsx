@@ -303,13 +303,7 @@ const CampaignTypeAnalysis: React.FC = () => {
               </div>
             </div>
             
-            <div className="p-4 bg-yellow-50 rounded-lg">
-              <h4 className="font-semibold text-yellow-800 mb-2">Optimization Opportunity</h4>
-              <p className="text-sm text-yellow-700">
-                Consider reallocating budget from lower-performing campaign types to{' '}
-                <strong>{sortedCampaignTypeMetrics[0]?.campaignType}</strong> for maximum ROI impact.
-              </p>
-            </div>
+
           </div>
         </CardContent>
       </Card>
