@@ -123,6 +123,16 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
+✓ Fixed Total Pipeline Calculation in Campaign Type Analytics (July 2, 2025)
+- Implemented corrected Total Pipeline calculation logic for campaign type aggregations
+- Fixed duplicate opportunity counting across campaigns within same type
+- Applied three-step filtering: (1) opportunity associated with at least one campaign in analysis period, (2) opportunity has entered_pipeline date in most recent snapshot, (3) opportunity has close date > first associated campaign date
+- Each opportunity now counted uniquely regardless of number of campaign touches in analysis period
+- Pipeline value calculated from most recent snapshots for qualifying opportunities only
+- Added new calculateCampaignTypePipeline method with proper deduplication logic
+- Updated /api/marketing/comparative/campaign-types endpoint to use corrected calculation
+- Total Pipeline Value now accurately reflects unique opportunities without double-counting
+
 ✓ Complete Marketing Comparative Analytics Platform - All Phases Implemented (July 1, 2025)
 - **Phase 1**: Executive Summary dashboard with fiscal year filtering and unique opportunity aggregation
 - **Phase 2**: Enhanced Campaign Type Performance with ROI bar charts, comprehensive performance table, and strategic insights

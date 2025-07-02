@@ -256,27 +256,25 @@ router.get('/campaign-types', async (req, res) => {
       return groups;
     }, {} as Record<string, typeof campaignData>);
     
-    // Calculate aggregated metrics for each type
-    const typeAnalytics = Object.entries(typeGroups).map(([type, campaigns]) => {
+    // Calculate aggregated metrics for each type using corrected pipeline logic
+    const typeAnalytics = await Promise.all(Object.entries(typeGroups).map(async ([type, campaigns]) => {
       const totalCampaigns = campaigns.length;
       const totalCost = campaigns.reduce((sum, c) => sum + c.cost, 0);
+      const campaignIds = campaigns.map(c => c.campaignId);
       
-      // For now, use simple aggregation but apply deduplication factor
-      // Based on actual data analysis, estimate ~33% customer overlap across campaigns
-      const customerOverlapFactor = 0.67; // Approximate unique customer ratio
+      // Use corrected pipeline calculation that avoids double-counting opportunities
+      const { pipelineValue: totalPipelineValue, closedWonValue: totalClosedWonValue, uniqueOpportunities } = 
+        await marketingComparativeStorage.calculateCampaignTypePipeline(campaignIds);
       
+      // For customer counts, still use the overlap factor approach for now
       const rawTotalCustomers = campaigns.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
       const rawTotalTargetCustomers = campaigns.reduce((sum, c) => sum + c.metrics.targetAccountCustomers, 0);
-      const rawTotalPipelineValue = campaigns.reduce((sum, c) => sum + c.metrics.pipelineValue, 0);
-      const rawTotalClosedWonValue = campaigns.reduce((sum, c) => sum + c.metrics.closedWonValue, 0);
-      const rawTotalOpenOpportunities = campaigns.reduce((sum, c) => sum + (c.metrics.pipelineValue > 0 ? 1 : 0), 0);
       
-      // Apply deduplication factor to customer counts and values
+      // Based on actual data analysis, estimate ~33% customer overlap across campaigns
+      const customerOverlapFactor = 0.67; // Approximate unique customer ratio
       const totalCustomers = Math.round(rawTotalCustomers * customerOverlapFactor);
       const totalTargetCustomers = Math.round(rawTotalTargetCustomers * customerOverlapFactor);
-      const totalPipelineValue = Math.round(rawTotalPipelineValue * customerOverlapFactor);
-      const totalClosedWonValue = Math.round(rawTotalClosedWonValue * customerOverlapFactor);
-      const totalOpenOpportunities = Math.round(rawTotalOpenOpportunities * customerOverlapFactor);
+      const totalOpenOpportunities = uniqueOpportunities;
       
       // Calculate total attendees (no deduplication needed since it's per campaign)
       const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
@@ -325,7 +323,7 @@ router.get('/campaign-types', async (req, res) => {
         averageCustomersPerCampaign: totalCampaigns > 0 ? totalCustomers / totalCampaigns : 0,
         averageAttendeesPerCampaign: totalCampaigns > 0 ? totalAttendees / totalCampaigns : 0
       };
-    });
+    }));
     
     // Sort by total pipeline value descending
     typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);

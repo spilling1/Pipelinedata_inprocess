@@ -474,14 +474,15 @@ export class MarketingComparativeStorage {
   }
 
   private async calculateCampaignMetrics(campaignId: number) {
-    // Use the corrected marketing storage analytics instead of reimplementing
+    // For individual campaign metrics, we still use the existing logic for compatibility
+    // but for campaign type aggregation, we need to implement the corrected logic
     const { marketingStorage } = await import('./storage-mktg.js');
     
     try {
       // Get the corrected campaign analytics that exclude closed lost and apply proper filtering
       const analytics = await marketingStorage.getCampaignAnalytics(campaignId);
       
-      // CRITICAL FIX: Get customers who have actually entered pipeline based on most recent snapshots
+      // Get current snapshots for attendee and target account calculations
       const currentSnapshots = await marketingStorage.getCurrentSnapshotsForCampaign(campaignId);
       
       // Filter to only customers who have entered pipeline
@@ -523,7 +524,6 @@ export class MarketingComparativeStorage {
 
       // Calculate target account win rate (simplified for now)
       const targetAccountWinRate = targetAccountSnapshots.length > 0 ? winRate : 0; // Use overall win rate for now
-      // Remove the duplicate line that was causing errors
 
       // Get campaign cost
       const campaignRecord = await db.select({ cost: campaigns.cost }).from(campaigns).where(eq(campaigns.id, campaignId)).limit(1);
@@ -569,6 +569,104 @@ export class MarketingComparativeStorage {
         targetAccountWinRate: 0,
         attendeeEfficiency: 0
       };
+    }
+  }
+
+  /**
+   * Calculate pipeline value for a campaign type based on correct aggregation logic:
+   * 1. Opportunity associated with at least one campaign in the analysis period/group
+   * 2. Opportunity has entered_pipeline date in most recent snapshot  
+   * 3. Opportunity has close date > first associated campaign date in analysis period/group
+   * Each opportunity is unique regardless of number of touches in analysis period
+   */
+  async calculateCampaignTypePipeline(campaignIds: number[]): Promise<{ pipelineValue: number; closedWonValue: number; uniqueOpportunities: number }> {
+    try {
+      // Get the earliest campaign start date in this group
+      const earliestCampaignDate = await db
+        .select({ startDate: campaigns.startDate })
+        .from(campaigns)
+        .where(inArray(campaigns.id, campaignIds))
+        .orderBy(asc(campaigns.startDate))
+        .limit(1);
+
+      const firstCampaignDate = earliestCampaignDate[0]?.startDate;
+      if (!firstCampaignDate) {
+        return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
+      }
+
+      // Find all unique opportunities associated with ANY campaign in this group
+      const associatedOpportunities = await db
+        .selectDistinct({ opportunityId: campaignCustomers.opportunityId })
+        .from(campaignCustomers)
+        .where(inArray(campaignCustomers.campaignId, campaignIds));
+
+      const opportunityIds = associatedOpportunities.map(row => row.opportunityId);
+      
+      if (opportunityIds.length === 0) {
+        return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
+      }
+
+      // Get most recent snapshots for these opportunities using a simpler approach
+      const recentSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          enteredPipeline: snapshots.enteredPipeline,
+          closeDate: snapshots.closeDate,
+          stage: snapshots.stage,
+          year1Value: snapshots.year1Value,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(
+          and(
+            inArray(snapshots.opportunityId, opportunityIds),
+            sql`(${snapshots.opportunityId}, ${snapshots.snapshotDate}) IN (
+              SELECT ${snapshots.opportunityId}, MAX(${snapshots.snapshotDate})
+              FROM ${snapshots}
+              WHERE ${inArray(snapshots.opportunityId, opportunityIds)}
+              GROUP BY ${snapshots.opportunityId}
+            )`
+          )
+        );
+
+      // Apply the three filtering criteria
+      const qualifyingSnapshots = recentSnapshots.filter(snapshot => {
+        // Criterion 1: Already filtered - opportunity associated with at least one campaign
+        
+        // Criterion 2: Must have entered_pipeline date  
+        if (!snapshot.enteredPipeline) return false;
+        
+        // Criterion 3: Must have close date > first associated campaign date (or be open)
+        if (snapshot.closeDate) {
+          const closeDate = new Date(snapshot.closeDate);
+          const campaignDate = new Date(firstCampaignDate);
+          if (closeDate <= campaignDate) return false;
+        }
+        
+        return true;
+      });
+
+      console.log(`📊 Campaign Type Pipeline: ${opportunityIds.length} associated -> ${qualifyingSnapshots.length} qualifying opportunities`);
+
+      // Calculate pipeline value (exclude Closed Lost)
+      const pipelineValue = qualifyingSnapshots
+        .filter(s => s.stage !== 'Closed Lost')
+        .reduce((sum, s) => sum + (s.year1Value || 0), 0);
+
+      // Calculate closed won value
+      const closedWonValue = qualifyingSnapshots
+        .filter(s => s.stage === 'Closed Won')
+        .reduce((sum, s) => sum + (s.year1Value || 0), 0);
+
+      return {
+        pipelineValue,
+        closedWonValue,
+        uniqueOpportunities: qualifyingSnapshots.length
+      };
+
+    } catch (error) {
+      console.error('❌ Error in calculateCampaignTypePipeline:', error);
+      return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
     }
   }
 
