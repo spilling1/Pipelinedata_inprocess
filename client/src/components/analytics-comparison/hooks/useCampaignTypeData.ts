@@ -35,7 +35,10 @@ export interface CampaignTypeMetrics {
   mostEfficientType: CampaignTypeData | null;
 }
 
-export const useCampaignTypeData = (analysisType: 'influenced' | 'new-pipeline' | 'stage-advance' = 'influenced') => {
+export const useCampaignTypeData = (
+  analysisType: 'influenced' | 'new-pipeline' | 'stage-advance' = 'influenced',
+  timePeriod: string = 'fy-to-date'
+) => {
   const queryKey = analysisType === 'influenced' 
     ? '/api/marketing/comparative/campaign-types'
     : analysisType === 'new-pipeline'
@@ -43,7 +46,15 @@ export const useCampaignTypeData = (analysisType: 'influenced' | 'new-pipeline' 
     : '/api/marketing/comparative/campaign-types-stage-advance';
 
   const { data: rawData, isLoading, error, refetch } = useQuery<CampaignTypeData[]>({
-    queryKey: [queryKey],
+    queryKey: [queryKey, timePeriod],
+    queryFn: async () => {
+      const url = `${queryKey}?timePeriod=${timePeriod}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Failed to fetch campaign type data');
+      }
+      return response.json();
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });

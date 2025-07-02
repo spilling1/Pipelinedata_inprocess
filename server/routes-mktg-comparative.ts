@@ -8,11 +8,73 @@ const router = Router();
 
 // Simple cache for expensive queries (5 minutes)
 let executiveSummaryCache: { data: any; timestamp: number } | null = null;
-let campaignTypesCache: { data: any; timestamp: number } | null = null;
+let campaignTypesCache: { data: any; timestamp: number; key?: string } | null = null;
 let newPipelineCache: { data: any; timestamp: number } | null = null;
 let stageAdvanceCache: { data: any; timestamp: number } | null = null;
 let customerJourneyCache: { data: any; timestamp: number } | null = null;
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to filter campaigns by time period using fiscal year logic
+function filterCampaignsByTimePeriod(campaigns: any[], timePeriod: string) {
+  if (timePeriod === 'all-time') {
+    return campaigns;
+  }
+
+  const now = new Date();
+  let startDate: Date;
+  let endDate: Date = now;
+
+  // Fiscal year runs Feb 1 - Jan 31
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+
+  // Determine current fiscal year
+  const currentFiscalYear = currentMonth >= 2 ? currentYear : currentYear - 1;
+
+  switch (timePeriod) {
+    case 'fy-to-date':
+      startDate = new Date(currentFiscalYear, 1, 1); // Feb 1 of current fiscal year
+      break;
+    case 'last-year':
+      startDate = new Date(currentFiscalYear - 1, 1, 1); // Feb 1 of last fiscal year
+      endDate = new Date(currentFiscalYear, 0, 31); // Jan 31 of current fiscal year
+      break;
+    case 'quarter-to-date':
+      // Fiscal quarters: Q1: Feb-Apr, Q2: May-Jul, Q3: Aug-Oct, Q4: Nov-Jan
+      if (currentMonth >= 2 && currentMonth <= 4) { // Q1
+        startDate = new Date(currentFiscalYear, 1, 1); // Feb 1
+      } else if (currentMonth >= 5 && currentMonth <= 7) { // Q2
+        startDate = new Date(currentFiscalYear, 4, 1); // May 1
+      } else if (currentMonth >= 8 && currentMonth <= 10) { // Q3
+        startDate = new Date(currentFiscalYear, 7, 1); // Aug 1
+      } else { // Q4 (Nov, Dec, Jan)
+        startDate = new Date(currentFiscalYear, 10, 1); // Nov 1
+      }
+      break;
+    case 'last-quarter':
+      if (currentMonth >= 2 && currentMonth <= 4) { // Q1, so last quarter is Q4
+        startDate = new Date(currentFiscalYear - 1, 10, 1); // Nov 1 of previous year
+        endDate = new Date(currentFiscalYear, 0, 31); // Jan 31 of current year
+      } else if (currentMonth >= 5 && currentMonth <= 7) { // Q2, so last quarter is Q1
+        startDate = new Date(currentFiscalYear, 1, 1); // Feb 1
+        endDate = new Date(currentFiscalYear, 3, 30); // Apr 30
+      } else if (currentMonth >= 8 && currentMonth <= 10) { // Q3, so last quarter is Q2
+        startDate = new Date(currentFiscalYear, 4, 1); // May 1
+        endDate = new Date(currentFiscalYear, 6, 31); // Jul 31
+      } else { // Q4, so last quarter is Q3
+        startDate = new Date(currentFiscalYear, 7, 1); // Aug 1
+        endDate = new Date(currentFiscalYear, 9, 31); // Oct 31
+      }
+      break;
+    default:
+      return campaigns;
+  }
+
+  return campaigns.filter(campaign => {
+    const campaignDate = new Date(campaign.startDate);
+    return campaignDate >= startDate && campaignDate <= endDate;
+  });
+}
 
 /**
  * Executive Summary - Comprehensive marketing performance overview
@@ -166,17 +228,23 @@ router.get('/strategic-matrix', async (req, res) => {
  */
 router.get('/campaign-types', async (req, res) => {
   try {
-    // Check cache first
+    const timePeriod = req.query.timePeriod as string || 'fy-to-date';
+    
+    // Check cache first (include timePeriod in cache key)
+    const cacheKey = `campaign-types-${timePeriod}`;
     const now = Date.now();
-    if (campaignTypesCache && (now - campaignTypesCache.timestamp) < CACHE_DURATION) {
-      console.log('📈 API: Returning cached campaign types');
+    if (campaignTypesCache && campaignTypesCache.key === cacheKey && (now - campaignTypesCache.timestamp) < CACHE_DURATION) {
+      console.log(`📈 API: Returning cached campaign types for ${timePeriod}`);
       return res.json(campaignTypesCache.data);
     }
 
-    console.log('📈 API: Fetching campaign type analytics...');
+    console.log(`📈 API: Fetching campaign type analytics for ${timePeriod}...`);
     
     // Get campaign comparison data and aggregate by type
-    const campaignData = await marketingComparativeStorage.getCampaignComparisonData();
+    let campaignData = await marketingComparativeStorage.getCampaignComparisonData();
+    
+    // Apply time filtering based on fiscal year periods (Feb 1 - Jan 31)
+    campaignData = filterCampaignsByTimePeriod(campaignData, timePeriod);
     
     // Group campaigns by type
     const typeGroups = campaignData.reduce((groups, campaign) => {
@@ -263,8 +331,8 @@ router.get('/campaign-types', async (req, res) => {
     typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);
     
     // Cache the result
-    campaignTypesCache = { data: typeAnalytics, timestamp: Date.now() };
-    console.log(`📈 API: Campaign type analytics completed and cached - ${typeAnalytics.length} types`);
+    campaignTypesCache = { data: typeAnalytics, timestamp: Date.now(), key: cacheKey };
+    console.log(`📈 API: Campaign type analytics completed and cached for ${timePeriod} - ${typeAnalytics.length} types`);
     
     res.json(typeAnalytics);
     

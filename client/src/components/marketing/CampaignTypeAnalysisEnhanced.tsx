@@ -3,16 +3,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import CampaignTypeROIBarchart from '../analytics-comparison/CampaignTypeROIBarchart';
 import CampaignTypePerformanceTable from '../analytics-comparison/CampaignTypePerformanceTable';
 
 import useCampaignTypeData from '../analytics-comparison/hooks/useCampaignTypeData';
-import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3, GitBranch, Clock, Activity } from 'lucide-react';
+import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3, GitBranch, Clock, Activity, Calendar } from 'lucide-react';
 
 type AnalysisView = 'influenced' | 'new-pipeline' | 'stage-advance';
+type TimePeriod = 'all-time' | 'fy-to-date' | 'last-year' | 'quarter-to-date' | 'last-quarter';
 
 const CampaignTypeAnalysisEnhanced: React.FC = () => {
   const [activeView, setActiveView] = useState<AnalysisView>('influenced');
+  const [timePeriod, setTimePeriod] = useState<TimePeriod>('fy-to-date');
   
   const { 
     data, 
@@ -22,7 +25,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
     isLoading, 
     error, 
     isEmpty 
-  } = useCampaignTypeData(activeView);
+  } = useCampaignTypeData(activeView, timePeriod);
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -92,9 +95,26 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
             Comprehensive analysis of campaign effectiveness by type with budget optimization insights
           </p>
         </div>
-        <Badge variant="secondary" className="px-3 py-1">
-          {data.length} Types
-        </Badge>
+        <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <Select value={timePeriod} onValueChange={(value) => setTimePeriod(value as TimePeriod)}>
+              <SelectTrigger className="w-40">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all-time">All Time</SelectItem>
+                <SelectItem value="fy-to-date">FY to Date</SelectItem>
+                <SelectItem value="last-year">Last Year</SelectItem>
+                <SelectItem value="quarter-to-date">Quarter to Date</SelectItem>
+                <SelectItem value="last-quarter">Last Quarter</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Badge variant="secondary" className="px-3 py-1">
+            {data.length} Types
+          </Badge>
+        </div>
       </div>
 
       {/* Analysis View Toggle */}
