@@ -30,6 +30,7 @@ function Router() {
           <Route path="/marketing" component={MarketingAnalyticsPage} />
           <Route path="/marketing-analytics" component={MarketingAnalyticsPage} />
           <Route path="/marketing-comparative" component={MarketingComparativeAnalytics} />
+          <Route path="/marketing/comparative" component={MarketingComparativeAnalytics} />
           <Route path="/marketing-analytics/comparative" component={MarketingComparativeAnalytics} />
           <Route path="/sales" component={SalesAnalyticsPage} />
           <Route path="/sales-analytics" component={SalesAnalyticsPage} />
