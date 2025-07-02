@@ -194,45 +194,6 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
             </Card>
           </div>
 
-          {/* Performance Distribution */}
-          {categorizedData && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
-                  Performance Distribution
-                </CardTitle>
-                <CardDescription>
-                  Campaign types categorized by ROI performance levels
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">{categorizedData.excellent.length}</div>
-                    <div className="text-sm text-muted-foreground">Excellent</div>
-                    <div className="text-xs text-muted-foreground">≥500% ROI</div>
-                  </div>
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">{categorizedData.good.length}</div>
-                    <div className="text-sm text-muted-foreground">Good</div>
-                    <div className="text-xs text-muted-foreground">200-499% ROI</div>
-                  </div>
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-yellow-600">{categorizedData.moderate.length}</div>
-                    <div className="text-sm text-muted-foreground">Moderate</div>
-                    <div className="text-xs text-muted-foreground">100-199% ROI</div>
-                  </div>
-                  <div className="text-center p-4 border rounded-lg">
-                    <div className="text-2xl font-bold text-red-600">{categorizedData.poor.length}</div>
-                    <div className="text-sm text-muted-foreground">Poor</div>
-                    <div className="text-xs text-muted-foreground">&lt;100% ROI</div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
           {/* ROI Bar Chart */}
           <CampaignTypeROIBarchart data={data} />
 
