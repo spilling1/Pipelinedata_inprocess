@@ -481,38 +481,38 @@ export class MarketingComparativeStorage {
       // Get the corrected campaign analytics that exclude closed lost and apply proper filtering
       const analytics = await marketingStorage.getCampaignAnalytics(campaignId);
       
-      // Get campaign customers using the same customer-centric grouping as individual analytics
-      const campaignCustomersData = await marketingStorage.getCampaignCustomers(campaignId);
+      // CRITICAL FIX: Get customers who have actually entered pipeline based on most recent snapshots
+      const currentSnapshots = await marketingStorage.getCurrentSnapshotsForCampaign(campaignId);
       
-      // Get attendee data from campaign_customers table
+      // Filter to only customers who have entered pipeline
+      const customersWithPipeline = currentSnapshots.filter(snapshot => 
+        snapshot.enteredPipeline !== null
+      );
+      
+      console.log(`🔍 Campaign ${campaignId}: ${currentSnapshots.length} total customers -> ${customersWithPipeline.length} with entered pipeline`);
+      
+      // Get attendee data from campaign_customers table for pipeline customers only
+      const pipelineOpportunityIds = customersWithPipeline.map(s => s.opportunityId);
       const attendeeData = await db
         .select({
           opportunityId: campaignCustomers.opportunityId,
           attendees: campaignCustomers.attendees,
         })
         .from(campaignCustomers)
-        .where(eq(campaignCustomers.campaignId, campaignId));
-
-      // Get target account data (for customers with current snapshots)
-      const targetAccountSnapshots = await db
-        .select({
-          targetAccount: snapshots.targetAccount,
-        })
-        .from(campaignCustomers)
-        .innerJoin(
-          snapshots,
-          eq(campaignCustomers.opportunityId, snapshots.opportunityId)
-        )
         .where(
           and(
             eq(campaignCustomers.campaignId, campaignId),
-            gte(snapshots.snapshotDate, sql`CURRENT_DATE - INTERVAL '30 days'`)
+            inArray(campaignCustomers.opportunityId, pipelineOpportunityIds)
           )
-        )
-        .orderBy(desc(snapshots.snapshotDate));
+        );
 
-      const totalCustomers = campaignCustomersData.length; // Use customer-centric count
-      const targetAccountCustomers = targetAccountSnapshots.filter(row => row.targetAccount === 1).length;
+      // Get target account data (for customers with current snapshots who have pipeline)
+      const targetAccountSnapshots = customersWithPipeline.filter(snapshot => 
+        snapshot.targetAccount === 1
+      );
+
+      const totalCustomers = customersWithPipeline.length; // Only count customers who entered pipeline
+      const targetAccountCustomers = targetAccountSnapshots.length;
       const totalAttendees = attendeeData.reduce((sum, row) => sum + (row.attendees || 0), 0);
       const averageAttendees = totalCustomers > 0 ? totalAttendees / totalCustomers : 0;
 
