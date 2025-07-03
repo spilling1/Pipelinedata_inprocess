@@ -226,63 +226,80 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
         <TabsContent value="new-pipeline" className="space-y-6">
           {/* New Pipeline Key Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Opportunities</CardTitle>
-                <Clock className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {data.reduce((sum, ct: any) => sum + (ct.newOpportunityCount || 0), 0)}
-                </div>
+                <div className="text-2xl font-bold">{formatCurrency(data.reduce((sum, ct: any) => sum + ct.totalCost, 0))}</div>
                 <p className="text-xs text-muted-foreground">
-                  Within 30 days of campaigns
+                  Across {data.length} campaign types
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">New Pipeline Value</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Pipeline</CardTitle>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.totalNewPipelineValue || 0), 0))}
-                </div>
+                <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
                 <p className="text-xs text-muted-foreground">
-                  From new opportunities
+                  {metrics.totalCustomers} opportunities influenced
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Closed Won</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Closed Won</CardTitle>
                 <Trophy className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.closedWonFromNew || 0), 0))}
+                  {formatCurrency(metrics.totalClosedWon)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  From new pipeline
+                  {metrics.closedWonCustomers} customers closed
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Efficiency</CardTitle>
+                <CardTitle className="text-sm font-medium">Open Pipeline</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {data.length > 0 ? formatCurrency(data.reduce((sum, ct: any) => sum + (ct.newPipelineEfficiency || 0), 0) / data.length) : '$0'}
+                  {formatCurrency(metrics.openPipeline)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  New pipeline per $ spent
+                  {metrics.openPipelineCustomers} customers open
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="text-2xl font-bold text-blue-600 cursor-help" 
+                  title={`Win Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost) = ${formatPercentage(metrics.averageWinRate)}`}
+                >
+                  {formatPercentage(metrics.averageWinRate)}
+                </div>
+                <p 
+                  className="text-xs text-gray-500 mt-1 cursor-help"
+                  title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
+                >
+                  Close Rate: {formatPercentage(metrics.averageCloseRate)}
                 </p>
               </CardContent>
             </Card>
@@ -297,63 +314,80 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
         <TabsContent value="stage-advance" className="space-y-6">
           {/* Stage Advance Key Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Positive Movements</CardTitle>
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
+                <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {data.reduce((sum, ct: any) => sum + (ct.positiveMovements || 0), 0)}
-                </div>
+                <div className="text-2xl font-bold">{formatCurrency(data.reduce((sum, ct: any) => sum + ct.totalCost, 0))}</div>
                 <p className="text-xs text-muted-foreground">
-                  Stage advancements within 30d
+                  Across {data.length} campaign types
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Advanced Pipeline</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Pipeline</CardTitle>
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.totalAdvancedPipelineValue || 0), 0))}
-                </div>
+                <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
                 <p className="text-xs text-muted-foreground">
-                  Value that moved forward
+                  {metrics.totalCustomers} opportunities influenced
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Closed Won</CardTitle>
+                <CardTitle className="text-sm font-medium">Total Closed Won</CardTitle>
                 <Trophy className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(data.reduce((sum, ct: any) => sum + (ct.closedWonFromAdvancement || 0), 0))}
+                  {formatCurrency(metrics.totalClosedWon)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  From stage advancement
+                  {metrics.closedWonCustomers} customers closed
                 </p>
               </CardContent>
             </Card>
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Advancement Efficiency</CardTitle>
+                <CardTitle className="text-sm font-medium">Open Pipeline</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {data.length > 0 ? formatCurrency(data.reduce((sum, ct: any) => sum + (ct.stageAdvancementEfficiency || 0), 0) / data.length) : '$0'}
+                  {formatCurrency(metrics.openPipeline)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Advanced pipeline per $ spent
+                  {metrics.openPipelineCustomers} customers open
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
+                <TrendingUp className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent>
+                <div 
+                  className="text-2xl font-bold text-blue-600 cursor-help" 
+                  title={`Win Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost) = ${formatPercentage(metrics.averageWinRate)}`}
+                >
+                  {formatPercentage(metrics.averageWinRate)}
+                </div>
+                <p 
+                  className="text-xs text-gray-500 mt-1 cursor-help"
+                  title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
+                >
+                  Close Rate: {formatPercentage(metrics.averageCloseRate)}
                 </p>
               </CardContent>
             </Card>
