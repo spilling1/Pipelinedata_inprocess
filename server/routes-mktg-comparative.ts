@@ -518,4 +518,85 @@ router.get('/customer-journey', async (req, res) => {
   }
 });
 
+/**
+ * Get detailed list of all qualifying opportunities
+ * Returns the 72 opportunities that meet the 3-step pipeline criteria
+ */
+router.get('/qualifying-opportunities', async (req, res) => {
+  try {
+    console.log('📋 API: Fetching detailed qualifying opportunities list...');
+    
+    const opportunities = await marketingComparativeStorage.getDetailedQualifyingOpportunities();
+    
+    console.log(`📋 API: Returning ${opportunities.length} qualifying opportunities`);
+    res.json(opportunities);
+    
+  } catch (error) {
+    console.error('❌ API Error in /qualifying-opportunities:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch qualifying opportunities',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
+/**
+ * Export qualifying opportunities as CSV
+ * Downloads the 72 opportunities that meet the 3-step pipeline criteria
+ */
+router.get('/qualifying-opportunities/csv', async (req, res) => {
+  try {
+    console.log('📋 API: Exporting qualifying opportunities as CSV...');
+    
+    const opportunities = await marketingComparativeStorage.getDetailedQualifyingOpportunities();
+    
+    // Create CSV headers
+    const headers = [
+      'Opportunity ID',
+      'Name', 
+      'Client Name',
+      'Stage',
+      'Year 1 Value',
+      'Entered Pipeline',
+      'Close Date',
+      'Snapshot Date',
+      'Campaign Type',
+      'First Campaign Date'
+    ];
+
+    // Create CSV rows
+    const csvRows = [
+      headers.join(','),
+      ...opportunities.map(opp => [
+        `"${opp.opportunityIdString}"`,
+        `"${opp.name.replace(/"/g, '""')}"`,
+        `"${opp.clientName || ''}"`,
+        `"${opp.stage}"`,
+        opp.year1Value,
+        opp.enteredPipeline ? opp.enteredPipeline.toISOString().split('T')[0] : '',
+        opp.closeDate ? opp.closeDate.toISOString().split('T')[0] : '',
+        opp.snapshotDate.toISOString().split('T')[0],
+        `"${opp.campaignType}"`,
+        new Date(opp.firstCampaignDate).toISOString().split('T')[0]
+      ].join(','))
+    ];
+
+    const csvContent = csvRows.join('\n');
+    
+    // Set headers for CSV download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="qualifying-opportunities.csv"');
+    
+    console.log(`📋 API: Exporting ${opportunities.length} qualifying opportunities as CSV`);
+    res.send(csvContent);
+    
+  } catch (error) {
+    console.error('❌ API Error in /qualifying-opportunities/csv:', error);
+    res.status(500).json({ 
+      error: 'Failed to export qualifying opportunities',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    });
+  }
+});
+
 export default router;

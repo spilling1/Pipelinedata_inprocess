@@ -778,6 +778,159 @@ export class MarketingComparativeStorage {
     }
   }
 
+  /**
+   * Get detailed list of all qualifying opportunities using the same 3-step logic
+   */
+  async getDetailedQualifyingOpportunities(): Promise<Array<{
+    opportunityId: number;
+    opportunityIdString: string;
+    name: string;
+    clientName: string | null;
+    stage: string;
+    year1Value: number;
+    enteredPipeline: Date | null;
+    closeDate: Date | null;
+    snapshotDate: Date;
+    campaignType: string;
+    firstCampaignDate: Date;
+  }>> {
+    try {
+      console.log('📋 Getting detailed list of all qualifying opportunities...');
+
+      // Get all campaign IDs for fiscal year to date
+      const fiscalYearStart = new Date('2025-02-01');
+      const fiscalYearEnd = new Date('2026-01-31');
+      
+      const campaignData = await db
+        .select({
+          campaignId: campaigns.id,
+          campaignType: campaigns.type
+        })
+        .from(campaigns)
+        .where(
+          and(
+            gte(campaigns.startDate, fiscalYearStart),
+            lte(campaigns.startDate, fiscalYearEnd)
+          )
+        );
+
+      const allCampaignIds = campaignData.map(c => c.campaignId);
+      
+      // Get all opportunities associated with these campaigns with first campaign touch date
+      const opportunityData = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          opportunityIdString: opportunities.opportunityId,
+          name: opportunities.name,
+          clientName: opportunities.clientName,
+          firstCampaignDate: sql<Date>`MIN(${campaigns.startDate})`.as('firstCampaignDate'),
+          campaignType: sql<string>`STRING_AGG(DISTINCT ${campaigns.type}, ', ')`.as('campaignType')
+        })
+        .from(campaignCustomers)
+        .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
+        .innerJoin(opportunities, eq(campaignCustomers.opportunityId, opportunities.id))
+        .where(inArray(campaignCustomers.campaignId, allCampaignIds))
+        .groupBy(
+          campaignCustomers.opportunityId, 
+          opportunities.opportunityId, 
+          opportunities.name, 
+          opportunities.clientName
+        );
+
+      const opportunityIds = opportunityData.map(row => row.opportunityId);
+      console.log(`📋 Found ${opportunityIds.length} total opportunities associated with campaigns`);
+      
+      if (opportunityIds.length === 0) {
+        return [];
+      }
+
+      // Get most recent snapshots for these opportunities
+      const recentSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          enteredPipeline: snapshots.enteredPipeline,
+          closeDate: snapshots.closeDate,
+          stage: snapshots.stage,
+          year1Value: snapshots.year1Value,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(
+          and(
+            inArray(snapshots.opportunityId, opportunityIds),
+            sql`(${snapshots.opportunityId}, ${snapshots.snapshotDate}) IN (
+              SELECT ${snapshots.opportunityId}, MAX(${snapshots.snapshotDate})
+              FROM ${snapshots}
+              WHERE ${inArray(snapshots.opportunityId, opportunityIds)}
+              GROUP BY ${snapshots.opportunityId}
+            )`
+          )
+        );
+
+      // Apply three-step filtering criteria and build detailed list
+      const qualifyingOpportunities: Array<{
+        opportunityId: number;
+        opportunityIdString: string;
+        name: string;
+        clientName: string | null;
+        stage: string;
+        year1Value: number;
+        enteredPipeline: Date | null;
+        closeDate: Date | null;
+        snapshotDate: Date;
+        campaignType: string;
+        firstCampaignDate: Date;
+      }> = [];
+
+      const opportunityDataMap = new Map(
+        opportunityData.map(row => [row.opportunityId, row])
+      );
+
+      for (const snapshot of recentSnapshots) {
+        const oppData = opportunityDataMap.get(snapshot.opportunityId);
+        if (!oppData) continue;
+
+        // Step 1: Already filtered (opportunity associated with campaign)
+        // Step 2: Has entered_pipeline date
+        if (!snapshot.enteredPipeline) continue;
+        
+        // Step 3: Close date > first campaign date (or no close date = still open)
+        if (snapshot.closeDate && snapshot.closeDate <= oppData.firstCampaignDate) continue;
+
+        // This opportunity qualifies
+        qualifyingOpportunities.push({
+          opportunityId: snapshot.opportunityId,
+          opportunityIdString: oppData.opportunityIdString,
+          name: oppData.name,
+          clientName: oppData.clientName,
+          stage: snapshot.stage,
+          year1Value: snapshot.year1Value || 0,
+          enteredPipeline: snapshot.enteredPipeline,
+          closeDate: snapshot.closeDate,
+          snapshotDate: snapshot.snapshotDate,
+          campaignType: oppData.campaignType,
+          firstCampaignDate: oppData.firstCampaignDate
+        });
+      }
+
+      // Sort by campaign type, then by name
+      qualifyingOpportunities.sort((a, b) => {
+        if (a.campaignType !== b.campaignType) {
+          return a.campaignType.localeCompare(b.campaignType);
+        }
+        return a.name.localeCompare(b.name);
+      });
+
+      console.log(`📋 Found ${qualifyingOpportunities.length} qualifying opportunities after 3-step filtering`);
+      
+      return qualifyingOpportunities;
+      
+    } catch (error) {
+      console.error('❌ Error getting detailed qualifying opportunities:', error);
+      throw error;
+    }
+  }
+
   private calculateMatrixMetrics(data: any[]) {
     const customerCount = data.length;
     
