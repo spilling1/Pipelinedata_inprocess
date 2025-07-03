@@ -8,9 +8,9 @@ import CampaignTypeROIBarchart from '../analytics-comparison/CampaignTypeROIBarc
 import CampaignTypePerformanceTable from '../analytics-comparison/CampaignTypePerformanceTable';
 
 import useCampaignTypeData from '../analytics-comparison/hooks/useCampaignTypeData';
-import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3, GitBranch, Clock, Activity, Calendar } from 'lucide-react';
+import { TrendingUp, DollarSign, Target, Users, Trophy, BarChart3, GitBranch, Clock, Calendar } from 'lucide-react';
 
-type AnalysisView = 'influenced' | 'new-pipeline' | 'stage-advance';
+type AnalysisView = 'influenced' | 'new-pipeline';
 type TimePeriod = 'all-time' | 'fy-to-date' | 'last-year' | 'quarter-to-date' | 'last-quarter';
 
 const CampaignTypeAnalysisEnhanced: React.FC = () => {
@@ -131,7 +131,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
       {/* Analysis View Toggle */}
       <Tabs value={activeView} onValueChange={(value) => setActiveView(value as AnalysisView)} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="influenced" className="flex items-center gap-2">
             <Target className="h-4 w-4" />
             Influenced Pipeline
@@ -139,10 +139,6 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
           <TabsTrigger value="new-pipeline" className="flex items-center gap-2">
             <Clock className="h-4 w-4" />
             New Pipeline (30d)
-          </TabsTrigger>
-          <TabsTrigger value="stage-advance" className="flex items-center gap-2">
-            <Activity className="h-4 w-4" />
-            Stage Advance (30d)
           </TabsTrigger>
         </TabsList>
 
@@ -324,93 +320,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
           <CampaignTypePerformanceTable data={currentData} analysisType="new-pipeline" />
         </TabsContent>
 
-        <TabsContent value="stage-advance" className="space-y-6">
-          {/* Stage Advance Key Metrics Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Investment</CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(data.reduce((sum, ct: any) => sum + ct.totalCost, 0))}</div>
-                <p className="text-xs text-muted-foreground">
-                  Across {data.length} campaign types
-                </p>
-              </CardContent>
-            </Card>
 
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Pipeline</CardTitle>
-                <Target className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(currentMetrics.totalPipeline)}</div>
-                <p className="text-xs text-muted-foreground">
-                  {currentMetrics.totalCustomers} opportunities influenced
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total Closed Won</CardTitle>
-                <Trophy className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(currentMetrics.totalClosedWon)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {currentMetrics.closedWonCustomers} customers closed
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Open Pipeline</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(currentMetrics.openPipeline)}
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  {currentMetrics.openPipelineCustomers} customers open
-                </p>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div 
-                  className="text-2xl font-bold text-blue-600 cursor-help" 
-                  title={`Win Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost) = ${formatPercentage(currentMetrics.averageWinRate)}`}
-                >
-                  {formatPercentage(currentMetrics.averageWinRate)}
-                </div>
-                <p 
-                  className="text-xs text-gray-500 mt-1 cursor-help"
-                  title={`Close Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost + ${currentMetrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(currentMetrics.averageCloseRate)}`}
-                >
-                  Close Rate: {formatPercentage(currentMetrics.averageCloseRate)}
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Stage Advance ROI Chart */}
-          <CampaignTypeROIBarchart data={currentData} />
-
-          {/* Stage Advance Performance Table */}
-          <CampaignTypePerformanceTable data={currentData} analysisType="stage-advance" />
-        </TabsContent>
       </Tabs>
     </div>
   );

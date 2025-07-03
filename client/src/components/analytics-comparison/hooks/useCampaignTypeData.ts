@@ -41,14 +41,12 @@ export interface CampaignTypeMetrics {
 }
 
 export const useCampaignTypeData = (
-  analysisType: 'influenced' | 'new-pipeline' | 'stage-advance' = 'influenced',
+  analysisType: 'influenced' | 'new-pipeline' = 'influenced',
   timePeriod: string = 'fy-to-date'
 ) => {
   const queryKey = analysisType === 'influenced' 
     ? '/api/marketing/comparative/campaign-types'
-    : analysisType === 'new-pipeline'
-    ? '/api/marketing/comparative/campaign-types-new-pipeline' 
-    : '/api/marketing/comparative/campaign-types-stage-advance';
+    : '/api/marketing/comparative/campaign-types-new-pipeline';
 
   const { data: rawResponse, isLoading, error, refetch } = useQuery<{
     campaignTypes: CampaignTypeData[];
@@ -89,8 +87,8 @@ export const useCampaignTypeData = (
       item.campaignType && 
       item.campaignType.trim() !== '' && 
       item.campaignType !== 'Unknown' &&
-      // For new-pipeline and stage-advance analysis, show all campaign types even with zero customers
-      (analysisType === 'new-pipeline' || analysisType === 'stage-advance' || item.totalCustomers > 0)
+      // For new-pipeline analysis, show all campaign types even with zero customers
+      (analysisType === 'new-pipeline' || item.totalCustomers > 0)
     );
 
     // Return null if no valid data after filtering

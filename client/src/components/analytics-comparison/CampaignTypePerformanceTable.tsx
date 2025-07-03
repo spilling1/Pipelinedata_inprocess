@@ -23,58 +23,13 @@ interface CampaignTypeData {
 
 interface CampaignTypePerformanceTableProps {
   data: CampaignTypeData[];
-  analysisType?: 'influenced' | 'new-pipeline' | 'stage-advance';
+  analysisType?: 'influenced' | 'new-pipeline';
 }
 
 type SortField = keyof CampaignTypeData;
 type SortDirection = 'asc' | 'desc';
 
-// Interface for stage advancement details
-interface StageAdvanceDetail {
-  opportunityId: number;
-  customerName: string;
-  stageFrom: string;
-  stageTo: string;
-  advancementDate: string;
-  daysSinceCampaign: number;
-}
 
-// Tooltip component for stage advancement details
-const StageAdvanceTooltip: React.FC<{ campaignType: string; openOps: number }> = ({ campaignType, openOps }) => {
-  const { data: stageDetails = [] } = useQuery<StageAdvanceDetail[]>({
-    queryKey: ['/api/marketing/comparative/stage-advance-details', campaignType],
-    enabled: openOps > 0, // Only fetch if there are open opportunities
-  });
-
-  if (stageDetails.length === 0) {
-    return (
-      <div className="text-sm max-w-64">
-        <p className="font-medium">{campaignType} - Stage Advances</p>
-        <p className="text-muted-foreground">No opportunities advanced through sales stages within 60 days of campaign start</p>
-        <p className="text-xs text-muted-foreground mt-2">This means customers may have taken longer than 60 days to progress through stages after the campaign</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="text-sm max-w-80">
-      <p className="font-medium mb-2">{campaignType} - Stage Advances</p>
-      <div className="space-y-1">
-        {stageDetails.map((detail, idx) => (
-          <div key={idx} className="border-l-2 border-blue-500 pl-2">
-            <p className="font-medium">{detail.customerName}</p>
-            <p className="text-muted-foreground">
-              {detail.stageFrom} → {detail.stageTo}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              {detail.daysSinceCampaign} days after campaign
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-};
 
 const CampaignTypePerformanceTable: React.FC<CampaignTypePerformanceTableProps> = ({ data, analysisType = 'influenced' }) => {
   const [sortField, setSortField] = useState<SortField>('averageROI');
@@ -350,25 +305,7 @@ const CampaignTypePerformanceTable: React.FC<CampaignTypePerformanceTableProps> 
                   <td className="p-4 align-middle">{formatCurrency(item.totalPipelineValue)}</td>
                   <td className="p-4 align-middle">{formatCurrency(item.totalClosedWonValue)}</td>
                   <td className="p-4 align-middle">
-                    {analysisType === 'stage-advance' && item.totalOpenOpportunities > 0 ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <button className="text-blue-600 hover:text-blue-800 font-medium underline cursor-pointer">
-                              {formatNumber(item.totalOpenOpportunities)}
-                            </button>
-                          </TooltipTrigger>
-                          <TooltipContent side="left" align="start">
-                            <StageAdvanceTooltip 
-                              campaignType={item.campaignType} 
-                              openOps={item.totalOpenOpportunities}
-                            />
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : (
-                      formatNumber(item.totalOpenOpportunities)
-                    )}
+                    {formatNumber(item.totalOpenOpportunities)}
                   </td>
                   <td className={`p-4 align-middle font-medium ${getROIColor(item.averageROI)}`}>
                     {formatPercentage(item.averageROI)}
