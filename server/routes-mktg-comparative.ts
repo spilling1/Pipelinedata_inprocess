@@ -423,14 +423,18 @@ router.get('/campaign-types-new-pipeline', async (req, res) => {
       const totalCustomers = uniqueOpportunities; 
       const totalOpenOpportunities = openPipelineCustomers;
       
-      // Calculate target customers
-      const qualifyingOpportunityIds = await marketingComparativeStorage.getQualifyingOpportunityIds(campaignIds);
-      const targetCustomerCount = await marketingComparativeStorage.countTargetAccountsInOpportunities(qualifyingOpportunityIds);
-      const totalTargetCustomers = targetCustomerCount;
+      // Calculate target customers - but use regular method to get original opportunity IDs for campaigns that might not have 30-day new pipeline
+      let totalTargetCustomers = 0;
+      if (totalCustomers > 0) {
+        // If we have new pipeline customers, count target accounts among them
+        const qualifyingOpportunityIds = await marketingComparativeStorage.getQualifyingOpportunityIds(campaignIds);
+        const targetCustomerCount = await marketingComparativeStorage.countTargetAccountsInOpportunities(qualifyingOpportunityIds);
+        totalTargetCustomers = targetCustomerCount;
+      }
       
       // Calculate averages from individual campaign metrics
       const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
-      const avgWinRate = campaigns.reduce((sum, c) => sum + c.metrics.winRate, 0) / totalCampaigns;
+      const avgWinRate = totalCampaigns > 0 ? campaigns.reduce((sum, c) => sum + c.metrics.winRate, 0) / totalCampaigns : 0;
       
       // Calculate ROI and efficiency
       const aggregateROI = totalCost > 0 ? (totalClosedWonValue / totalCost) * 100 : 0;
