@@ -34,10 +34,14 @@ export default function SalesMetricsCards({ filters }: SalesMetricsCardsProps) {
     totalValue: 0,
     activeCount: 0,
     avgDealSize: 0,
-    conversionRate: 0
+    conversionRate: 0,
+    totalYear1ARR: 0
   };
 
-  const formatCurrency = (value: number) => {
+  const formatCurrency = (value: number | undefined) => {
+    if (!value || isNaN(value)) {
+      return '$0';
+    }
     if (value >= 1000000) {
       return `$${(value / 1000000).toFixed(1)}M`;
     } else if (value >= 1000) {
@@ -49,6 +53,19 @@ export default function SalesMetricsCards({ filters }: SalesMetricsCardsProps) {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Total Year 1 ARR</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
+        </CardHeader>
+        <CardContent>
+          <div className="text-2xl font-bold">{formatCurrency(metrics.totalYear1ARR)}</div>
+          <p className="text-xs text-muted-foreground">
+            Year 1 ARR pipeline
+          </p>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-sm font-medium">Total Pipeline Value</CardTitle>
@@ -97,19 +114,6 @@ export default function SalesMetricsCards({ filters }: SalesMetricsCardsProps) {
           <div className="text-2xl font-bold">{(metrics.conversionRate * 100).toFixed(1)}%</div>
           <p className="text-xs text-muted-foreground">
             Closed won rate
-          </p>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-          <CardTitle className="text-sm font-medium">Total Year 1 ARR</CardTitle>
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
-        </CardHeader>
-        <CardContent>
-          <div className="text-2xl font-bold">{formatCurrency(metrics.totalValue)}</div>
-          <p className="text-xs text-muted-foreground">
-            Year 1 ARR pipeline
           </p>
         </CardContent>
       </Card>

@@ -65,6 +65,16 @@ export function registerSalesRoutes(app: Express) {
         storage.salesStorage.getSalesStageDistribution(filters)
       ]);
 
+      // Calculate actual Year1_ARR sum from sales storage
+      let totalYear1ARR = 0;
+      try {
+        totalYear1ARR = await storage.salesStorage.getSalesTotalYear1ARR(filters);
+        console.log('✅ Total Year1 ARR calculated:', totalYear1ARR);
+      } catch (error) {
+        console.error('❌ Error calculating Total Year1 ARR:', error);
+        totalYear1ARR = 0;
+      }
+      
       // Calculate metrics using the same logic as original pipeline analytics
       // Total Pipeline Value: Sum of Year1 ARR from stage distribution (current snapshot)
       const totalValue = stageDistribution.reduce((sum, stage) => sum + stage.value, 0);
@@ -86,6 +96,7 @@ export function registerSalesRoutes(app: Express) {
         winRate: 0.237,
         closeRate: 0.075,
         totalContractValue: totalValue,
+        totalYear1ARR,
         // Add change calculations here if needed
         valueChange: 0,
         countChange: 0,

@@ -447,6 +447,46 @@ export class PostgreSQLSalesStorage implements ISalesStorage {
   async getSalesRecentLosses(filters: any): Promise<Array<any>> {
     return []; // Placeholder
   }
+
+  async getSalesTotalYear1ARR(filters: any): Promise<number> {
+    // Get the most recent snapshot date
+    const latestDateResult = await db
+      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
+      .from(snapshots);
+    
+    const latestDateStr = latestDateResult[0]?.maxDate;
+    console.log('🗓️ Using latest snapshot date for sales Year1 ARR:', latestDateStr);
+    
+    if (!latestDateStr) {
+      console.log('❌ No snapshots found for Year1 ARR calculation');
+      return 0;
+    }
+    
+    // Build where conditions for filtering
+    let whereConditions = [
+      sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
+      sql`${snapshots.stage} NOT IN ('Validation/Introduction', 'Closed Won', 'Closed Lost')`
+    ];
+    
+    // Add sales rep filter if specified
+    if (filters.salesRep && filters.salesRep !== 'all') {
+      whereConditions.push(eq(opportunities.owner, filters.salesRep));
+    }
+    
+    // Calculate total Year1 ARR
+    const result = await db
+      .select({
+        totalYear1ARR: sql<number>`SUM(COALESCE(${snapshots.year1Value}, 0))`
+      })
+      .from(snapshots)
+      .innerJoin(opportunities, eq(snapshots.opportunityId, opportunities.id))
+      .where(and(...whereConditions));
+    
+    const totalYear1ARR = Number(result[0]?.totalYear1ARR || 0);
+    console.log('💰 Total Year1 ARR calculation:', totalYear1ARR);
+    
+    return totalYear1ARR;
+  }
 }
 
 // Export the singleton instance
