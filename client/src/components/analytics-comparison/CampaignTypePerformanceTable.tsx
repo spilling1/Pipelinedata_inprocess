@@ -284,7 +284,7 @@ const CampaignTypePerformanceTable: React.FC<CampaignTypePerformanceTableProps> 
                     size="sm"
                     onClick={() => handleSort('costEfficiency')}
                   >
-                    Pipeline/Cost
+                    Pipeline $/Cost
                     <SortIcon field="costEfficiency" />
                   </Button>
                 </th>
