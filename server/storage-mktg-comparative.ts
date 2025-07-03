@@ -857,7 +857,21 @@ export class MarketingComparativeStorage {
         touchDistribution: touchDistributionArray
       };
 
-      console.log(`🎯🛤️ Customer journey analysis completed: ${totalCustomers} customers, avg ${averageTouchesPerCustomer.toFixed(1)} touches per customer`);
+      // Add detailed breakdown for customer engagement analysis
+      const closedWonCustomers = customers.filter(c => c.isClosedWon).length;
+      const closedLostCustomers = customers.filter(c => c.isClosedLost).length;
+      const activeCustomers = customers.filter(c => !c.isClosedWon && !c.isClosedLost).length;
+      const engagedCustomers = customers.filter(c => c.totalTouches >= 1).length; // Should be same as total
+      const multiTouchCustomers = customers.filter(c => c.totalTouches > 1).length;
+      
+      console.log(`🎯🛤️ CUSTOMER ENGAGEMENT BREAKDOWN:`);
+      console.log(`   📊 Total Customers: ${totalCustomers}`);
+      console.log(`   ✅ Closed Won: ${closedWonCustomers}`);
+      console.log(`   ❌ Closed Lost: ${closedLostCustomers}`);
+      console.log(`   🔄 Active Pipeline: ${activeCustomers}`);
+      console.log(`   🤝 Engaged (1+ touches): ${engagedCustomers}`);
+      console.log(`   🔄 Multi-Touch (2+ touches): ${multiTouchCustomers}`);
+      console.log(`   📈 Average touches per customer: ${averageTouchesPerCustomer.toFixed(1)}`);
 
       return {
         customers,
