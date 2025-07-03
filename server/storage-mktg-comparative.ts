@@ -594,19 +594,21 @@ export class MarketingComparativeStorage {
         return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
       }
 
-      // Find all unique opportunities associated with ANY campaign in this group
+      // Step 1: Find all UNIQUE opportunity_id values from campaign_customers table for this campaign group
       const associatedOpportunities = await db
         .selectDistinct({ opportunityId: campaignCustomers.opportunityId })
         .from(campaignCustomers)
         .where(inArray(campaignCustomers.campaignId, campaignIds));
 
-      const opportunityIds = associatedOpportunities.map(row => row.opportunityId);
+      const uniqueOpportunityIds = associatedOpportunities.map(row => row.opportunityId);
       
-      if (opportunityIds.length === 0) {
+      if (uniqueOpportunityIds.length === 0) {
         return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
       }
 
-      // Get most recent snapshots for these opportunities using a simpler approach
+      console.log(`📊 Campaign Type Pipeline Step 1: Found ${uniqueOpportunityIds.length} unique opportunity_id values from campaign_customers table`);
+
+      // Step 2: Get most recent snapshots for these UNIQUE opportunity_id values from snapshots table
       const recentSnapshots = await db
         .select({
           opportunityId: snapshots.opportunityId,
@@ -619,24 +621,24 @@ export class MarketingComparativeStorage {
         .from(snapshots)
         .where(
           and(
-            inArray(snapshots.opportunityId, opportunityIds),
+            inArray(snapshots.opportunityId, uniqueOpportunityIds),
             sql`(${snapshots.opportunityId}, ${snapshots.snapshotDate}) IN (
               SELECT ${snapshots.opportunityId}, MAX(${snapshots.snapshotDate})
               FROM ${snapshots}
-              WHERE ${inArray(snapshots.opportunityId, opportunityIds)}
+              WHERE ${inArray(snapshots.opportunityId, uniqueOpportunityIds)}
               GROUP BY ${snapshots.opportunityId}
             )`
           )
         );
 
-      // Apply the three filtering criteria
+      console.log(`📊 Campaign Type Pipeline Step 2: Found ${recentSnapshots.length} most recent snapshots for unique opportunities`);
+
+      // Step 3: Apply filtering criteria to get qualifying unique opportunities
       const qualifyingSnapshots = recentSnapshots.filter(snapshot => {
-        // Criterion 1: Already filtered - opportunity associated with at least one campaign
-        
-        // Criterion 2: Must have entered_pipeline date  
+        // Filter 1: Opportunity must have entered_pipeline date populated in most recent snapshot
         if (!snapshot.enteredPipeline) return false;
         
-        // Criterion 3: Must have close date > first associated campaign date (or be open)
+        // Filter 2: Opportunity must have close date > first associated campaign date (or be open)
         if (snapshot.closeDate) {
           const closeDate = new Date(snapshot.closeDate);
           const campaignDate = new Date(firstCampaignDate);
@@ -646,7 +648,11 @@ export class MarketingComparativeStorage {
         return true;
       });
 
-      console.log(`📊 Campaign Type Pipeline: ${opportunityIds.length} associated -> ${qualifyingSnapshots.length} qualifying opportunities`);
+      // Extract unique opportunity IDs from qualifying snapshots (should be same as count due to our logic)
+      const uniqueQualifyingOpportunityIds = [...new Set(qualifyingSnapshots.map(s => s.opportunityId))];
+
+      console.log(`📊 Campaign Type Pipeline Step 3: ${qualifyingSnapshots.length} qualifying opportunities after filtering`);
+      console.log(`📊 Campaign Type Pipeline Verification: ${uniqueQualifyingOpportunityIds.length} unique opportunity IDs in final result`);
 
       // Calculate pipeline value (exclude Closed Lost)
       const pipelineValue = qualifyingSnapshots
@@ -661,7 +667,7 @@ export class MarketingComparativeStorage {
       return {
         pipelineValue,
         closedWonValue,
-        uniqueOpportunities: qualifyingSnapshots.length
+        uniqueOpportunities: uniqueQualifyingOpportunityIds.length // Use verified unique count
       };
 
     } catch (error) {
@@ -720,6 +726,7 @@ export class MarketingComparativeStorage {
       );
 
       for (const snapshot of recentSnapshots) {
+        if (!snapshot.opportunityId) continue;
         const firstCampaignDate = opportunityDateMap.get(snapshot.opportunityId);
         if (!firstCampaignDate) continue;
 
@@ -728,7 +735,7 @@ export class MarketingComparativeStorage {
         if (!snapshot.enteredPipeline) continue;
         
         // Step 3: Close date > first campaign date (or no close date = still open)
-        if (snapshot.closeDate && snapshot.closeDate <= firstCampaignDate) continue;
+        if (snapshot.closeDate && firstCampaignDate && snapshot.closeDate <= firstCampaignDate) continue;
 
         // This opportunity qualifies
         qualifyingIds.push(snapshot.opportunityId);
@@ -887,6 +894,7 @@ export class MarketingComparativeStorage {
       );
 
       for (const snapshot of recentSnapshots) {
+        if (!snapshot.opportunityId) continue;
         const oppData = opportunityDataMap.get(snapshot.opportunityId);
         if (!oppData) continue;
 
@@ -900,11 +908,11 @@ export class MarketingComparativeStorage {
         // This opportunity qualifies
         qualifyingOpportunities.push({
           opportunityId: snapshot.opportunityId,
-          opportunityIdString: oppData.opportunityIdString,
-          name: oppData.name,
-          clientName: oppData.clientName,
-          stage: snapshot.stage,
-          year1Value: snapshot.year1Value || 0,
+          opportunityIdString: oppData.opportunityIdString ?? '',
+          name: oppData.name ?? '',
+          clientName: oppData.clientName ?? '',
+          stage: snapshot.stage ?? '',
+          year1Value: snapshot.year1Value ?? 0,
           enteredPipeline: snapshot.enteredPipeline,
           closeDate: snapshot.closeDate,
           snapshotDate: snapshot.snapshotDate,
@@ -1389,20 +1397,24 @@ export class MarketingComparativeStorage {
         },
         timeSeriesData,
         insights: {
-          bestPerformingCampaignType: {
+          bestPerformingCampaignType: bestPerformingType ? {
             name: bestPerformingType.campaignType,
             roi: bestPerformingType.roi,
             value: bestPerformingType.closedWonValue
-          },
+          } : null,
           mostInefficientCampaignType: mostInefficientType ? {
             name: mostInefficientType.campaignType,
             roi: mostInefficientType.roi,
             costPercentage: mostInefficientType.costPercentage
           } : null,
-          bestPipelineEfficiency: {
+          bestPipelineEfficiency: bestPipelineEfficiency ? {
             name: bestPipelineEfficiency.campaignType,
             efficiency: bestPipelineEfficiency.pipelineEfficiency,
             value: bestPipelineEfficiency.pipelineValue
+          } : {
+            name: 'No data',
+            efficiency: 0,
+            value: 0
           }
         },
         summaryText

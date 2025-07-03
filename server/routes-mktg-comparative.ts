@@ -183,9 +183,10 @@ router.get('/campaign-comparison', async (req, res) => {
     
     if (endDate) {
       const filterEndDate = new Date(endDate as string);
-      filteredData = filteredData.filter(campaign => 
-        !campaign.endDate || campaign.endDate <= filterEndDate
-      );
+      filteredData = filteredData.filter(campaign => {
+        // Most campaigns don't have endDate, so we filter by start date instead
+        return campaign.startDate <= filterEndDate;
+      });
     }
     
     console.log(`📊 API: Campaign comparison completed - ${filteredData.length} campaigns`);
