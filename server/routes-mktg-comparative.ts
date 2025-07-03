@@ -264,12 +264,12 @@ router.get('/campaign-types', async (req, res) => {
       const campaignIds = campaigns.map(c => c.campaignId);
       
       // Use corrected pipeline calculation that avoids double-counting opportunities
-      const { pipelineValue: totalPipelineValue, closedWonValue: totalClosedWonValue, uniqueOpportunities } = 
+      const { pipelineValue: totalPipelineValue, closedWonValue: totalClosedWonValue, openPipelineCustomers, uniqueOpportunities } = 
         await marketingComparativeStorage.calculateCampaignTypePipeline(campaignIds);
       
       // Use the same logic as Total Pipeline calculation for customer counts
       const totalCustomers = uniqueOpportunities; // Same 3-step filtering as pipeline
-      const totalOpenOpportunities = uniqueOpportunities;
+      const totalOpenOpportunities = openPipelineCustomers; // Only open pipeline customers (excludes Closed Won/Lost)
       
       // Calculate target customers from the qualifying opportunities using same logic
       const qualifyingOpportunityIds = await marketingComparativeStorage.getQualifyingOpportunityIds(campaignIds);
