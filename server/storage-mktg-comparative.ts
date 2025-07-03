@@ -928,11 +928,11 @@ export class MarketingComparativeStorage {
           const prevSnapshot = snapshots[i - 1];
           const currentSnapshot = snapshots[i];
           
-          // Check if this stage change happened within 30 days of campaign
+          // Check if this stage change happened within 180 days of campaign
           const snapshotDate = new Date(currentSnapshot.snapshotDate);
           const daysDifference = Math.abs((snapshotDate.getTime() - firstCampaignDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          if (daysDifference <= 30) {
+          if (daysDifference <= 180) {
             // Define stage progression (simplified - could be more sophisticated)
             const stageProgression = [
               'Validation', 'Introduction', 'Concept', 'Proposal', 'Negotiation', 'Closed Won'
@@ -1125,11 +1125,11 @@ export class MarketingComparativeStorage {
           const prevSnapshot = snapshots[i - 1];
           const currentSnapshot = snapshots[i];
           
-          // Check if this stage change happened within 30 days of campaign
+          // Check if this stage change happened within 180 days of campaign
           const snapshotDate = new Date(currentSnapshot.snapshotDate);
           const daysDifference = Math.abs((snapshotDate.getTime() - firstCampaignDate.getTime()) / (1000 * 60 * 60 * 24));
           
-          if (daysDifference <= 30) {
+          if (daysDifference <= 180) {
             const prevStage = prevSnapshot.stage || '';
             const currentStage = currentSnapshot.stage || '';
             const prevStageIndex = stageProgression.indexOf(prevStage);
@@ -1169,14 +1169,25 @@ export class MarketingComparativeStorage {
           
           console.log(`📈     - Opportunity ${opportunityId}: ${snapshots.length} snapshots, first campaign: ${firstCampaignDate.toISOString().split('T')[0]}`);
           
-          // Check for any stage changes at all
+          // Check for any stage changes at all within 180 days
           for (let i = 1; i < snapshots.length; i++) {
             const prevStage = snapshots[i - 1].stage || '';
             const currentStage = snapshots[i].stage || '';
             if (prevStage !== currentStage) {
               const snapshotDate = new Date(snapshots[i].snapshotDate);
               const daysDifference = Math.abs((snapshotDate.getTime() - firstCampaignDate.getTime()) / (1000 * 60 * 60 * 24));
-              console.log(`📈       - Stage change: ${prevStage} → ${currentStage} on ${snapshotDate.toISOString().split('T')[0]} (${Math.round(daysDifference)} days from campaign)`);
+              
+              // Check if within our window
+              if (daysDifference <= 180) {
+                const stageProgression = ['Validation', 'Introduction', 'Concept', 'Proposal', 'Negotiation', 'Closed Won'];
+                const prevStageIndex = stageProgression.indexOf(prevStage);
+                const currentStageIndex = stageProgression.indexOf(currentStage);
+                const isProgression = currentStageIndex > prevStageIndex && currentStageIndex !== -1 && prevStageIndex !== -1;
+                
+                console.log(`📈       - Stage change: ${prevStage} → ${currentStage} on ${snapshotDate.toISOString().split('T')[0]} (${Math.round(daysDifference)} days from campaign) ${isProgression ? '✅ PROGRESSION' : '❌ NOT PROGRESSION'}`);
+              } else {
+                console.log(`📈       - Stage change: ${prevStage} → ${currentStage} on ${snapshotDate.toISOString().split('T')[0]} (${Math.round(daysDifference)} days from campaign) ❌ OUTSIDE WINDOW`);
+              }
             }
           }
           debugCount++;

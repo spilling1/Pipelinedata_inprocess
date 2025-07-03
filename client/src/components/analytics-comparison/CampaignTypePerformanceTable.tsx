@@ -50,8 +50,8 @@ const StageAdvanceTooltip: React.FC<{ campaignType: string; openOps: number }> =
     return (
       <div className="text-sm max-w-64">
         <p className="font-medium">{campaignType} - Stage Advances</p>
-        <p className="text-muted-foreground">No opportunities advanced through sales stages within 30 days of campaign start</p>
-        <p className="text-xs text-muted-foreground mt-2">This means customers may have taken longer than 30 days to progress through stages after the campaign</p>
+        <p className="text-muted-foreground">No opportunities advanced through sales stages within 60 days of campaign start</p>
+        <p className="text-xs text-muted-foreground mt-2">This means customers may have taken longer than 60 days to progress through stages after the campaign</p>
       </div>
     );
   }
