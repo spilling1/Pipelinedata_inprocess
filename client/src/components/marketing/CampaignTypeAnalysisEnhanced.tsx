@@ -205,9 +205,6 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
                 >
                   {formatPercentage(metrics.averageWinRate)}
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Closed Won / (Closed Won + Closed Lost)
-                </p>
                 <p 
                   className="text-xs text-gray-500 mt-1 cursor-help"
                   title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
