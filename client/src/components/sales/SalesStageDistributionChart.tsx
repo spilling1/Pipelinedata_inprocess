@@ -19,7 +19,6 @@ const COLORS = [
 ];
 
 export default function SalesStageDistributionChart({ filters }: SalesStageDistributionChartProps) {
-  const [viewMode, setViewMode] = useState<'count' | 'value'>('count');
   const [displayMode, setDisplayMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
   
@@ -65,7 +64,7 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
       name: item.stage,
       count: item.count,
       value: item.value,
-      displayValue: viewMode === 'count' ? item.count : item.value,
+      displayValue: item.count, // Always show count (number of opportunities)
       color: COLORS[index % COLORS.length],
       formattedValue: item.value >= 1000000 
         ? `$${(item.value / 1000000).toFixed(1)}M`
@@ -73,24 +72,14 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
         ? `$${(item.value / 1000).toFixed(0)}K`
         : `$${item.value}`
     }));
-  }, [analytics?.stageDistribution, viewMode, stageOrder]);
+  }, [analytics?.stageDistribution, stageOrder]);
 
   // No automatic fallback detection - let user choose display mode
 
   // Memoize tooltip formatting function (must be before early return)
   const formatTooltipValue = useCallback((value: number, name: string) => {
-    if (viewMode === 'count') {
-      return [`${value} opportunities`, 'Count'];
-    } else {
-      if (value >= 1000000) {
-        return [`$${(value / 1000000).toFixed(1)}M`, 'Value'];
-      } else if (value >= 1000) {
-        return [`$${(value / 1000).toFixed(0)}K`, 'Value'];
-      } else {
-        return [`$${value}`, 'Value'];
-      }
-    }
-  }, [viewMode]);
+    return [`${value} opportunities`, 'Count']; // Always show count format
+  }, []);
 
   if (isLoading) {
     return (
@@ -137,20 +126,6 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
         <div className="flex items-center justify-between">
           <CardTitle>Stage Distribution</CardTitle>
           <div className="flex space-x-2">
-            <Button
-              size="sm"
-              variant={viewMode === 'count' ? 'default' : 'outline'}
-              onClick={() => setViewMode('count')}
-            >
-              Count
-            </Button>
-            <Button
-              size="sm"
-              variant={viewMode === 'value' ? 'default' : 'outline'}
-              onClick={() => setViewMode('value')}
-            >
-              Value
-            </Button>
             <Button
               size="sm"
               variant={displayMode === 'chart' ? 'default' : 'outline'}
@@ -207,15 +182,15 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
               </div>
             ) : (
               <div ref={chartRef} className="relative">
-                <div style={{ width: '100%', height: '300px' }}>
+                <div style={{ width: '100%', height: '350px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={chartData}
                         cx="50%"
                         cy="45%"
-                        innerRadius={50}
-                        outerRadius={100}
+                        innerRadius={70}
+                        outerRadius={140}
                         paddingAngle={2}
                         dataKey="displayValue"
                       >
