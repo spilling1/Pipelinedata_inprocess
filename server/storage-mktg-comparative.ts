@@ -633,12 +633,37 @@ export class MarketingComparativeStorage {
 
       console.log(`📊 Campaign Type Pipeline Step 2: Found ${recentSnapshots.length} most recent snapshots for unique opportunities`);
 
-      // Step 3: Apply filtering criteria to get qualifying unique opportunities
+      // Step 3: Get the first campaign date for each opportunity (not the group earliest date)
+      const opportunityFirstCampaignDates = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          firstCampaignDate: sql`MIN(${campaigns.startDate})`.as('firstCampaignDate')
+        })
+        .from(campaignCustomers)
+        .innerJoin(campaigns, eq(campaigns.id, campaignCustomers.campaignId))
+        .where(
+          and(
+            inArray(campaignCustomers.campaignId, campaignIds),
+            inArray(campaignCustomers.opportunityId, uniqueOpportunityIds)
+          )
+        )
+        .groupBy(campaignCustomers.opportunityId);
+
+      const opportunityDateMap = new Map(
+        opportunityFirstCampaignDates.map(row => [row.opportunityId, row.firstCampaignDate])
+      );
+
+      // Apply filtering criteria using each opportunity's specific first campaign date
       const qualifyingSnapshots = recentSnapshots.filter(snapshot => {
+        if (!snapshot.opportunityId) return false;
+        
         // Filter 1: Opportunity must have entered_pipeline date populated in most recent snapshot
         if (!snapshot.enteredPipeline) return false;
         
-        // Filter 2: Opportunity must have close date > first associated campaign date (or be open)
+        // Filter 2: Opportunity must have close date > its first associated campaign date (or be open)
+        const firstCampaignDate = opportunityDateMap.get(snapshot.opportunityId);
+        if (!firstCampaignDate) return false;
+        
         if (snapshot.closeDate) {
           const closeDate = new Date(snapshot.closeDate);
           const campaignDate = new Date(firstCampaignDate);
