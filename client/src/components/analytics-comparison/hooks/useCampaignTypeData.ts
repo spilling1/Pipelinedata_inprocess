@@ -89,7 +89,8 @@ export const useCampaignTypeData = (
       item.campaignType && 
       item.campaignType.trim() !== '' && 
       item.campaignType !== 'Unknown' &&
-      item.totalCustomers > 0 // Only include types with actual customers
+      // For new-pipeline and stage-advance analysis, show all campaign types even with zero customers
+      (analysisType === 'new-pipeline' || analysisType === 'stage-advance' || item.totalCustomers > 0)
     );
 
     // Return null if no valid data after filtering
