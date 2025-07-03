@@ -1,9 +1,9 @@
 import { useState } from "react";
 import FileUpload from "@/components/FileUpload";
 import SalesFilterPanel from "@/components/sales/SalesFilterPanel";
-import MetricsCards from "@/components/MetricsCards";
-import PipelineValueChart from "@/components/PipelineValueChart";
-import StageDistributionChart from "@/components/StageDistributionChart";
+import SalesMetricsCards from "@/components/sales/SalesMetricsCards";
+import SalesPipelineValueChart from "@/components/sales/SalesPipelineValueChart";
+import SalesStageDistributionChart from "@/components/sales/SalesStageDistributionChart";
 import FiscalYearPipelineChart from "@/components/FiscalYearPipelineChart";
 import OpportunitiesTable from "@/components/OpportunitiesTable";
 
@@ -110,13 +110,13 @@ export default function SalesAnalytics() {
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
             {/* Key Metrics Cards */}
-            <MetricsCards filters={filters} />
+            <SalesMetricsCards filters={salesFilters} />
 
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-              <PipelineValueChart filters={filters} />
+              <SalesPipelineValueChart filters={salesFilters} />
               <FiscalYearPipelineChart filters={filters} />
-              <StageDistributionChart filters={filters} />
+              <SalesStageDistributionChart filters={salesFilters} />
               <DuplicateOpportunitiesCard filters={filters} />
             </div>
 
