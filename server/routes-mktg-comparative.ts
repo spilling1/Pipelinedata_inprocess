@@ -274,6 +274,11 @@ router.get('/campaign-types', async (req, res) => {
       const customerOverlapFactor = 0.67; // Approximate unique customer ratio
       const totalCustomers = Math.round(rawTotalCustomers * customerOverlapFactor);
       const totalTargetCustomers = Math.round(rawTotalTargetCustomers * customerOverlapFactor);
+      
+      console.log(`📊 Campaign Type: ${type}`);
+      console.log(`   🔢 Raw Total Customers: ${rawTotalCustomers}`);
+      console.log(`   ⚖️ Overlap Factor: ${customerOverlapFactor}`);
+      console.log(`   ✅ Final Customer Count: ${totalCustomers}`);
       const totalOpenOpportunities = uniqueOpportunities;
       
       // Calculate total attendees (no deduplication needed since it's per campaign)
@@ -327,6 +332,12 @@ router.get('/campaign-types', async (req, res) => {
     
     // Sort by total pipeline value descending
     typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);
+    
+    // Calculate and log the total customers across all campaign types for debugging
+    const totalCustomersAcrossAllTypes = typeAnalytics.reduce((sum, type) => sum + type.totalCustomers, 0);
+    console.log(`📊 TOTAL CUSTOMERS CALCULATION:`);
+    console.log(`   🔢 Sum across all campaign types: ${totalCustomersAcrossAllTypes}`);
+    console.log(`   📝 This is the "182 customers engaged" figure shown in Total Pipeline card`);
     
     // Cache the result
     campaignTypesCache = { data: typeAnalytics, timestamp: Date.now(), key: cacheKey };
