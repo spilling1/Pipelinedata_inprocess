@@ -1,6 +1,6 @@
 import { useState } from "react";
 import FileUpload from "@/components/FileUpload";
-import FilterPanel from "@/components/FilterPanel";
+import SalesFilterPanel from "@/components/sales/SalesFilterPanel";
 import MetricsCards from "@/components/MetricsCards";
 import PipelineValueChart from "@/components/PipelineValueChart";
 import StageDistributionChart from "@/components/StageDistributionChart";
@@ -25,21 +25,35 @@ import { LossReasonByStage } from "@/components/LossReasonByStage";
 import RecentLossesTable from "@/components/RecentLossesTable";
 import { Button } from "@/components/ui/button";
 import { TrendingUp, Upload, Download, Settings, Database, Home } from "lucide-react";
+import { SalesFilterState } from "@/types/sales";
 import { FilterState } from "@/types/pipeline";
 import { Link } from "wouter";
 
 export default function SalesAnalytics() {
-  const [filters, setFilters] = useState<FilterState>({
+  const [salesFilters, setSalesFilters] = useState<SalesFilterState>({
     startDate: '',
     endDate: '',
+    salesRep: 'all',
     stages: [],
-    owner: 'all',
     minValue: '',
     maxValue: '',
     search: '',
     valueType: 'amount',
     clientName: 'all'
   });
+
+  // Convert SalesFilterState to FilterState for components that expect FilterState
+  const filters: FilterState = {
+    startDate: salesFilters.startDate,
+    endDate: salesFilters.endDate,
+    stages: salesFilters.stages,
+    owner: salesFilters.salesRep, // Map salesRep to owner
+    minValue: salesFilters.minValue,
+    maxValue: salesFilters.maxValue,
+    search: salesFilters.search,
+    valueType: salesFilters.valueType,
+    clientName: salesFilters.clientName
+  };
 
   const [showUpload, setShowUpload] = useState(false);
 
@@ -88,11 +102,10 @@ export default function SalesAnalytics() {
           </div>
         </div>
       </header>
-      {/* Filter Panel - Now a collapsible sidebar */}
-      <FilterPanel 
-        filters={filters} 
-        onFiltersChange={setFilters}
-        onUploadClick={() => setShowUpload(true)}
+      {/* Sales Filter Panel - Now a collapsible sidebar */}
+      <SalesFilterPanel 
+        filters={salesFilters} 
+        onFiltersChange={setSalesFilters}
       />
       <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
