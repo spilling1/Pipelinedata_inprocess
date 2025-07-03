@@ -19,8 +19,7 @@ const COLORS = [
 ];
 
 export default function StageDistributionChart({ filters }: StageDistributionChartProps) {
-  const [viewMode, setViewMode] = useState<'count' | 'value'>('count');
-  const [showFallback, setShowFallback] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
   
   const { data: stageData, isLoading } = useQuery({
@@ -54,12 +53,12 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
       return a.stage.localeCompare(b.stage);
     });
     
-    // Format data for chart
+    // Format data for chart - always show count data
     return sortedStageData.map((item: any, index: number) => ({
       name: item.stage,
       count: item.count,
       value: item.value,
-      displayValue: viewMode === 'count' ? item.count : item.value,
+      displayValue: item.count, // Always show count
       color: COLORS[index % COLORS.length],
       formattedValue: item.value >= 1000000 
         ? `$${(item.value / 1000000).toFixed(1)}M`
@@ -67,38 +66,12 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
         ? `$${(item.value / 1000).toFixed(0)}K`
         : `$${item.value}`
     }));
-  }, [stageData, viewMode, stageOrder]);
-
-  // Detect if chart failed to render (common on Safari/Mac)
-  useEffect(() => {
-    if (chartData.length > 0 && !showFallback) {
-      const timer = setTimeout(() => {
-        if (chartRef.current && chartRef.current.children.length > 0) {
-          const svg = chartRef.current.querySelector('svg');
-          if (!svg || svg.children.length === 0) {
-            setShowFallback(true);
-          }
-        }
-      }, 2000); // Check after 2 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [chartData, showFallback]);
+  }, [stageData, stageOrder]);
 
   // Memoize tooltip formatting function (must be before early return)
   const formatTooltipValue = useCallback((value: number, name: string) => {
-    if (viewMode === 'count') {
-      return [`${value} opportunities`, 'Count'];
-    } else {
-      if (value >= 1000000) {
-        return [`$${(value / 1000000).toFixed(1)}M`, 'Value'];
-      } else if (value >= 1000) {
-        return [`$${(value / 1000).toFixed(0)}K`, 'Value'];
-      } else {
-        return [`$${value}`, 'Value'];
-      }
-    }
-  }, [viewMode]);
+    return [`${value} opportunities`, 'Count']; // Always show count format
+  }, []);
 
   if (isLoading) {
     return (
@@ -145,26 +118,26 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
           <div className="flex space-x-2">
             <Button
               size="sm"
-              variant={viewMode === 'count' ? 'default' : 'outline'}
-              onClick={() => setViewMode('count')}
+              variant={displayMode === 'chart' ? 'default' : 'outline'}
+              onClick={() => setDisplayMode('chart')}
             >
-              Count
+              Chart
             </Button>
             <Button
               size="sm"
-              variant={viewMode === 'value' ? 'default' : 'outline'}
-              onClick={() => setViewMode('value')}
+              variant={displayMode === 'table' ? 'default' : 'outline'}
+              onClick={() => setDisplayMode('table')}
             >
-              Value
+              Table
             </Button>
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-96" style={{ width: '100%', height: '384px' }}>
+        <div className="h-96" style={{ width: '100%', height: '350px' }}>
           {chartData.length > 0 ? (
-            showFallback ? (
-              // Fallback table view for when charts don't render (common on Safari/Mac)
+            displayMode === 'table' ? (
+              // Table view
               <div className="h-full overflow-auto">
                 <table className="w-full border-collapse">
                   <thead>
@@ -175,7 +148,7 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
                     </tr>
                   </thead>
                   <tbody>
-                    {chartData.map((item, index) => (
+                    {chartData.map((item: any, index: number) => (
                       <tr key={`row-${index}`} className="border-b">
                         <td className="p-2 flex items-center">
                           <div 
@@ -190,41 +163,43 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
                     ))}
                   </tbody>
                 </table>
-                <div className="mt-4 text-sm text-gray-500 text-center">
-                  Chart view not available - showing table format
-                </div>
               </div>
             ) : (
+              // Chart view with larger donut
               <div ref={chartRef}>
-                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
-                  <PieChart width={400} height={400}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={120}
+                      innerRadius={70}
+                      outerRadius={140}
                       paddingAngle={2}
                       dataKey="displayValue"
                       animationBegin={0}
                       animationDuration={800}
                     >
-                      {chartData.map((entry, index) => (
+                      {chartData.map((entry: any, index: number) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
                     <Tooltip content={<CustomTooltip />} />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      iconType="circle"
-                      wrapperStyle={{ 
-                        paddingTop: '20px',
-                        fontSize: '12px'
-                      }}
-                    />
                   </PieChart>
                 </ResponsiveContainer>
+                
+                {/* Custom Legend with uniform dots */}
+                <div className="flex flex-wrap justify-center gap-4 mt-4">
+                  {chartData.map((entry: any, index: number) => (
+                    <div key={`legend-${index}`} className="flex items-center gap-2">
+                      <div
+                        className="w-2 h-2 rounded-full"
+                        style={{ backgroundColor: entry.color }}
+                      />
+                      <span className="text-sm text-gray-600">{entry.name}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
             )
           ) : (
