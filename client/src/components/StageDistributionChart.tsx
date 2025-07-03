@@ -35,14 +35,10 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     'Negotiation/Review'
   ], []);
   const chartData = useMemo(() => {
-    if (!stageData || !Array.isArray(stageData)) {
-      console.log('Pipeline StageDistribution: No data or not array:', stageData);
-      return [];
-    }
+    if (!stageData || !Array.isArray(stageData)) return [];
     
     // Data is already filtered on the backend, no need to filter closed stages
     const activeStageData = stageData;
-    console.log('Pipeline StageDistribution: Active stage data:', activeStageData);
 
     // Sort stages according to the defined order
     const sortedStageData = activeStageData.sort((a: any, b: any) => {
@@ -58,7 +54,7 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
     });
     
     // Format data for chart - always show count data
-    const formattedData = sortedStageData.map((item: any, index: number) => ({
+    return sortedStageData.map((item: any, index: number) => ({
       name: item.stage,
       count: item.count,
       value: item.value,
@@ -70,9 +66,6 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
         ? `$${(item.value / 1000).toFixed(0)}K`
         : `$${item.value}`
     }));
-    
-    console.log('Pipeline StageDistribution: Formatted chart data:', formattedData);
-    return formattedData;
   }, [stageData, stageOrder]);
 
   // Memoize tooltip formatting function (must be before early return)
@@ -172,14 +165,14 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
                 </table>
               </div>
             ) : (
-              <div ref={chartRef} className="relative">
-                <div style={{ width: '100%', height: '350px' }}>
+              <div ref={chartRef} className="flex flex-col h-full">
+                <div style={{ width: '100%', height: '280px' }}>
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
                         data={chartData}
                         cx="50%"
-                        cy="45%"
+                        cy="50%"
                         innerRadius={70}
                         outerRadius={140}
                         paddingAngle={2}
@@ -194,8 +187,8 @@ export default function StageDistributionChart({ filters }: StageDistributionCha
                   </ResponsiveContainer>
                 </div>
                 
-                {/* Custom Legend with uniform small dots */}
-                <div className="absolute bottom-4 left-0 right-0">
+                {/* Custom Legend with uniform small dots positioned at bottom */}
+                <div className="mt-auto pt-4">
                   <div className="flex flex-wrap justify-center gap-4">
                     {chartData.map((entry: any, index: number) => (
                       <div key={`legend-${index}`} className="flex items-center gap-2">
