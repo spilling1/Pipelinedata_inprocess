@@ -38,11 +38,7 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
   ], []);
 
   const chartData = useMemo(() => {
-    console.log('Sales Analytics Data:', analytics);
-    console.log('Stage Distribution:', analytics?.stageDistribution);
-    
     if (!analytics?.stageDistribution || !Array.isArray(analytics.stageDistribution)) {
-      console.log('No stage distribution data available');
       return [];
     }
     
@@ -65,7 +61,7 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
       }
     });
 
-    const result = sortedStageData.map((item: any, index: number) => ({
+    return sortedStageData.map((item: any, index: number) => ({
       name: item.stage,
       count: item.count,
       value: item.value,
@@ -77,12 +73,6 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
         ? `$${(item.value / 1000).toFixed(0)}K`
         : `$${item.value}`
     }));
-    
-    console.log('Final chart data:', result);
-    console.log('View mode:', viewMode);
-    console.log('Display mode:', displayMode);
-    
-    return result;
   }, [analytics?.stageDistribution, viewMode, stageOrder]);
 
   // No automatic fallback detection - let user choose display mode

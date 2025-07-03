@@ -123,6 +123,18 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
+✓ Sales Analytics Dashboard Complete with Beautiful Donut Chart (July 3, 2025)
+- Fixed Sales Pipeline Value chart with restored date filter dropdown and blue color consistency
+- Completely rebuilt Sales Stage Distribution chart as proper donut chart matching original design
+- Added Count/Value toggle functionality for data display modes
+- Added Chart/Table toggle for display format options
+- Implemented proper donut chart with inner/outer radius, legend, and color consistency
+- Fixed chart rendering issues by simplifying ResponsiveContainer and chart configuration
+- All components now have complete visual and functional parity with Pipeline Analytics
+- Account Rep filtering works across all charts and metrics
+- Verified data integrity: 4 stages (Discover: 10, Developing Champions: 11, ROI Analysis: 3, Negotiation: 1)
+- Maintained complete separation from original Pipeline Analytics codebase with sales-specific endpoints
+
 ✓ Sales Analytics Dashboard with Account Rep Filtering Implemented (July 3, 2025)
 - Built complete Sales Analytics dashboard as exact copy of Pipeline Analytics with separate codebase
 - Implemented comprehensive Account Rep filtering affecting every component on sales page
@@ -131,7 +143,6 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Backend filters all data through opportunities.owner field in PostgreSQL queries
 - Verified filtering works: All reps ($31.3M) vs Anthony Dimaggio ($11.7M)
 - Established pattern for extending to other filters: create filtered endpoints, filter-specific components
-- Maintained complete separation from original Pipeline Analytics codebase
 
 ✓ Simplified Marketing Analytics to Single Campaign Types Interface (July 3, 2025)
 - Completely removed Executive Summary, Campaign Influence, Target Accounts, Strategic Matrix, and Customer Journey tabs
