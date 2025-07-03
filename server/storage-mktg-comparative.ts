@@ -670,6 +670,114 @@ export class MarketingComparativeStorage {
     }
   }
 
+  /**
+   * Get qualifying opportunity IDs using the same 3-step logic as pipeline calculation
+   */
+  async getQualifyingOpportunityIds(campaignIds: number[]): Promise<number[]> {
+    try {
+      // Get all opportunities associated with these campaigns with first campaign touch date
+      const opportunityData = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          firstCampaignDate: sql<Date>`MIN(${campaigns.startDate})`.as('firstCampaignDate')
+        })
+        .from(campaignCustomers)
+        .innerJoin(campaigns, eq(campaignCustomers.campaignId, campaigns.id))
+        .where(inArray(campaignCustomers.campaignId, campaignIds))
+        .groupBy(campaignCustomers.opportunityId);
+
+      const opportunityIds = opportunityData.map(row => row.opportunityId);
+      
+      if (opportunityIds.length === 0) {
+        return [];
+      }
+
+      // Get most recent snapshots for these opportunities
+      const recentSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          enteredPipeline: snapshots.enteredPipeline,
+          closeDate: snapshots.closeDate,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(
+          and(
+            inArray(snapshots.opportunityId, opportunityIds),
+            sql`(${snapshots.opportunityId}, ${snapshots.snapshotDate}) IN (
+              SELECT ${snapshots.opportunityId}, MAX(${snapshots.snapshotDate})
+              FROM ${snapshots}
+              WHERE ${inArray(snapshots.opportunityId, opportunityIds)}
+              GROUP BY ${snapshots.opportunityId}
+            )`
+          )
+        );
+
+      // Apply three-step filtering criteria
+      const qualifyingIds: number[] = [];
+      const opportunityDateMap = new Map(
+        opportunityData.map(row => [row.opportunityId, row.firstCampaignDate])
+      );
+
+      for (const snapshot of recentSnapshots) {
+        const firstCampaignDate = opportunityDateMap.get(snapshot.opportunityId);
+        if (!firstCampaignDate) continue;
+
+        // Step 1: Already filtered (opportunity associated with campaign)
+        // Step 2: Has entered_pipeline date
+        if (!snapshot.enteredPipeline) continue;
+        
+        // Step 3: Close date > first campaign date (or no close date = still open)
+        if (snapshot.closeDate && snapshot.closeDate <= firstCampaignDate) continue;
+
+        // This opportunity qualifies
+        qualifyingIds.push(snapshot.opportunityId);
+      }
+
+      return qualifyingIds;
+      
+    } catch (error) {
+      console.error('❌ Error getting qualifying opportunity IDs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Count target accounts within the given opportunity IDs
+   */
+  async countTargetAccountsInOpportunities(opportunityIds: number[]): Promise<number> {
+    try {
+      if (opportunityIds.length === 0) {
+        return 0;
+      }
+
+      // Get most recent snapshots for these opportunities and count target accounts
+      const targetAccountCount = await db
+        .select({
+          count: sql<number>`COUNT(DISTINCT ${snapshots.opportunityId})`
+        })
+        .from(snapshots)
+        .where(
+          and(
+            inArray(snapshots.opportunityId, opportunityIds),
+            eq(snapshots.targetAccount, 1),
+            sql`(${snapshots.opportunityId}, ${snapshots.snapshotDate}) IN (
+              SELECT ${snapshots.opportunityId}, MAX(${snapshots.snapshotDate})
+              FROM ${snapshots}
+              WHERE ${inArray(snapshots.opportunityId, opportunityIds)}
+              GROUP BY ${snapshots.opportunityId}
+            )`
+          )
+        );
+
+      return targetAccountCount[0]?.count || 0;
+      
+    } catch (error) {
+      console.error('❌ Error counting target accounts:', error);
+      throw error;
+    }
+  }
+
   private calculateMatrixMetrics(data: any[]) {
     const customerCount = data.length;
     

@@ -266,20 +266,18 @@ router.get('/campaign-types', async (req, res) => {
       const { pipelineValue: totalPipelineValue, closedWonValue: totalClosedWonValue, uniqueOpportunities } = 
         await marketingComparativeStorage.calculateCampaignTypePipeline(campaignIds);
       
-      // For customer counts, still use the overlap factor approach for now
-      const rawTotalCustomers = campaigns.reduce((sum, c) => sum + c.metrics.totalCustomers, 0);
-      const rawTotalTargetCustomers = campaigns.reduce((sum, c) => sum + c.metrics.targetAccountCustomers, 0);
+      // Use the same logic as Total Pipeline calculation for customer counts
+      const totalCustomers = uniqueOpportunities; // Same 3-step filtering as pipeline
+      const totalOpenOpportunities = uniqueOpportunities;
       
-      // Based on actual data analysis, estimate ~33% customer overlap across campaigns
-      const customerOverlapFactor = 0.67; // Approximate unique customer ratio
-      const totalCustomers = Math.round(rawTotalCustomers * customerOverlapFactor);
-      const totalTargetCustomers = Math.round(rawTotalTargetCustomers * customerOverlapFactor);
+      // Calculate target customers from the qualifying opportunities using same logic
+      const qualifyingOpportunityIds = await marketingComparativeStorage.getQualifyingOpportunityIds(campaignIds);
+      const targetCustomerCount = await marketingComparativeStorage.countTargetAccountsInOpportunities(qualifyingOpportunityIds);
+      const totalTargetCustomers = targetCustomerCount;
       
       console.log(`📊 Campaign Type: ${type}`);
-      console.log(`   🔢 Raw Total Customers: ${rawTotalCustomers}`);
-      console.log(`   ⚖️ Overlap Factor: ${customerOverlapFactor}`);
-      console.log(`   ✅ Final Customer Count: ${totalCustomers}`);
-      const totalOpenOpportunities = uniqueOpportunities;
+      console.log(`   ✅ Qualifying Opportunities (Customer Count): ${totalCustomers}`);
+      console.log(`   🎯 Target Account Customers: ${totalTargetCustomers}`);
       
       // Calculate total attendees (no deduplication needed since it's per campaign)
       const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
