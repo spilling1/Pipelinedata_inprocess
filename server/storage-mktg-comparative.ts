@@ -688,9 +688,15 @@ export class MarketingComparativeStorage {
         .filter(s => s.stage === 'Closed Won')
         .reduce((sum, s) => sum + (s.year1Value || 0), 0);
 
+      // Calculate open pipeline value (exclude both Closed Won and Closed Lost)
+      const openPipelineValue = qualifyingSnapshots
+        .filter(s => s.stage !== 'Closed Won' && s.stage !== 'Closed Lost')
+        .reduce((sum, s) => sum + (s.year1Value || 0), 0);
+
       return {
         pipelineValue,
         closedWonValue,
+        openPipelineValue,
         uniqueOpportunities: uniqueQualifyingOpportunityIds.length // Use verified unique count
       };
 
