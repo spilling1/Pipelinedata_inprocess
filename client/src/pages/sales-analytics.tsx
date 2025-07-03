@@ -1,39 +1,47 @@
 import { useState } from "react";
-import SalesFilterPanel from "@/components/sales/SalesFilterPanel";
-import SalesMetricsCards from "@/components/sales/SalesMetricsCards";
-import SalesPipelineValueChart from "@/components/sales/SalesPipelineValueChart";
-import SalesStageDistributionChart from "@/components/sales/SalesStageDistributionChart";
-import SalesFiscalYearPipelineChart from "@/components/sales/SalesFiscalYearPipelineChart";
-import SalesOpportunitiesTable from "@/components/sales/SalesOpportunitiesTable";
-import SalesSankeyFlowChart from "@/components/sales/SalesSankeyFlowChart";
-import SalesStageTimingCard from "@/components/sales/SalesStageTimingCard";
-import SalesDuplicateOpportunitiesCard from "@/components/sales/SalesDuplicateOpportunitiesCard";
-import SalesDateSlippageCard from "@/components/sales/SalesDateSlippageCard";
-import SalesValueChangeCard from "@/components/sales/SalesValueChangeCard";
-import SalesClosingProbabilityCard from "@/components/sales/SalesClosingProbabilityCard";
-import SalesStageFunnelChart from "@/components/sales/SalesStageFunnelChart";
-import SalesWinRateCard from "@/components/sales/SalesWinRateCard";
-import SalesCloseRateCard from "@/components/sales/SalesCloseRateCard";
-import SalesLossReasonOverview from "@/components/sales/SalesLossReasonOverview";
-import SalesLossReasonByStage from "@/components/sales/SalesLossReasonByStage";
-import SalesRecentLossesTable from "@/components/sales/SalesRecentLossesTable";
+import FileUpload from "@/components/FileUpload";
+import FilterPanel from "@/components/FilterPanel";
+import MetricsCards from "@/components/MetricsCards";
+import PipelineValueChart from "@/components/PipelineValueChart";
+import StageDistributionChart from "@/components/StageDistributionChart";
+import FiscalYearPipelineChart from "@/components/FiscalYearPipelineChart";
+import OpportunitiesTable from "@/components/OpportunitiesTable";
+
+import SankeyFlowChart from "@/components/SankeyFlowChart";
+import StageTimingCard from "@/components/StageTimingCard";
+import DuplicateOpportunitiesCard from "@/components/DuplicateOpportunitiesCard";
+
+import DateSlippageCard from "@/components/DateSlippageCard";
+import ValueChangeCard from "@/components/ValueChangeCard";
+import ClosingProbabilityCard from "@/components/ClosingProbabilityCard";
+import StageFunnelChart from "@/components/StageFunnelChart";
+import WinRateCard from "@/components/WinRateCard";
+import CloseRateCard from "@/components/CloseRateCard";
+import ClosedWonFYCard from "@/components/ClosedWonFYCard";
+import WinRateOverTimeCard from "@/components/WinRateOverTimeCard";
+import { CloseRateOverTimeCard } from "@/components/CloseRateOverTimeCard";
+import { LossReasonOverview } from "@/components/LossReasonOverview";
+import { LossReasonByStage } from "@/components/LossReasonByStage";
+import RecentLossesTable from "@/components/RecentLossesTable";
 import { Button } from "@/components/ui/button";
-import { TrendingUp, Home, Database, Settings, Download } from "lucide-react";
-import { SalesFilterState } from "@/types/sales";
+import { TrendingUp, Upload, Download, Settings, Database, Home } from "lucide-react";
+import { FilterState } from "@/types/pipeline";
 import { Link } from "wouter";
 
 export default function SalesAnalytics() {
-  const [filters, setFilters] = useState<SalesFilterState>({
+  const [filters, setFilters] = useState<FilterState>({
     startDate: '',
     endDate: '',
-    salesRep: 'all', // Main filter for sales rep
     stages: [],
+    owner: 'all',
     minValue: '',
     maxValue: '',
     search: '',
     valueType: 'amount',
     clientName: 'all'
   });
+
+  const [showUpload, setShowUpload] = useState(false);
 
   return (
     <div className="min-h-screen bg-background">
@@ -43,10 +51,10 @@ export default function SalesAnalytics() {
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-3">
-                <div className="w-8 h-8 bg-green-600 rounded-lg flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5 text-white" />
+                <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-primary-foreground" />
                 </div>
-                <h1 className="text-xl font-semibold text-gray-900">Sales Analytics Dashboard</h1>
+                <h1 className="text-xl font-semibold text-gray-900">Sales Analytics</h1>
               </div>
             </div>
             <div className="flex items-center space-x-4">
@@ -54,12 +62,6 @@ export default function SalesAnalytics() {
                 <Button variant="outline" size="sm">
                   <Home className="w-4 h-4 mr-2" />
                   Back to Desktop
-                </Button>
-              </Link>
-              <Link href="/dashboard">
-                <Button variant="outline" size="sm">
-                  <TrendingUp className="w-4 h-4 mr-2" />
-                  Pipeline Analytics
                 </Button>
               </Link>
               <Link href="/database">
@@ -78,100 +80,84 @@ export default function SalesAnalytics() {
                 <Download className="w-4 h-4 mr-2" />
                 Export Data
               </Button>
+              <Button size="sm" onClick={() => setShowUpload(true)}>
+                <Upload className="w-4 h-4 mr-2" />
+                Upload Files
+              </Button>
             </div>
           </div>
         </div>
       </header>
-
-      {/* Sales Filter Panel - Collapsible sidebar */}
-      <SalesFilterPanel 
+      {/* Filter Panel - Now a collapsible sidebar */}
+      <FilterPanel 
         filters={filters} 
         onFiltersChange={setFilters}
+        onUploadClick={() => setShowUpload(true)}
       />
-
-      {/* Main Content Area */}
-      <div className="w-full px-4 sm:px-6 lg:px-8 py-8 pl-16"> {/* pl-16 accounts for collapsed sidebar */}
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
         <div className="space-y-6">
-          {/* Current Sales Rep Display */}
-          {filters.salesRep !== 'all' && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-600 rounded-full flex items-center justify-center">
-                    <span className="text-white font-semibold text-sm">
-                      {filters.salesRep.split(' ').map(n => n[0]).join('')}
-                    </span>
-                  </div>
-                  <div>
-                    <h2 className="text-lg font-semibold text-green-900">
-                      Sales Analytics for {filters.salesRep}
-                    </h2>
-                    <p className="text-sm text-green-700">
-                      All metrics and charts below are filtered for this sales representative
-                    </p>
-                  </div>
-                </div>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => setFilters(prev => ({ ...prev, salesRep: 'all' }))}
-                >
-                  View All Reps
-                </Button>
+            {/* Key Metrics Cards */}
+            <MetricsCards filters={filters} />
+
+            {/* Charts Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+              <PipelineValueChart filters={filters} />
+              <FiscalYearPipelineChart filters={filters} />
+              <StageDistributionChart filters={filters} />
+              <DuplicateOpportunitiesCard filters={filters} />
+            </div>
+
+            {/* Advanced Analytics Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
+              <StageTimingCard filters={filters} />
+              <DateSlippageCard filters={filters} />
+              <ValueChangeCard filters={filters} />
+              <ClosingProbabilityCard filters={filters} />
+              <ClosedWonFYCard filters={filters} />
+            </div>
+
+            {/* Loss Analysis Section */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <LossReasonOverview />
+              <div className="lg:col-span-2">
+                <LossReasonByStage />
+              </div>
+              <div className="lg:col-span-1">
+                <RecentLossesTable />
               </div>
             </div>
-          )}
 
-          {/* Key Metrics Cards */}
-          <SalesMetricsCards filters={filters} />
+            {/* Stage Flow Analysis - Full Width */}
+            <SankeyFlowChart filters={filters} />
 
-          {/* Charts Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-            <SalesPipelineValueChart filters={filters} />
-            <SalesFiscalYearPipelineChart filters={filters} />
-            <SalesStageDistributionChart filters={filters} />
-            <SalesDuplicateOpportunitiesCard filters={filters} />
-          </div>
-
-          {/* Advanced Analytics Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
-            <SalesStageTimingCard filters={filters} />
-            <SalesDateSlippageCard filters={filters} />
-            <SalesValueChangeCard filters={filters} />
-            <SalesClosingProbabilityCard filters={filters} />
-          </div>
-
-          {/* Loss Analysis Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            <SalesLossReasonOverview filters={filters} />
-            <div className="lg:col-span-2">
-              <SalesLossReasonByStage filters={filters} />
+            {/* Stage Progression Rates */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              <div className="lg:col-span-1">
+                <StageFunnelChart filters={filters} />
+              </div>
+              <div className="lg:col-span-1">
+                <WinRateCard filters={filters} />
+              </div>
+              <div className="lg:col-span-1">
+                <CloseRateCard filters={filters} />
+              </div>
             </div>
-            <div className="lg:col-span-1">
-              <SalesRecentLossesTable filters={filters} />
-            </div>
-          </div>
 
-          {/* Stage Flow Analysis - Full Width */}
-          <SalesSankeyFlowChart filters={filters} />
-
-          {/* Stage Progression Rates */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-1">
-              <SalesStageFunnelChart filters={filters} />
+            {/* Win Rate and Close Rate Over Time - Each 2/4 width */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              <div className="lg:col-span-2">
+                <WinRateOverTimeCard filters={filters} />
+              </div>
+              <div className="lg:col-span-2">
+                <CloseRateOverTimeCard />
+              </div>
             </div>
-            <div className="lg:col-span-1">
-              <SalesWinRateCard filters={filters} />
-            </div>
-            <div className="lg:col-span-1">
-              <SalesCloseRateCard filters={filters} />
-            </div>
-          </div>
-
-          {/* Detailed Opportunities Table */}
-          <SalesOpportunitiesTable filters={filters} />
         </div>
       </div>
+      {/* File Upload Modal */}
+      {showUpload && (
+        <FileUpload onClose={() => setShowUpload(false)} />
+      )}
     </div>
   );
 }

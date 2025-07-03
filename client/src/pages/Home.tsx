@@ -137,7 +137,7 @@ export default function Home() {
             )}
 
             {canAccessPage('sales') && (
-              <Link href="/sales">
+              <Link href="/sales-analytics">
                 <Card className="cursor-pointer hover:shadow-lg transition-shadow">
                   <CardHeader>
                     <TrendingUp className="h-8 w-8 text-green-600 mb-2" />
