@@ -45,7 +45,14 @@ export const useCampaignTypeData = (
     ? '/api/marketing/comparative/campaign-types-new-pipeline' 
     : '/api/marketing/comparative/campaign-types-stage-advance';
 
-  const { data: rawData, isLoading, error, refetch } = useQuery<CampaignTypeData[]>({
+  const { data: rawResponse, isLoading, error, refetch } = useQuery<{
+    campaignTypes: CampaignTypeData[];
+    metadata: {
+      totalUniqueCustomers: number;
+      timePeriod: string;
+      calculatedAt: string;
+    };
+  }>({
     queryKey: [queryKey, timePeriod],
     queryFn: async () => {
       const url = `${queryKey}?timePeriod=${timePeriod}`;
@@ -58,6 +65,10 @@ export const useCampaignTypeData = (
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
   });
+
+  // Extract data and metadata from response
+  const rawData = rawResponse?.campaignTypes;
+  const metadata = rawResponse?.metadata;
 
   const processedData = useMemo(() => {
     if (!rawData || rawData.length === 0) return null;
@@ -103,7 +114,8 @@ export const useCampaignTypeData = (
     const totalPipeline = normalizedData.reduce((sum, item) => sum + item.totalPipelineValue, 0);
     const totalClosedWon = normalizedData.reduce((sum, item) => sum + item.totalClosedWonValue, 0);
     const totalCampaigns = normalizedData.reduce((sum, item) => sum + item.totalCampaigns, 0);
-    const totalCustomers = normalizedData.reduce((sum, item) => sum + item.totalCustomers, 0);
+    // Use actual unique customers from metadata instead of summing campaign type counts
+    const totalCustomers = metadata?.totalUniqueCustomers || 0;
 
     // Calculate weighted averages
     const averageROI = totalInvestment > 0 ? (totalClosedWon / totalInvestment) * 100 : 0;

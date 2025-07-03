@@ -332,17 +332,32 @@ router.get('/campaign-types', async (req, res) => {
     // Sort by total pipeline value descending
     typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);
     
-    // Calculate and log the total customers across all campaign types for debugging
-    const totalCustomersAcrossAllTypes = typeAnalytics.reduce((sum, type) => sum + type.totalCustomers, 0);
-    console.log(`📊 TOTAL CUSTOMERS CALCULATION:`);
-    console.log(`   🔢 Sum across all campaign types: ${totalCustomersAcrossAllTypes}`);
-    console.log(`   📝 This is the "182 customers engaged" figure shown in Total Pipeline card`);
+    // Calculate ACTUAL unique customers across all campaign types (avoid double-counting)
+    const allCampaignIds = campaignData.map(c => c.campaignId);
+    const { uniqueOpportunities: actualUniqueCustomers } = 
+      await marketingComparativeStorage.calculateCampaignTypePipeline(allCampaignIds);
     
-    // Cache the result
-    campaignTypesCache = { data: typeAnalytics, timestamp: Date.now(), key: cacheKey };
+    // Log both the incorrect sum and the correct unique count for comparison
+    const summedCount = typeAnalytics.reduce((sum, type) => sum + type.totalCustomers, 0);
+    console.log(`📊 TOTAL CUSTOMERS CALCULATION:`);
+    console.log(`   ❌ Incorrect sum across campaign types: ${summedCount} (double-counts opportunities)`);
+    console.log(`   ✅ Actual unique customers across all campaigns: ${actualUniqueCustomers}`);
+    console.log(`   📝 Using ${actualUniqueCustomers} as the correct "customers engaged" figure`);
+    
+    // Cache the result with corrected metadata
+    const responseData = {
+      campaignTypes: typeAnalytics,
+      metadata: {
+        totalUniqueCustomers: actualUniqueCustomers,
+        timePeriod: timePeriod,
+        calculatedAt: new Date().toISOString()
+      }
+    };
+    
+    campaignTypesCache = { data: responseData, timestamp: Date.now(), key: cacheKey };
     console.log(`📈 API: Campaign type analytics completed and cached for ${timePeriod} - ${typeAnalytics.length} types`);
     
-    res.json(typeAnalytics);
+    res.json(responseData);
     
   } catch (error) {
     console.error('❌ API Error in /campaign-types:', error);
