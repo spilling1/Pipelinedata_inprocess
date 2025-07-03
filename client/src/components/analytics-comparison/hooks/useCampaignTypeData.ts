@@ -135,13 +135,15 @@ export const useCampaignTypeData = (
 
     // Calculate weighted averages
     const averageROI = totalInvestment > 0 ? (totalClosedWon / totalInvestment) * 100 : 0;
-    const averageWinRate = normalizedData.reduce((sum, item, index, arr) => 
-      sum + (item.averageWinRate / arr.length), 0
-    );
     
-    // Calculate Close Rate: Closed Won / (Closed Won + Closed Lost)
-    const averageCloseRate = (closedWonCustomers + closedLostCustomers) > 0 
+    // Calculate Win Rate: Closed Won / (Closed Won + Closed Lost)
+    const averageWinRate = (closedWonCustomers + closedLostCustomers) > 0 
       ? (closedWonCustomers / (closedWonCustomers + closedLostCustomers)) * 100 
+      : 0;
+    
+    // Calculate Close Rate: Closed Won / (Closed Won + Open Pipeline)
+    const averageCloseRate = (closedWonCustomers + openPipelineCustomers) > 0 
+      ? (closedWonCustomers / (closedWonCustomers + openPipelineCustomers)) * 100 
       : 0;
 
     // Find best/worst/most efficient

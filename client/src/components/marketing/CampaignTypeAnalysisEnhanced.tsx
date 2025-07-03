@@ -195,18 +195,24 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Close Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">Win Rate</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {formatPercentage(metrics.averageCloseRate)}
+                <div 
+                  className="text-2xl font-bold text-blue-600 cursor-help" 
+                  title={`Win Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost) = ${formatPercentage(metrics.averageWinRate)}`}
+                >
+                  {formatPercentage(metrics.averageWinRate)}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Closed Won / (Closed Won + Closed Lost)
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Win Rate: {formatPercentage(metrics.averageWinRate)}
+                <p 
+                  className="text-xs text-gray-500 mt-1 cursor-help"
+                  title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
+                >
+                  Close Rate: {formatPercentage(metrics.averageCloseRate)}
                 </p>
               </CardContent>
             </Card>
