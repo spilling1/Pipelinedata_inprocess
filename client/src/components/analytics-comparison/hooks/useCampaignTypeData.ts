@@ -141,9 +141,9 @@ export const useCampaignTypeData = (
       ? (closedWonCustomers / (closedWonCustomers + closedLostCustomers)) * 100 
       : 0;
     
-    // Calculate Close Rate: Closed Won / (Closed Won + Open Pipeline)
-    const averageCloseRate = (closedWonCustomers + openPipelineCustomers) > 0 
-      ? (closedWonCustomers / (closedWonCustomers + openPipelineCustomers)) * 100 
+    // Calculate Close Rate: Closed Won / (Closed Won + Closed Lost + Open Pipeline)
+    const averageCloseRate = (closedWonCustomers + closedLostCustomers + openPipelineCustomers) > 0 
+      ? (closedWonCustomers / (closedWonCustomers + closedLostCustomers + openPipelineCustomers)) * 100 
       : 0;
 
     // Find best/worst/most efficient
