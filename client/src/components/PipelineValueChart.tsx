@@ -1,14 +1,10 @@
-import { useState, useMemo, useCallback, useEffect, useRef } from "react";
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Calendar, CalendarDays } from "lucide-react";
 import { Line, LineChart, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { FilterState } from "@/types/pipeline";
+import { format, parseISO } from "date-fns";
 
 interface PipelineValueChartProps {
   filters: FilterState;
@@ -62,29 +58,6 @@ const getFiscalDateRange = (periodId: string) => {
         endDate: today.toISOString().split('T')[0]
       };
       
-    case 'monthtodate':
-      const monthStart = new Date(currentYear, currentMonth, 1);
-      return {
-        startDate: monthStart.toISOString().split('T')[0],
-        endDate: today.toISOString().split('T')[0]
-      };
-      
-    case 'fqtodate':
-      // Current fiscal quarter to date
-      const fiscalQuarter = Math.floor((currentMonth + 10) % 12 / 3) + 1; // Feb-Apr=Q1, May-Jul=Q2, etc.
-      let fqStartMonth;
-      if (fiscalQuarter === 1) fqStartMonth = 1; // Feb
-      else if (fiscalQuarter === 2) fqStartMonth = 4; // May  
-      else if (fiscalQuarter === 3) fqStartMonth = 7; // Aug
-      else fqStartMonth = 10; // Nov
-      
-      const fqStartYear = fqStartMonth <= currentMonth ? currentYear : currentYear - 1;
-      const fqStart = new Date(fqStartYear, fqStartMonth, 1);
-      return {
-        startDate: fqStart.toISOString().split('T')[0],
-        endDate: today.toISOString().split('T')[0]
-      };
-      
     case 'fytodate':
       // Current fiscal year to date (Feb 1 to today)
       const fyStart = new Date(currentFiscalYear, 1, 1); // Feb 1
@@ -93,62 +66,21 @@ const getFiscalDateRange = (periodId: string) => {
         endDate: today.toISOString().split('T')[0]
       };
       
-    case 'lastfq':
-      // Previous fiscal quarter
-      const prevFiscalQuarter = Math.floor((currentMonth + 10) % 12 / 3); // 0-3
-      let lastFqStartMonth, lastFqEndMonth;
-      if (prevFiscalQuarter === 0) { lastFqStartMonth = 10; lastFqEndMonth = 0; } // Nov-Jan
-      else if (prevFiscalQuarter === 1) { lastFqStartMonth = 1; lastFqEndMonth = 3; } // Feb-Apr
-      else if (prevFiscalQuarter === 2) { lastFqStartMonth = 4; lastFqEndMonth = 6; } // May-Jul
-      else { lastFqStartMonth = 7; lastFqEndMonth = 9; } // Aug-Oct
-      
-      const lastFqStartYear = lastFqStartMonth <= currentMonth ? currentYear - 1 : currentYear - 1;
-      const lastFqEndYear = lastFqEndMonth >= currentMonth ? currentYear : currentYear;
-      
-      const lastFqStart = new Date(lastFqStartYear, lastFqStartMonth, 1);
-      const lastFqEnd = new Date(lastFqEndYear, lastFqEndMonth + 1, 0); // Last day of month
-      return {
-        startDate: lastFqStart.toISOString().split('T')[0],
-        endDate: lastFqEnd.toISOString().split('T')[0]
-      };
-      
-    case 'lastfy':
-      // Previous fiscal year (Feb 1 - Jan 31)
-      const lastFyStart = new Date(currentFiscalYear - 1, 1, 1); // Feb 1 of last FY
-      const lastFyEnd = new Date(currentFiscalYear, 0, 31); // Jan 31 of current year
-      return {
-        startDate: lastFyStart.toISOString().split('T')[0],
-        endDate: lastFyEnd.toISOString().split('T')[0]
-      };
-      
     default:
-      // Default to FQ to date
-      return getFiscalDateRange('fqtodate');
+      // Default to FY to date
+      return getFiscalDateRange('fytodate');
   }
 };
 
 export default function PipelineValueChart({ filters }: PipelineValueChartProps) {
   const [selectedPeriod, setSelectedPeriod] = useState('fytodate');
-  const [customStartDate, setCustomStartDate] = useState('');
-  const [customEndDate, setCustomEndDate] = useState('');
-  const [showCustomPicker, setShowCustomPicker] = useState(false);
-  const [showFallback, setShowFallback] = useState(false);
-  const chartRef = useRef<HTMLDivElement>(null);
   
   // Create filters with the selected time period
   const getChartFilters = () => {
-    if (selectedPeriod === 'custom') {
-      return {
-        ...filters,
-        startDate: customStartDate,
-        endDate: customEndDate
-      };
-    } else {
-      return {
-        ...filters,
-        ...getFiscalDateRange(selectedPeriod)
-      };
-    }
+    return {
+      ...filters,
+      ...getFiscalDateRange(selectedPeriod)
+    };
   };
   
   const chartFilters = getChartFilters();
@@ -156,85 +88,9 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
   const { data: analytics, isLoading } = useQuery({
     queryKey: ['/api/analytics', chartFilters],
   });
-  
-  // Memoize expensive data processing (must be before early return)
-  const pipelineData = (analytics as any)?.pipelineValueByDate || [];
-  const chartData = useMemo(() => {
-    return pipelineData.map((item: any) => ({
-      date: new Date(item.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
-      dateTimestamp: new Date(item.date).getTime(),
-      value: item.value,
-      formattedValue: item.value >= 1000000 
-        ? `$${(item.value / 1000000).toFixed(1)}M`
-        : `$${(item.value / 1000).toFixed(0)}K`
-    }));
-  }, [pipelineData]);
-
-  // Detect if chart failed to render (common on Safari/Mac)
-  useEffect(() => {
-    if (chartData.length > 0 && !showFallback) {
-      const timer = setTimeout(() => {
-        if (chartRef.current && chartRef.current.children.length > 0) {
-          const svg = chartRef.current.querySelector('svg');
-          if (!svg || svg.children.length === 0) {
-            setShowFallback(true);
-          }
-        }
-      }, 2000); // Check after 2 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [chartData, showFallback]);
-
-  // Generate monthly ticks for time-based axis
-  const generateMonthlyTicks = useMemo(() => {
-    if (pipelineData.length === 0) return [];
-    
-    const dates = pipelineData.map((d: any) => new Date(d.date)).sort((a: Date, b: Date) => a.getTime() - b.getTime());
-    const startDate = dates[0];
-    const endDate = dates[dates.length - 1];
-    
-    const ticks = [];
-    const current = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
-    
-    while (current <= endDate) {
-      ticks.push(current.getTime());
-      current.setMonth(current.getMonth() + 1);
-    }
-    
-    return ticks;
-  }, [pipelineData]);
-
-  // Memoize tooltip formatting function (must be before early return)
-  const formatTooltipValue = useCallback((value: number) => {
-    if (value >= 1000000) {
-      return `$${(value / 1000000).toFixed(1)}M`;
-    } else if (value >= 1000) {
-      return `$${(value / 1000).toFixed(0)}K`;
-    } else {
-      return `$${value.toFixed(0)}`;
-    }
-  }, []);
-
-  // Format date for Mon-YY display
-  const formatDate = useCallback((dateStr: string) => {
-    const date = new Date(dateStr);
-    const month = date.toLocaleDateString('en-US', { month: 'short' });
-    const year = date.getFullYear().toString().slice(-2);
-    return `${month}-${year}`;
-  }, []);
 
   const handlePeriodChange = (value: string) => {
     setSelectedPeriod(value);
-    if (value === 'custom') {
-      setShowCustomPicker(true);
-    } else {
-      setShowCustomPicker(false);
-    }
-  };
-  
-  const applyCustomDates = () => {
-    setShowCustomPicker(false);
   };
 
   if (isLoading) {
@@ -253,6 +109,25 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
     );
   }
 
+  const pipelineData = (analytics as any)?.pipelineValueByDate || [];
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}K`;
+    } else {
+      return `$${value.toLocaleString()}`;
+    }
+  };
+
+  // Transform data for the chart
+  const chartData = pipelineData.map((item: any) => ({
+    value: item.value,
+    date: typeof item.date === 'string' ? item.date : item.date.toISOString().split('T')[0],
+    formattedDate: format(parseISO(typeof item.date === 'string' ? item.date : item.date.toISOString().split('T')[0]), 'MMM dd')
+  }));
+
   return (
     <Card>
       <CardHeader>
@@ -268,145 +143,40 @@ export default function PipelineValueChart({ filters }: PipelineValueChartProps)
                 <SelectItem value="last3months">Last 3 Months</SelectItem>
                 <SelectItem value="last6months">Last 6 Months</SelectItem>
                 <SelectItem value="last12months">Last 12 Months</SelectItem>
-                <SelectItem value="monthtodate">Month to Date</SelectItem>
-                <SelectItem value="fqtodate">FQ to Date</SelectItem>
                 <SelectItem value="fytodate">FY to Date</SelectItem>
-                <SelectItem value="lastfq">Last FQ</SelectItem>
-                <SelectItem value="lastfy">Last FY</SelectItem>
-                <SelectItem value="custom">Custom</SelectItem>
               </SelectContent>
             </Select>
-            
-            {selectedPeriod === 'custom' && (
-              <Popover open={showCustomPicker} onOpenChange={setShowCustomPicker}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <CalendarDays className="w-4 h-4" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-80" align="end">
-                  <div className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="start-date">Start Date</Label>
-                      <Input
-                        id="start-date"
-                        type="date"
-                        value={customStartDate}
-                        onChange={(e) => setCustomStartDate(e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="end-date">End Date</Label>
-                      <Input
-                        id="end-date"
-                        type="date"
-                        value={customEndDate}
-                        onChange={(e) => setCustomEndDate(e.target.value)}
-                      />
-                    </div>
-                    <Button onClick={applyCustomDates} className="w-full">
-                      Apply Dates
-                    </Button>
-                  </div>
-                </PopoverContent>
-              </Popover>
-            )}
           </div>
         </div>
       </CardHeader>
       <CardContent>
-        <div className="h-64" style={{ width: '100%', height: '256px' }}>
-          {chartData.length > 0 ? (
-            showFallback ? (
-              // Fallback table view for when charts don't render (common on Safari/Mac)
-              <div className="h-full overflow-auto">
-                <table className="w-full border-collapse">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-2">Date</th>
-                      <th className="text-right p-2">Pipeline Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {chartData.slice(-10).map((item, index) => (
-                      <tr key={`row-${index}`} className="border-b">
-                        <td className="p-2">{item.date}</td>
-                        <td className="text-right p-2">{item.formattedValue}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                <div className="mt-4 text-sm text-gray-500 text-center">
-                  Chart view not available - showing table format (last 10 entries)
-                </div>
-              </div>
-            ) : (
-              <div ref={chartRef}>
-                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={200}>
-                  <LineChart data={chartData} width={600} height={256}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                    <XAxis 
-                      dataKey="dateTimestamp"
-                      type="number"
-                      scale="time"
-                      domain={['dataMin', 'dataMax']}
-                      ticks={generateMonthlyTicks}
-                      tickFormatter={(timestamp) => formatDate(new Date(timestamp).toISOString())}
-                      stroke="#666"
-                      fontSize={12}
-                    />
-                    <YAxis 
-                      stroke="#666"
-                      fontSize={12}
-                      tickFormatter={(value) => {
-                        if (value >= 1000000) {
-                          return `$${(value / 1000000).toFixed(1)}M`;
-                        } else if (value >= 1000) {
-                          return `$${(value / 1000).toFixed(0)}K`;
-                        } else {
-                          return `$${value}`;
-                        }
-                      }}
-                    />
-                    <Tooltip 
-                      formatter={(value: number) => [formatTooltipValue(value), "Pipeline Value"]}
-                      labelFormatter={(timestamp: number) => {
-                        return new Date(timestamp).toLocaleDateString('en-US', { 
-                          year: 'numeric',
-                          month: 'short', 
-                          day: 'numeric',
-                          timeZone: 'UTC'
-                        });
-                      }}
-                      labelStyle={{ color: '#666' }}
-                      contentStyle={{ 
-                        backgroundColor: 'white', 
-                        border: '1px solid #ccc', 
-                        borderRadius: '6px' 
-                      }}
-                    />
-                    <Line 
-                      type="monotone" 
-                      dataKey="value" 
-                      stroke="hsl(var(--primary))" 
-                      strokeWidth={3}
-                      dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
-                      activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
-                      animationBegin={0}
-                      animationDuration={800}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            )
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-500">
-              <div className="text-center">
-                <p className="text-lg font-medium mb-2">No data available</p>
-                <p className="text-sm">Upload pipeline files to see trends</p>
-              </div>
-            </div>
-          )}
+        <div className="h-64">
+          <ResponsiveContainer width="100%" height="100%">
+            <LineChart data={chartData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+              <XAxis 
+                dataKey="formattedDate" 
+                tick={{ fontSize: 12 }}
+                interval="preserveStartEnd"
+              />
+              <YAxis 
+                tick={{ fontSize: 12 }}
+                tickFormatter={formatCurrency}
+              />
+              <Tooltip 
+                formatter={(value: number) => [formatCurrency(value), 'Pipeline Value']}
+                labelFormatter={(label) => `Date: ${label}`}
+              />
+              <Line 
+                type="monotone" 
+                dataKey="value" 
+                stroke="hsl(var(--primary))" 
+                strokeWidth={3}
+                dot={{ fill: "hsl(var(--primary))", strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6, stroke: "hsl(var(--primary))", strokeWidth: 2 }}
+              />
+            </LineChart>
+          </ResponsiveContainer>
         </div>
       </CardContent>
     </Card>
