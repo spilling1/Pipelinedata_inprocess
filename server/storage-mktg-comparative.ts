@@ -844,6 +844,182 @@ export class MarketingComparativeStorage {
   }
 
   /**
+   * Calculate campaign type pipeline with 30-day stage advance filtering
+   * Only includes opportunities that had stage movement within 30 days of their first campaign date
+   */
+  async calculateCampaignTypeStageAdvance(campaignIds: number[]): Promise<{ pipelineValue: number; closedWonValue: number; openPipelineValue: number; openPipelineCustomers: number; closedWonCustomers: number; closedLostCustomers: number; uniqueOpportunities: number }> {
+    try {
+      // Step 1: Find all UNIQUE opportunity_id values from campaign_customers table for this campaign group
+      const associatedOpportunities = await db
+        .selectDistinct({ opportunityId: campaignCustomers.opportunityId })
+        .from(campaignCustomers)
+        .where(inArray(campaignCustomers.campaignId, campaignIds));
+
+      const uniqueOpportunityIds = associatedOpportunities.map(row => row.opportunityId);
+      
+      if (uniqueOpportunityIds.length === 0) {
+        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, closedLostCustomers: 0, uniqueOpportunities: 0 };
+      }
+
+      console.log(`📈 Stage Advance Step 1: Found ${uniqueOpportunityIds.length} unique opportunity_id values`);
+
+      // Step 2: Get snapshots for these opportunities to analyze stage movement
+      const allSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          enteredPipeline: snapshots.enteredPipeline,
+          closeDate: snapshots.closeDate,
+          stage: snapshots.stage,
+          year1Value: snapshots.year1Value,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(inArray(snapshots.opportunityId, uniqueOpportunityIds))
+        .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
+
+      console.log(`📈 Stage Advance Step 2: Found ${allSnapshots.length} total snapshots for analysis`);
+
+      // Step 3: Get the first campaign date for each opportunity
+      const opportunityFirstCampaignDates = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          firstCampaignDate: sql`MIN(${campaigns.startDate})`.as('firstCampaignDate')
+        })
+        .from(campaignCustomers)
+        .innerJoin(campaigns, eq(campaigns.id, campaignCustomers.campaignId))
+        .where(
+          and(
+            inArray(campaignCustomers.campaignId, campaignIds),
+            inArray(campaignCustomers.opportunityId, uniqueOpportunityIds)
+          )
+        )
+        .groupBy(campaignCustomers.opportunityId);
+
+      const opportunityDateMap = new Map(
+        opportunityFirstCampaignDates.map(row => [row.opportunityId, new Date(row.firstCampaignDate as string)])
+      );
+
+      // Group snapshots by opportunity and analyze stage movement
+      const opportunitySnapshots = new Map<number, typeof allSnapshots>();
+      allSnapshots.forEach(snapshot => {
+        if (!snapshot.opportunityId) return; // Skip null opportunity IDs
+        const oppId = snapshot.opportunityId;
+        if (!opportunitySnapshots.has(oppId)) {
+          opportunitySnapshots.set(oppId, []);
+        }
+        opportunitySnapshots.get(oppId)!.push(snapshot);
+      });
+
+      const qualifyingOpportunities = new Set<number>();
+
+      // Analyze each opportunity for stage advancement within 30 days
+      for (const [opportunityId, snapshots] of opportunitySnapshots) {
+        const firstCampaignDate = opportunityDateMap.get(opportunityId);
+        if (!firstCampaignDate) continue;
+
+        // Must have entered pipeline
+        const hasEnteredPipeline = snapshots.some(s => s.enteredPipeline);
+        if (!hasEnteredPipeline) continue;
+
+        // Look for stage progression within 30 days of campaign start
+        let hadStageAdvancement = false;
+        
+        for (let i = 1; i < snapshots.length; i++) {
+          const prevSnapshot = snapshots[i - 1];
+          const currentSnapshot = snapshots[i];
+          
+          // Check if this stage change happened within 30 days of campaign
+          const snapshotDate = new Date(currentSnapshot.snapshotDate);
+          const daysDifference = Math.abs((snapshotDate.getTime() - firstCampaignDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDifference <= 30) {
+            // Define stage progression (simplified - could be more sophisticated)
+            const stageProgression = [
+              'Validation', 'Introduction', 'Concept', 'Proposal', 'Negotiation', 'Closed Won'
+            ];
+            
+            const prevStage = prevSnapshot.stage || '';
+            const currentStage = currentSnapshot.stage || '';
+            const prevStageIndex = stageProgression.indexOf(prevStage);
+            const currentStageIndex = stageProgression.indexOf(currentStage);
+            
+            // Check for positive stage movement
+            if (currentStageIndex > prevStageIndex && currentStageIndex !== -1 && prevStageIndex !== -1) {
+              hadStageAdvancement = true;
+              console.log(`📈 Stage advancement found for ${opportunityId}: ${prevSnapshot.stage} → ${currentSnapshot.stage} (${daysDifference} days from campaign)`);
+              break;
+            }
+          }
+        }
+
+        if (hadStageAdvancement) {
+          qualifyingOpportunities.add(opportunityId);
+        }
+      }
+
+      console.log(`📈 Stage Advance Step 3: ${qualifyingOpportunities.size} qualifying opportunities after 30-day stage advance filtering`);
+
+      // Get most recent snapshots for qualifying opportunities
+      const qualifyingOpportunityIds = Array.from(qualifyingOpportunities);
+      
+      if (qualifyingOpportunityIds.length === 0) {
+        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, closedLostCustomers: 0, uniqueOpportunities: 0 };
+      }
+
+      const recentSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          enteredPipeline: snapshots.enteredPipeline,
+          closeDate: snapshots.closeDate,
+          stage: snapshots.stage,
+          year1Value: snapshots.year1Value,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(
+          and(
+            inArray(snapshots.opportunityId, qualifyingOpportunityIds),
+            sql`(${snapshots.opportunityId}, ${snapshots.snapshotDate}) IN (
+              SELECT ${snapshots.opportunityId}, MAX(${snapshots.snapshotDate})
+              FROM ${snapshots}
+              WHERE ${inArray(snapshots.opportunityId, qualifyingOpportunityIds)}
+              GROUP BY ${snapshots.opportunityId}
+            )`
+          )
+        );
+
+      // Calculate metrics using most recent snapshots for qualifying opportunities
+      const pipelineValue = recentSnapshots
+        .reduce((sum, s) => sum + (s.year1Value || 0), 0);
+
+      const closedWonValue = recentSnapshots
+        .filter(s => s.stage === 'Closed Won')
+        .reduce((sum, s) => sum + (s.year1Value || 0), 0);
+
+      const openPipelineSnapshots = recentSnapshots.filter(s => s.stage !== 'Closed Won' && s.stage !== 'Closed Lost');
+      const openPipelineValue = openPipelineSnapshots.reduce((sum, s) => sum + (s.year1Value || 0), 0);
+      const openPipelineCustomers = openPipelineSnapshots.length;
+
+      const closedWonCustomers = recentSnapshots.filter(s => s.stage === 'Closed Won').length;
+      const closedLostCustomers = recentSnapshots.filter(s => s.stage === 'Closed Lost').length;
+
+      return {
+        pipelineValue,
+        closedWonValue,
+        openPipelineValue,
+        openPipelineCustomers,
+        closedWonCustomers,
+        closedLostCustomers,
+        uniqueOpportunities: qualifyingOpportunityIds.length
+      };
+
+    } catch (error) {
+      console.error('❌ Error in calculateCampaignTypeStageAdvance:', error);
+      return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, closedLostCustomers: 0, uniqueOpportunities: 0 };
+    }
+  }
+
+  /**
    * Get qualifying opportunity IDs using the same 3-step logic as pipeline calculation
    */
   async getQualifyingOpportunityIds(campaignIds: number[]): Promise<number[]> {

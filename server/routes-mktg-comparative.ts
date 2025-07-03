@@ -517,11 +517,102 @@ router.get('/campaign-types-stage-advance', async (req, res) => {
 
     console.log('📈 API: Fetching stage advance (30d) campaign type analytics...');
     
-    const campaignTypes = await marketingComparativeStorage.getCampaignTypeStageAdvanceAnalysis();
+    // Get campaign data and apply 30-day stage advance filtering
+    let campaignData = await marketingComparativeStorage.getCampaignComparisonData();
+    
+    // Apply time filtering based on fiscal year periods (Feb 1 - Jan 31)
+    campaignData = filterCampaignsByTimePeriod(campaignData, 'fy-to-date');
+    
+    // Group campaigns by type
+    const typeGroups = campaignData.reduce((groups, campaign) => {
+      const type = campaign.campaignType;
+      if (!groups[type]) {
+        groups[type] = [];
+      }
+      groups[type].push(campaign);
+      return groups;
+    }, {} as Record<string, typeof campaignData>);
+    
+    // Calculate aggregated metrics for each type using 30-day stage advance logic
+    const typeAnalytics = await Promise.all(Object.entries(typeGroups).map(async ([type, campaigns]) => {
+      const totalCampaigns = campaigns.length;
+      const totalCost = campaigns.reduce((sum, c) => sum + c.cost, 0);
+      const campaignIds = campaigns.map(c => c.campaignId);
+      
+      // Use stage advance calculation that filters by 30-day stage movement window
+      const { pipelineValue: totalPipelineValue, closedWonValue: totalClosedWonValue, openPipelineCustomers, uniqueOpportunities } = 
+        await marketingComparativeStorage.calculateCampaignTypeStageAdvance(campaignIds);
+      
+      const totalCustomers = uniqueOpportunities; 
+      const totalOpenOpportunities = openPipelineCustomers;
+      
+      // Calculate target customers - but use regular method to get original opportunity IDs for campaigns that might not have 30-day stage advance
+      let totalTargetCustomers = 0;
+      if (totalCustomers > 0) {
+        // If we have stage advance customers, count target accounts among them
+        const qualifyingOpportunityIds = await marketingComparativeStorage.getQualifyingOpportunityIds(campaignIds);
+        const targetCustomerCount = await marketingComparativeStorage.countTargetAccountsInOpportunities(qualifyingOpportunityIds);
+        totalTargetCustomers = targetCustomerCount;
+      }
+      
+      // Calculate averages from individual campaign metrics
+      const totalAttendees = campaigns.reduce((sum, c) => sum + c.metrics.totalAttendees, 0);
+      const avgWinRate = totalCampaigns > 0 ? campaigns.reduce((sum, c) => sum + c.metrics.winRate, 0) / totalCampaigns : 0;
+      
+      // Calculate ROI and efficiency
+      const aggregateROI = totalCost > 0 ? (totalClosedWonValue / totalCost) * 100 : 0;
+      const costEfficiency = totalCost > 0 ? totalPipelineValue / totalCost : 0;
+      const attendeeEfficiency = totalAttendees > 0 ? totalPipelineValue / totalAttendees : 0;
+      const targetAccountPercentage = totalCustomers > 0 ? (totalTargetCustomers / totalCustomers) * 100 : 0;
+      
+      return {
+        campaignType: type,
+        totalCampaigns,
+        totalCost,
+        totalCustomers,
+        totalTargetCustomers,
+        targetAccountPercentage,
+        totalPipelineValue,
+        totalClosedWonValue,
+        totalOpenOpportunities,
+        totalAttendees,
+        averageWinRate: avgWinRate,
+        averageROI: aggregateROI,
+        averageTargetAccountWinRate: 0,
+        costEfficiency,
+        attendeeEfficiency,
+        averageCostPerCampaign: totalCampaigns > 0 ? totalCost / totalCampaigns : 0,
+        averageCustomersPerCampaign: totalCampaigns > 0 ? totalCustomers / totalCampaigns : 0,
+        averageAttendeesPerCampaign: totalCampaigns > 0 ? totalAttendees / totalCampaigns : 0
+      };
+    }));
+    
+    // Sort by total pipeline value descending
+    typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);
+    
+    // Calculate totals across all campaign types
+    const allCampaignIds = campaignData.map(c => c.campaignId);
+    const { uniqueOpportunities: actualUniqueCustomers, pipelineValue: actualTotalPipeline, closedWonValue: actualTotalClosedWon, openPipelineValue: actualOpenPipeline, openPipelineCustomers: actualOpenCustomers, closedWonCustomers: actualClosedWonCustomers, closedLostCustomers: actualClosedLostCustomers } = 
+      await marketingComparativeStorage.calculateCampaignTypeStageAdvance(allCampaignIds);
+    
+    const campaignTypes = {
+      campaignTypes: typeAnalytics,
+      metadata: {
+        totalUniqueCustomers: actualUniqueCustomers,
+        totalPipelineValue: actualTotalPipeline,
+        totalClosedWonValue: actualTotalClosedWon,
+        openPipelineValue: actualOpenPipeline,
+        openPipelineCustomers: actualOpenCustomers,
+        closedWonCustomers: actualClosedWonCustomers,
+        closedLostCustomers: actualClosedLostCustomers,
+        timePeriod: 'fy-to-date',
+        calculatedAt: new Date().toISOString()
+      }
+    };
     
     // Cache the result
     stageAdvanceCache = { data: campaignTypes, timestamp: Date.now() };
-    console.log(`📈 API: Stage advance analytics completed and cached - ${campaignTypes.length} types`);
+    console.log(`📈 API: Stage advance analytics completed and cached - ${typeAnalytics.length} types`);
     
     res.json(campaignTypes);
     
