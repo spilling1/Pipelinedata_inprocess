@@ -102,10 +102,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight">Campaign Type Performance</h2>
-          <p className="text-muted-foreground">
-            Comprehensive analysis of campaign effectiveness by type with budget optimization insights
-          </p>
+
         </div>
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
