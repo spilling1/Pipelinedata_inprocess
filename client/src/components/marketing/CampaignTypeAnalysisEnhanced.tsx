@@ -27,6 +27,18 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
     isEmpty 
   } = useCampaignTypeData('influenced', timePeriod);
 
+  // For New Pipeline tab, we need specialized data that filters by 30-day window
+  const { 
+    data: newPipelineData, 
+    metrics: newPipelineMetrics,
+    isLoading: newPipelineLoading
+  } = useCampaignTypeData(activeView === 'new-pipeline' ? 'new-pipeline' : 'influenced', timePeriod);
+
+  // Use the appropriate data and metrics based on active view
+  const currentData = activeView === 'new-pipeline' ? newPipelineData : data;
+  const currentMetrics = activeView === 'new-pipeline' ? newPipelineMetrics : metrics;
+  const currentLoading = activeView === 'new-pipeline' ? newPipelineLoading : isLoading;
+
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
@@ -35,7 +47,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
   const formatPercentage = (value: number) => `${value.toFixed(1)}%`;
 
-  if (isLoading) {
+  if (currentLoading) {
     return (
       <div className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -73,7 +85,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
     );
   }
 
-  if (isEmpty || !metrics) {
+  if (isEmpty || !currentMetrics) {
     return (
       <Card>
         <CardContent className="p-6">
@@ -112,7 +124,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
             </Select>
           </div>
           <Badge variant="secondary" className="px-3 py-1">
-            {data.length} Types
+            {currentData.length} Types
           </Badge>
         </div>
       </div>
@@ -143,9 +155,9 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(metrics.totalInvestment)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(currentMetrics.totalInvestment)}</div>
                 <p className="text-xs text-muted-foreground">
-                  Across {metrics.totalCampaigns} campaigns
+                  Across {currentMetrics.totalCampaigns} campaigns
                 </p>
               </CardContent>
             </Card>
@@ -156,9 +168,9 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(currentMetrics.totalPipeline)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.totalCustomers} opportunities influenced
+                  {currentMetrics.totalCustomers} opportunities influenced
                 </p>
               </CardContent>
             </Card>
@@ -170,10 +182,10 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(metrics.totalClosedWon)}
+                  {formatCurrency(currentMetrics.totalClosedWon)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.closedWonCustomers} customers closed
+                  {currentMetrics.closedWonCustomers} customers closed
                 </p>
               </CardContent>
             </Card>
@@ -185,10 +197,10 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(metrics.openPipeline)}
+                  {formatCurrency(currentMetrics.openPipeline)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.openPipelineCustomers} customers open
+                  {currentMetrics.openPipelineCustomers} customers open
                 </p>
               </CardContent>
             </Card>
@@ -201,25 +213,25 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               <CardContent>
                 <div 
                   className="text-2xl font-bold text-blue-600 cursor-help" 
-                  title={`Win Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost) = ${formatPercentage(metrics.averageWinRate)}`}
+                  title={`Win Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost) = ${formatPercentage(currentMetrics.averageWinRate)}`}
                 >
-                  {formatPercentage(metrics.averageWinRate)}
+                  {formatPercentage(currentMetrics.averageWinRate)}
                 </div>
                 <p 
                   className="text-xs text-gray-500 mt-1 cursor-help"
-                  title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
+                  title={`Close Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost + ${currentMetrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(currentMetrics.averageCloseRate)}`}
                 >
-                  Close Rate: {formatPercentage(metrics.averageCloseRate)}
+                  Close Rate: {formatPercentage(currentMetrics.averageCloseRate)}
                 </p>
               </CardContent>
             </Card>
           </div>
 
           {/* ROI Bar Chart */}
-          <CampaignTypeROIBarchart data={data} />
+          <CampaignTypeROIBarchart data={currentData} />
 
           {/* Performance Table */}
-          <CampaignTypePerformanceTable data={data} />
+          <CampaignTypePerformanceTable data={currentData} />
 
 
         </TabsContent>
@@ -246,9 +258,9 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(currentMetrics.totalPipeline)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.totalCustomers} opportunities influenced
+                  {currentMetrics.totalCustomers} opportunities influenced
                 </p>
               </CardContent>
             </Card>
@@ -260,10 +272,10 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(metrics.totalClosedWon)}
+                  {formatCurrency(currentMetrics.totalClosedWon)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.closedWonCustomers} customers closed
+                  {currentMetrics.closedWonCustomers} customers closed
                 </p>
               </CardContent>
             </Card>
@@ -275,10 +287,10 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(metrics.openPipeline)}
+                  {formatCurrency(currentMetrics.openPipeline)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.openPipelineCustomers} customers open
+                  {currentMetrics.openPipelineCustomers} customers open
                 </p>
               </CardContent>
             </Card>
@@ -291,25 +303,25 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               <CardContent>
                 <div 
                   className="text-2xl font-bold text-blue-600 cursor-help" 
-                  title={`Win Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost) = ${formatPercentage(metrics.averageWinRate)}`}
+                  title={`Win Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost) = ${formatPercentage(currentMetrics.averageWinRate)}`}
                 >
-                  {formatPercentage(metrics.averageWinRate)}
+                  {formatPercentage(currentMetrics.averageWinRate)}
                 </div>
                 <p 
                   className="text-xs text-gray-500 mt-1 cursor-help"
-                  title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
+                  title={`Close Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost + ${currentMetrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(currentMetrics.averageCloseRate)}`}
                 >
-                  Close Rate: {formatPercentage(metrics.averageCloseRate)}
+                  Close Rate: {formatPercentage(currentMetrics.averageCloseRate)}
                 </p>
               </CardContent>
             </Card>
           </div>
 
           {/* New Pipeline ROI Chart */}
-          <CampaignTypeROIBarchart data={data} />
+          <CampaignTypeROIBarchart data={currentData} />
 
           {/* New Pipeline Performance Table */}
-          <CampaignTypePerformanceTable data={data} />
+          <CampaignTypePerformanceTable data={currentData} />
         </TabsContent>
 
         <TabsContent value="stage-advance" className="space-y-6">
@@ -334,9 +346,9 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
                 <Target className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{formatCurrency(metrics.totalPipeline)}</div>
+                <div className="text-2xl font-bold">{formatCurrency(currentMetrics.totalPipeline)}</div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.totalCustomers} opportunities influenced
+                  {currentMetrics.totalCustomers} opportunities influenced
                 </p>
               </CardContent>
             </Card>
@@ -348,10 +360,10 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-green-600">
-                  {formatCurrency(metrics.totalClosedWon)}
+                  {formatCurrency(currentMetrics.totalClosedWon)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.closedWonCustomers} customers closed
+                  {currentMetrics.closedWonCustomers} customers closed
                 </p>
               </CardContent>
             </Card>
@@ -363,10 +375,10 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(metrics.openPipeline)}
+                  {formatCurrency(currentMetrics.openPipeline)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  {metrics.openPipelineCustomers} customers open
+                  {currentMetrics.openPipelineCustomers} customers open
                 </p>
               </CardContent>
             </Card>
@@ -379,25 +391,25 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
               <CardContent>
                 <div 
                   className="text-2xl font-bold text-blue-600 cursor-help" 
-                  title={`Win Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost) = ${formatPercentage(metrics.averageWinRate)}`}
+                  title={`Win Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost) = ${formatPercentage(currentMetrics.averageWinRate)}`}
                 >
-                  {formatPercentage(metrics.averageWinRate)}
+                  {formatPercentage(currentMetrics.averageWinRate)}
                 </div>
                 <p 
                   className="text-xs text-gray-500 mt-1 cursor-help"
-                  title={`Close Rate Calculation: ${metrics.closedWonCustomers} Closed Won / (${metrics.closedWonCustomers} Closed Won + ${metrics.closedLostCustomers} Closed Lost + ${metrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(metrics.averageCloseRate)}`}
+                  title={`Close Rate Calculation: ${currentMetrics.closedWonCustomers} Closed Won / (${currentMetrics.closedWonCustomers} Closed Won + ${currentMetrics.closedLostCustomers} Closed Lost + ${currentMetrics.openPipelineCustomers} Open Pipeline) = ${formatPercentage(currentMetrics.averageCloseRate)}`}
                 >
-                  Close Rate: {formatPercentage(metrics.averageCloseRate)}
+                  Close Rate: {formatPercentage(currentMetrics.averageCloseRate)}
                 </p>
               </CardContent>
             </Card>
           </div>
 
           {/* Stage Advance ROI Chart */}
-          <CampaignTypeROIBarchart data={data} />
+          <CampaignTypeROIBarchart data={currentData} />
 
           {/* Stage Advance Performance Table */}
-          <CampaignTypePerformanceTable data={data} />
+          <CampaignTypePerformanceTable data={currentData} />
         </TabsContent>
       </Tabs>
     </div>
