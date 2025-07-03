@@ -662,6 +662,44 @@ router.get('/stage-advance-details/:campaignType', async (req, res) => {
 });
 
 /**
+ * Get all stage advances for debugging (no 30-day limit)
+ */
+router.get('/stage-advance-details-all/:campaignType', async (req, res) => {
+  try {
+    const { campaignType } = req.params;
+    console.log(`📈 API: Fetching ALL stage advance details for ${campaignType}...`);
+    
+    // Get campaign data and filter by type and time period
+    let campaignData = await marketingComparativeStorage.getCampaignComparisonData();
+    campaignData = filterCampaignsByTimePeriod(campaignData, 'fy-to-date');
+    
+    // Filter campaigns by the requested type
+    const typeCampaigns = campaignData.filter(c => c.campaignType === campaignType);
+    const campaignIds = typeCampaigns.map(c => c.campaignId);
+    
+    if (campaignIds.length === 0) {
+      return res.json([]);
+    }
+    
+    // Modified version that shows ALL stage advances (for debugging)
+    const results = await marketingComparativeStorage.db
+      .selectDistinct({ opportunityId: marketingComparativeStorage.db.select().from(marketingComparativeStorage.db.schema.campaignCustomers).where(inArray(marketingComparativeStorage.db.schema.campaignCustomers.campaignId, campaignIds)) })
+      .from(marketingComparativeStorage.db.schema.campaignCustomers)
+      .where(inArray(marketingComparativeStorage.db.schema.campaignCustomers.campaignId, campaignIds));
+    
+    console.log(`📈 Found ${results.length} opportunities for ${campaignType}, checking for any stage changes...`);
+    res.json({ debugInfo: `Found ${results.length} opportunities for analysis` });
+    
+  } catch (error) {
+    console.error('❌ API Error in /stage-advance-details-all:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch all stage advance details', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+
+/**
  * Get summary dashboard data
  * High-level overview combining all comparative analytics
  */

@@ -1151,6 +1151,38 @@ export class MarketingComparativeStorage {
         }
       }
 
+      console.log(`📈 Stage Advance Debug Summary:`);
+      console.log(`📈   - Total opportunities analyzed: ${opportunitySnapshots.size}`);
+      console.log(`📈   - Opportunities with stage advancement: ${stageAdvanceDetails.length}`);
+      
+      if (stageAdvanceDetails.length === 0) {
+        console.log(`📈   - No stage advances found within 30 days`);
+        // Let's see what opportunities exist and why they're not qualifying
+        let debugCount = 0;
+        for (const [opportunityId, snapshots] of opportunitySnapshots) {
+          if (debugCount >= 3) break; // Limit debug output
+          const firstCampaignDate = opportunityDateMap.get(opportunityId);
+          if (!firstCampaignDate) continue;
+          
+          const hasEnteredPipeline = snapshots.some(s => s.enteredPipeline);
+          if (!hasEnteredPipeline) continue;
+          
+          console.log(`📈     - Opportunity ${opportunityId}: ${snapshots.length} snapshots, first campaign: ${firstCampaignDate.toISOString().split('T')[0]}`);
+          
+          // Check for any stage changes at all
+          for (let i = 1; i < snapshots.length; i++) {
+            const prevStage = snapshots[i - 1].stage || '';
+            const currentStage = snapshots[i].stage || '';
+            if (prevStage !== currentStage) {
+              const snapshotDate = new Date(snapshots[i].snapshotDate);
+              const daysDifference = Math.abs((snapshotDate.getTime() - firstCampaignDate.getTime()) / (1000 * 60 * 60 * 24));
+              console.log(`📈       - Stage change: ${prevStage} → ${currentStage} on ${snapshotDate.toISOString().split('T')[0]} (${Math.round(daysDifference)} days from campaign)`);
+            }
+          }
+          debugCount++;
+        }
+      }
+
       return stageAdvanceDetails;
 
     } catch (error) {
