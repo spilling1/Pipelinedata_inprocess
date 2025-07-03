@@ -38,7 +38,13 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
   ], []);
 
   const chartData = useMemo(() => {
-    if (!analytics?.stageDistribution || !Array.isArray(analytics.stageDistribution)) return [];
+    console.log('Sales Analytics Data:', analytics);
+    console.log('Stage Distribution:', analytics?.stageDistribution);
+    
+    if (!analytics?.stageDistribution || !Array.isArray(analytics.stageDistribution)) {
+      console.log('No stage distribution data available');
+      return [];
+    }
     
     // Data is already filtered on the backend, no need to filter closed stages
     const activeStageData = analytics.stageDistribution;
@@ -59,7 +65,7 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
       }
     });
 
-    return sortedStageData.map((item: any, index: number) => ({
+    const result = sortedStageData.map((item: any, index: number) => ({
       name: item.stage,
       count: item.count,
       value: item.value,
@@ -71,6 +77,12 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
         ? `$${(item.value / 1000).toFixed(0)}K`
         : `$${item.value}`
     }));
+    
+    console.log('Final chart data:', result);
+    console.log('View mode:', viewMode);
+    console.log('Display mode:', displayMode);
+    
+    return result;
   }, [analytics?.stageDistribution, viewMode, stageOrder]);
 
   // No automatic fallback detection - let user choose display mode
@@ -204,35 +216,24 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
                 </div>
               </div>
             ) : (
-              <div ref={chartRef}>
-                <ResponsiveContainer width="100%" height="100%" minWidth={300} minHeight={300}>
-                  <PieChart width={400} height={400}>
+              <div ref={chartRef} style={{ width: '100%', height: '100%' }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
                     <Pie
                       data={chartData}
                       cx="50%"
-                      cy="50%"
+                      cy="40%"
                       innerRadius={60}
                       outerRadius={120}
-                      paddingAngle={2}
+                      fill="#8884d8"
                       dataKey="displayValue"
-                      animationBegin={0}
-                      animationDuration={800}
                     >
                       {chartData.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
                       ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
-                    <Legend 
-                      verticalAlign="bottom" 
-                      height={36}
-                      iconType="circle"
-                      formatter={(value, entry) => (
-                        <span style={{ color: entry.color }}>
-                          {value} ({entry.payload.count})
-                        </span>
-                      )}
-                    />
+                    <Tooltip />
+                    <Legend />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
