@@ -25,7 +25,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
     isLoading, 
     error, 
     isEmpty 
-  } = useCampaignTypeData(activeView, timePeriod);
+  } = useCampaignTypeData('influenced', timePeriod);
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
