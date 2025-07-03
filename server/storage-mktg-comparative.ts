@@ -579,7 +579,7 @@ export class MarketingComparativeStorage {
    * 3. Opportunity has close date > first associated campaign date in analysis period/group
    * Each opportunity is unique regardless of number of touches in analysis period
    */
-  async calculateCampaignTypePipeline(campaignIds: number[]): Promise<{ pipelineValue: number; closedWonValue: number; uniqueOpportunities: number }> {
+  async calculateCampaignTypePipeline(campaignIds: number[]): Promise<{ pipelineValue: number; closedWonValue: number; openPipelineValue: number; openPipelineCustomers: number; closedWonCustomers: number; uniqueOpportunities: number }> {
     try {
       // Get the earliest campaign start date in this group
       const earliestCampaignDate = await db
@@ -591,7 +591,7 @@ export class MarketingComparativeStorage {
 
       const firstCampaignDate = earliestCampaignDate[0]?.startDate;
       if (!firstCampaignDate) {
-        return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
+        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, uniqueOpportunities: 0 };
       }
 
       // Step 1: Find all UNIQUE opportunity_id values from campaign_customers table for this campaign group
@@ -603,7 +603,7 @@ export class MarketingComparativeStorage {
       const uniqueOpportunityIds = associatedOpportunities.map(row => row.opportunityId);
       
       if (uniqueOpportunityIds.length === 0) {
-        return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
+        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, uniqueOpportunities: 0 };
       }
 
       console.log(`📊 Campaign Type Pipeline Step 1: Found ${uniqueOpportunityIds.length} unique opportunity_id values from campaign_customers table`);
@@ -650,7 +650,7 @@ export class MarketingComparativeStorage {
         .groupBy(campaignCustomers.opportunityId);
 
       const opportunityDateMap = new Map(
-        opportunityFirstCampaignDates.map(row => [row.opportunityId, row.firstCampaignDate])
+        opportunityFirstCampaignDates.map(row => [row.opportunityId, new Date(row.firstCampaignDate as string)])
       );
 
       // Apply filtering criteria using each opportunity's specific first campaign date
@@ -666,8 +666,7 @@ export class MarketingComparativeStorage {
         
         if (snapshot.closeDate) {
           const closeDate = new Date(snapshot.closeDate);
-          const campaignDate = new Date(firstCampaignDate);
-          if (closeDate <= campaignDate) return false;
+          if (closeDate <= firstCampaignDate) return false;
         }
         
         return true;
@@ -689,20 +688,25 @@ export class MarketingComparativeStorage {
         .reduce((sum, s) => sum + (s.year1Value || 0), 0);
 
       // Calculate open pipeline value (exclude both Closed Won and Closed Lost)
-      const openPipelineValue = qualifyingSnapshots
-        .filter(s => s.stage !== 'Closed Won' && s.stage !== 'Closed Lost')
-        .reduce((sum, s) => sum + (s.year1Value || 0), 0);
+      const openPipelineSnapshots = qualifyingSnapshots.filter(s => s.stage !== 'Closed Won' && s.stage !== 'Closed Lost');
+      const openPipelineValue = openPipelineSnapshots.reduce((sum, s) => sum + (s.year1Value || 0), 0);
+      const openPipelineCustomers = openPipelineSnapshots.length;
+
+      // Calculate closed won customer count
+      const closedWonCustomers = qualifyingSnapshots.filter(s => s.stage === 'Closed Won').length;
 
       return {
         pipelineValue,
         closedWonValue,
         openPipelineValue,
+        openPipelineCustomers,
+        closedWonCustomers,
         uniqueOpportunities: uniqueQualifyingOpportunityIds.length // Use verified unique count
       };
 
     } catch (error) {
       console.error('❌ Error in calculateCampaignTypePipeline:', error);
-      return { pipelineValue: 0, closedWonValue: 0, uniqueOpportunities: 0 };
+      return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, uniqueOpportunities: 0 };
     }
   }
 

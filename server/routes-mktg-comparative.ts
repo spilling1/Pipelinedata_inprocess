@@ -334,7 +334,7 @@ router.get('/campaign-types', async (req, res) => {
     
     // Calculate ACTUAL unique customers and pipeline value across all campaign types (avoid double-counting)
     const allCampaignIds = campaignData.map(c => c.campaignId);
-    const { uniqueOpportunities: actualUniqueCustomers, pipelineValue: actualTotalPipeline, closedWonValue: actualTotalClosedWon } = 
+    const { uniqueOpportunities: actualUniqueCustomers, pipelineValue: actualTotalPipeline, closedWonValue: actualTotalClosedWon, openPipelineValue: actualOpenPipeline, openPipelineCustomers: actualOpenCustomers, closedWonCustomers: actualClosedWonCustomers } = 
       await marketingComparativeStorage.calculateCampaignTypePipeline(allCampaignIds);
     
     // Log both the incorrect sum and the correct unique count for comparison
@@ -356,6 +356,9 @@ router.get('/campaign-types', async (req, res) => {
         totalUniqueCustomers: actualUniqueCustomers,
         totalPipelineValue: actualTotalPipeline,
         totalClosedWonValue: actualTotalClosedWon,
+        openPipelineValue: actualOpenPipeline,
+        openPipelineCustomers: actualOpenCustomers,
+        closedWonCustomers: actualClosedWonCustomers,
         timePeriod: timePeriod,
         calculatedAt: new Date().toISOString()
       }

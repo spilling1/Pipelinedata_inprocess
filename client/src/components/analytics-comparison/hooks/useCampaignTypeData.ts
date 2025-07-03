@@ -26,6 +26,9 @@ export interface CampaignTypeMetrics {
   totalInvestment: number;
   totalPipeline: number;
   totalClosedWon: number;
+  openPipeline: number;
+  openPipelineCustomers: number;
+  closedWonCustomers: number;
   averageROI: number;
   averageWinRate: number;
   totalCampaigns: number;
@@ -49,6 +52,11 @@ export const useCampaignTypeData = (
     campaignTypes: CampaignTypeData[];
     metadata: {
       totalUniqueCustomers: number;
+      totalPipelineValue: number;
+      totalClosedWonValue: number;
+      openPipelineValue: number;
+      openPipelineCustomers: number;
+      closedWonCustomers: number;
       timePeriod: string;
       calculatedAt: string;
     };
@@ -114,6 +122,9 @@ export const useCampaignTypeData = (
     // Use actual unique total pipeline from metadata instead of summing campaign type values (avoids double-counting)
     const totalPipeline = metadata?.totalPipelineValue || 0;
     const totalClosedWon = metadata?.totalClosedWonValue || 0;
+    const openPipeline = metadata?.openPipelineValue || 0;
+    const openPipelineCustomers = metadata?.openPipelineCustomers || 0;
+    const closedWonCustomers = metadata?.closedWonCustomers || 0;
     const totalCampaigns = normalizedData.reduce((sum, item) => sum + item.totalCampaigns, 0);
     // Use actual unique customers from metadata instead of summing campaign type counts
     const totalCustomers = metadata?.totalUniqueCustomers || 0;
@@ -133,6 +144,9 @@ export const useCampaignTypeData = (
       totalInvestment,
       totalPipeline,
       totalClosedWon,
+      openPipeline,
+      openPipelineCustomers,
+      closedWonCustomers,
       averageROI,
       averageWinRate,
       totalCampaigns,
