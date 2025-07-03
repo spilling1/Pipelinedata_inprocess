@@ -1,5 +1,5 @@
-import { db } from './shared/db.js';
-import { campaigns, campaignCustomers, opportunities, snapshots } from './shared/schema.js';
+import { db } from './shared/db.ts';
+import { campaigns, campaignCustomers, opportunities, snapshots } from './shared/schema.ts';
 import { and, gte, lte, inArray, eq, sql } from 'drizzle-orm';
 import { writeFileSync } from 'fs';
 
