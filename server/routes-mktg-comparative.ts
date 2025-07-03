@@ -332,23 +332,30 @@ router.get('/campaign-types', async (req, res) => {
     // Sort by total pipeline value descending
     typeAnalytics.sort((a, b) => b.totalPipelineValue - a.totalPipelineValue);
     
-    // Calculate ACTUAL unique customers across all campaign types (avoid double-counting)
+    // Calculate ACTUAL unique customers and pipeline value across all campaign types (avoid double-counting)
     const allCampaignIds = campaignData.map(c => c.campaignId);
-    const { uniqueOpportunities: actualUniqueCustomers } = 
+    const { uniqueOpportunities: actualUniqueCustomers, pipelineValue: actualTotalPipeline, closedWonValue: actualTotalClosedWon } = 
       await marketingComparativeStorage.calculateCampaignTypePipeline(allCampaignIds);
     
     // Log both the incorrect sum and the correct unique count for comparison
     const summedCount = typeAnalytics.reduce((sum, type) => sum + type.totalCustomers, 0);
+    const summedPipeline = typeAnalytics.reduce((sum, type) => sum + type.totalPipelineValue, 0);
     console.log(`📊 TOTAL CUSTOMERS CALCULATION:`);
     console.log(`   ❌ Incorrect sum across campaign types: ${summedCount} (double-counts opportunities)`);
     console.log(`   ✅ Actual unique customers across all campaigns: ${actualUniqueCustomers}`);
     console.log(`   📝 Using ${actualUniqueCustomers} as the correct "customers engaged" figure`);
+    console.log(`📊 TOTAL PIPELINE CALCULATION:`);
+    console.log(`   ❌ Incorrect sum across campaign types: $${summedPipeline.toLocaleString()} (double-counts opportunities)`);
+    console.log(`   ✅ Actual total pipeline across all campaigns: $${actualTotalPipeline.toLocaleString()}`);
+    console.log(`   📝 Using $${actualTotalPipeline.toLocaleString()} as the correct "Total Pipeline" figure`);
     
     // Cache the result with corrected metadata
     const responseData = {
       campaignTypes: typeAnalytics,
       metadata: {
         totalUniqueCustomers: actualUniqueCustomers,
+        totalPipelineValue: actualTotalPipeline,
+        totalClosedWonValue: actualTotalClosedWon,
         timePeriod: timePeriod,
         calculatedAt: new Date().toISOString()
       }

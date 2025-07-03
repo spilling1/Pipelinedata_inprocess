@@ -111,8 +111,9 @@ export const useCampaignTypeData = (
 
     // Calculate aggregate metrics
     const totalInvestment = normalizedData.reduce((sum, item) => sum + item.totalCost, 0);
-    const totalPipeline = normalizedData.reduce((sum, item) => sum + item.totalPipelineValue, 0);
-    const totalClosedWon = normalizedData.reduce((sum, item) => sum + item.totalClosedWonValue, 0);
+    // Use actual unique total pipeline from metadata instead of summing campaign type values (avoids double-counting)
+    const totalPipeline = metadata?.totalPipelineValue || 0;
+    const totalClosedWon = metadata?.totalClosedWonValue || 0;
     const totalCampaigns = normalizedData.reduce((sum, item) => sum + item.totalCampaigns, 0);
     // Use actual unique customers from metadata instead of summing campaign type counts
     const totalCustomers = metadata?.totalUniqueCustomers || 0;

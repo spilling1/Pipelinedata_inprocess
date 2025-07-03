@@ -679,9 +679,8 @@ export class MarketingComparativeStorage {
       console.log(`📊 Campaign Type Pipeline Step 3: ${qualifyingSnapshots.length} qualifying opportunities after filtering`);
       console.log(`📊 Campaign Type Pipeline Verification: ${uniqueQualifyingOpportunityIds.length} unique opportunity IDs in final result`);
 
-      // Calculate pipeline value (exclude Closed Lost)
+      // Calculate total pipeline value (include ALL qualified opportunities - both open pipeline AND Closed Won)
       const pipelineValue = qualifyingSnapshots
-        .filter(s => s.stage !== 'Closed Lost')
         .reduce((sum, s) => sum + (s.year1Value || 0), 0);
 
       // Calculate closed won value
