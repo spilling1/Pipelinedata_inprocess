@@ -20,7 +20,7 @@ const COLORS = [
 
 export default function SalesStageDistributionChart({ filters }: SalesStageDistributionChartProps) {
   const [viewMode, setViewMode] = useState<'count' | 'value'>('count');
-  const [showFallback, setShowFallback] = useState(false);
+  const [displayMode, setDisplayMode] = useState<'chart' | 'table'>('chart');
   const chartRef = useRef<HTMLDivElement>(null);
   
   const { data: analytics, isLoading } = useQuery({
@@ -73,21 +73,7 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
     }));
   }, [analytics?.stageDistribution, viewMode, stageOrder]);
 
-  // Check if chart rendered (Safari/Mac compatibility)
-  useEffect(() => {
-    if (chartData.length > 0 && !showFallback) {
-      const timer = setTimeout(() => {
-        if (chartRef.current) {
-          const svgElement = chartRef.current.querySelector('svg');
-          if (!svgElement || svgElement.children.length === 0) {
-            setShowFallback(true);
-          }
-        }
-      }, 2000); // Check after 2 seconds
-
-      return () => clearTimeout(timer);
-    }
-  }, [chartData, showFallback]);
+  // No automatic fallback detection - let user choose display mode
 
   // Memoize tooltip formatting function (must be before early return)
   const formatTooltipValue = useCallback((value: number, name: string) => {
@@ -111,6 +97,8 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
           <div className="flex items-center justify-between">
             <CardTitle>Stage Distribution</CardTitle>
             <div className="flex space-x-2">
+              <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
+              <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
               <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
               <div className="w-16 h-8 bg-gray-200 rounded animate-pulse"></div>
             </div>
@@ -161,6 +149,20 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
             >
               Value
             </Button>
+            <Button
+              size="sm"
+              variant={displayMode === 'chart' ? 'default' : 'outline'}
+              onClick={() => setDisplayMode('chart')}
+            >
+              Chart
+            </Button>
+            <Button
+              size="sm"
+              variant={displayMode === 'table' ? 'default' : 'outline'}
+              onClick={() => setDisplayMode('table')}
+            >
+              Table
+            </Button>
           </div>
         </div>
         {filters.salesRep !== 'all' && (
@@ -170,8 +172,8 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
       <CardContent>
         <div className="h-96" style={{ width: '100%', height: '384px' }}>
           {chartData.length > 0 ? (
-            showFallback ? (
-              // Fallback table view for when charts don't render (common on Safari/Mac)
+            displayMode === 'table' ? (
+              // Table view selected by user
               <div className="h-full overflow-auto">
                 <table className="w-full border-collapse">
                   <thead>
@@ -198,7 +200,7 @@ export default function SalesStageDistributionChart({ filters }: SalesStageDistr
                   </tbody>
                 </table>
                 <div className="mt-4 text-sm text-gray-500 text-center">
-                  Chart view not available - showing table format
+                  Table view - Switch to Chart view above
                 </div>
               </div>
             ) : (
