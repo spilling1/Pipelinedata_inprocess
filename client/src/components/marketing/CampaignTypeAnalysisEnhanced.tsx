@@ -195,15 +195,18 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Average Win Rate</CardTitle>
+                <CardTitle className="text-sm font-medium">Average Close Rate</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-blue-600">
-                  {formatPercentage(metrics.averageWinRate)}
+                  {formatPercentage(metrics.averageCloseRate)}
                 </div>
                 <p className="text-xs text-muted-foreground">
-                  Across all campaign types
+                  Closed Won / (Closed Won + Closed Lost)
+                </p>
+                <p className="text-xs text-gray-500 mt-1">
+                  Win Rate: {formatPercentage(metrics.averageWinRate)}
                 </p>
               </CardContent>
             </Card>

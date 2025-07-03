@@ -29,8 +29,10 @@ export interface CampaignTypeMetrics {
   openPipeline: number;
   openPipelineCustomers: number;
   closedWonCustomers: number;
+  closedLostCustomers: number;
   averageROI: number;
   averageWinRate: number;
+  averageCloseRate: number;
   totalCampaigns: number;
   totalCustomers: number;
   bestPerformingType: CampaignTypeData | null;
@@ -57,6 +59,7 @@ export const useCampaignTypeData = (
       openPipelineValue: number;
       openPipelineCustomers: number;
       closedWonCustomers: number;
+      closedLostCustomers: number;
       timePeriod: string;
       calculatedAt: string;
     };
@@ -125,6 +128,7 @@ export const useCampaignTypeData = (
     const openPipeline = metadata?.openPipelineValue || 0;
     const openPipelineCustomers = metadata?.openPipelineCustomers || 0;
     const closedWonCustomers = metadata?.closedWonCustomers || 0;
+    const closedLostCustomers = metadata?.closedLostCustomers || 0;
     const totalCampaigns = normalizedData.reduce((sum, item) => sum + item.totalCampaigns, 0);
     // Use actual unique customers from metadata instead of summing campaign type counts
     const totalCustomers = metadata?.totalUniqueCustomers || 0;
@@ -134,6 +138,11 @@ export const useCampaignTypeData = (
     const averageWinRate = normalizedData.reduce((sum, item, index, arr) => 
       sum + (item.averageWinRate / arr.length), 0
     );
+    
+    // Calculate Close Rate: Closed Won / (Closed Won + Closed Lost)
+    const averageCloseRate = (closedWonCustomers + closedLostCustomers) > 0 
+      ? (closedWonCustomers / (closedWonCustomers + closedLostCustomers)) * 100 
+      : 0;
 
     // Find best/worst/most efficient
     const bestPerformingType = sortedData[0] || null;
@@ -147,8 +156,10 @@ export const useCampaignTypeData = (
       openPipeline,
       openPipelineCustomers,
       closedWonCustomers,
+      closedLostCustomers,
       averageROI,
       averageWinRate,
+      averageCloseRate,
       totalCampaigns,
       totalCustomers,
       bestPerformingType,

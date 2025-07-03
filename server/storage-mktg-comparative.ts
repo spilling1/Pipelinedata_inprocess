@@ -579,7 +579,7 @@ export class MarketingComparativeStorage {
    * 3. Opportunity has close date > first associated campaign date in analysis period/group
    * Each opportunity is unique regardless of number of touches in analysis period
    */
-  async calculateCampaignTypePipeline(campaignIds: number[]): Promise<{ pipelineValue: number; closedWonValue: number; openPipelineValue: number; openPipelineCustomers: number; closedWonCustomers: number; uniqueOpportunities: number }> {
+  async calculateCampaignTypePipeline(campaignIds: number[]): Promise<{ pipelineValue: number; closedWonValue: number; openPipelineValue: number; openPipelineCustomers: number; closedWonCustomers: number; closedLostCustomers: number; uniqueOpportunities: number }> {
     try {
       // Get the earliest campaign start date in this group
       const earliestCampaignDate = await db
@@ -591,7 +591,7 @@ export class MarketingComparativeStorage {
 
       const firstCampaignDate = earliestCampaignDate[0]?.startDate;
       if (!firstCampaignDate) {
-        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, uniqueOpportunities: 0 };
+        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, closedLostCustomers: 0, uniqueOpportunities: 0 };
       }
 
       // Step 1: Find all UNIQUE opportunity_id values from campaign_customers table for this campaign group
@@ -603,7 +603,7 @@ export class MarketingComparativeStorage {
       const uniqueOpportunityIds = associatedOpportunities.map(row => row.opportunityId);
       
       if (uniqueOpportunityIds.length === 0) {
-        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, uniqueOpportunities: 0 };
+        return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, closedLostCustomers: 0, uniqueOpportunities: 0 };
       }
 
       console.log(`📊 Campaign Type Pipeline Step 1: Found ${uniqueOpportunityIds.length} unique opportunity_id values from campaign_customers table`);
@@ -694,6 +694,9 @@ export class MarketingComparativeStorage {
 
       // Calculate closed won customer count
       const closedWonCustomers = qualifyingSnapshots.filter(s => s.stage === 'Closed Won').length;
+      
+      // Calculate closed lost customer count
+      const closedLostCustomers = qualifyingSnapshots.filter(s => s.stage === 'Closed Lost').length;
 
       return {
         pipelineValue,
@@ -701,12 +704,13 @@ export class MarketingComparativeStorage {
         openPipelineValue,
         openPipelineCustomers,
         closedWonCustomers,
+        closedLostCustomers,
         uniqueOpportunities: uniqueQualifyingOpportunityIds.length // Use verified unique count
       };
 
     } catch (error) {
       console.error('❌ Error in calculateCampaignTypePipeline:', error);
-      return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, uniqueOpportunities: 0 };
+      return { pipelineValue: 0, closedWonValue: 0, openPipelineValue: 0, openPipelineCustomers: 0, closedWonCustomers: 0, closedLostCustomers: 0, uniqueOpportunities: 0 };
     }
   }
 
