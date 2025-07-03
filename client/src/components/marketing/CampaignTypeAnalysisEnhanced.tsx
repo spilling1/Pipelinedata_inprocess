@@ -231,7 +231,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
           <CampaignTypeROIBarchart data={currentData} />
 
           {/* Performance Table */}
-          <CampaignTypePerformanceTable data={currentData} />
+          <CampaignTypePerformanceTable data={currentData} analysisType="influenced" />
 
 
         </TabsContent>
@@ -321,7 +321,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
           <CampaignTypeROIBarchart data={currentData} />
 
           {/* New Pipeline Performance Table */}
-          <CampaignTypePerformanceTable data={currentData} />
+          <CampaignTypePerformanceTable data={currentData} analysisType="new-pipeline" />
         </TabsContent>
 
         <TabsContent value="stage-advance" className="space-y-6">
@@ -409,7 +409,7 @@ const CampaignTypeAnalysisEnhanced: React.FC = () => {
           <CampaignTypeROIBarchart data={currentData} />
 
           {/* Stage Advance Performance Table */}
-          <CampaignTypePerformanceTable data={currentData} />
+          <CampaignTypePerformanceTable data={currentData} analysisType="stage-advance" />
         </TabsContent>
       </Tabs>
     </div>

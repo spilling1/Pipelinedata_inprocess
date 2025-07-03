@@ -1020,6 +1020,146 @@ export class MarketingComparativeStorage {
   }
 
   /**
+   * Get detailed stage advance information for tooltips
+   * Returns customer names and stage progression details for each campaign type
+   */
+  async getStageAdvanceDetails(campaignIds: number[]): Promise<Array<{
+    opportunityId: number;
+    customerName: string;
+    stageFrom: string;
+    stageTo: string;
+    advancementDate: Date;
+    daysSinceCampaign: number;
+  }>> {
+    try {
+      // Step 1: Find all UNIQUE opportunity_id values from campaign_customers table for this campaign group
+      const associatedOpportunities = await db
+        .selectDistinct({ opportunityId: campaignCustomers.opportunityId })
+        .from(campaignCustomers)
+        .where(inArray(campaignCustomers.campaignId, campaignIds));
+
+      const uniqueOpportunityIds = associatedOpportunities.map(row => row.opportunityId);
+      
+      if (uniqueOpportunityIds.length === 0) {
+        return [];
+      }
+
+      // Get opportunity names
+      const opportunityNames = await db
+        .select({
+          id: opportunities.id,
+          name: opportunities.name
+        })
+        .from(opportunities)
+        .where(inArray(opportunities.id, uniqueOpportunityIds));
+
+      const nameMap = new Map(opportunityNames.map(opp => [opp.id, opp.name || 'Unknown']));
+
+      // Step 2: Get snapshots for these opportunities to analyze stage movement
+      const allSnapshots = await db
+        .select({
+          opportunityId: snapshots.opportunityId,
+          enteredPipeline: snapshots.enteredPipeline,
+          stage: snapshots.stage,
+          snapshotDate: snapshots.snapshotDate
+        })
+        .from(snapshots)
+        .where(inArray(snapshots.opportunityId, uniqueOpportunityIds))
+        .orderBy(snapshots.opportunityId, snapshots.snapshotDate);
+
+      // Step 3: Get the first campaign date for each opportunity
+      const opportunityFirstCampaignDates = await db
+        .select({
+          opportunityId: campaignCustomers.opportunityId,
+          firstCampaignDate: sql`MIN(${campaigns.startDate})`.as('firstCampaignDate')
+        })
+        .from(campaignCustomers)
+        .innerJoin(campaigns, eq(campaigns.id, campaignCustomers.campaignId))
+        .where(
+          and(
+            inArray(campaignCustomers.campaignId, campaignIds),
+            inArray(campaignCustomers.opportunityId, uniqueOpportunityIds)
+          )
+        )
+        .groupBy(campaignCustomers.opportunityId);
+
+      const opportunityDateMap = new Map(
+        opportunityFirstCampaignDates.map(row => [row.opportunityId, new Date(row.firstCampaignDate as string)])
+      );
+
+      // Group snapshots by opportunity and analyze stage movement
+      const opportunitySnapshots = new Map<number, typeof allSnapshots>();
+      allSnapshots.forEach(snapshot => {
+        if (!snapshot.opportunityId) return;
+        const oppId = snapshot.opportunityId;
+        if (!opportunitySnapshots.has(oppId)) {
+          opportunitySnapshots.set(oppId, []);
+        }
+        opportunitySnapshots.get(oppId)!.push(snapshot);
+      });
+
+      const stageAdvanceDetails: Array<{
+        opportunityId: number;
+        customerName: string;
+        stageFrom: string;
+        stageTo: string;
+        advancementDate: Date;
+        daysSinceCampaign: number;
+      }> = [];
+
+      const stageProgression = [
+        'Validation', 'Introduction', 'Concept', 'Proposal', 'Negotiation', 'Closed Won'
+      ];
+
+      // Analyze each opportunity for stage advancement within 30 days
+      for (const [opportunityId, snapshots] of opportunitySnapshots) {
+        const firstCampaignDate = opportunityDateMap.get(opportunityId);
+        if (!firstCampaignDate) continue;
+
+        // Must have entered pipeline
+        const hasEnteredPipeline = snapshots.some(s => s.enteredPipeline);
+        if (!hasEnteredPipeline) continue;
+
+        // Look for stage progression within 30 days of campaign start
+        for (let i = 1; i < snapshots.length; i++) {
+          const prevSnapshot = snapshots[i - 1];
+          const currentSnapshot = snapshots[i];
+          
+          // Check if this stage change happened within 30 days of campaign
+          const snapshotDate = new Date(currentSnapshot.snapshotDate);
+          const daysDifference = Math.abs((snapshotDate.getTime() - firstCampaignDate.getTime()) / (1000 * 60 * 60 * 24));
+          
+          if (daysDifference <= 30) {
+            const prevStage = prevSnapshot.stage || '';
+            const currentStage = currentSnapshot.stage || '';
+            const prevStageIndex = stageProgression.indexOf(prevStage);
+            const currentStageIndex = stageProgression.indexOf(currentStage);
+            
+            // Check for positive stage movement
+            if (currentStageIndex > prevStageIndex && currentStageIndex !== -1 && prevStageIndex !== -1) {
+              stageAdvanceDetails.push({
+                opportunityId,
+                customerName: nameMap.get(opportunityId) || 'Unknown',
+                stageFrom: prevStage,
+                stageTo: currentStage,
+                advancementDate: snapshotDate,
+                daysSinceCampaign: Math.round(daysDifference)
+              });
+              break; // Only record the first advancement for each opportunity
+            }
+          }
+        }
+      }
+
+      return stageAdvanceDetails;
+
+    } catch (error) {
+      console.error('❌ Error in getStageAdvanceDetails:', error);
+      return [];
+    }
+  }
+
+  /**
    * Get qualifying opportunity IDs using the same 3-step logic as pipeline calculation
    */
   async getQualifyingOpportunityIds(campaignIds: number[]): Promise<number[]> {

@@ -626,6 +626,42 @@ router.get('/campaign-types-stage-advance', async (req, res) => {
 });
 
 /**
+ * Get stage advance details for tooltips
+ * Returns customer names and stage progression for each campaign type
+ */
+router.get('/stage-advance-details/:campaignType', async (req, res) => {
+  try {
+    const { campaignType } = req.params;
+    console.log(`📈 API: Fetching stage advance details for ${campaignType}...`);
+    
+    // Get campaign data and filter by type and time period
+    let campaignData = await marketingComparativeStorage.getCampaignComparisonData();
+    campaignData = filterCampaignsByTimePeriod(campaignData, 'fy-to-date');
+    
+    // Filter campaigns by the requested type
+    const typeCampaigns = campaignData.filter(c => c.campaignType === campaignType);
+    const campaignIds = typeCampaigns.map(c => c.campaignId);
+    
+    if (campaignIds.length === 0) {
+      return res.json([]);
+    }
+    
+    // Get detailed stage advance information
+    const stageDetails = await marketingComparativeStorage.getStageAdvanceDetails(campaignIds);
+    
+    console.log(`📈 API: Found ${stageDetails.length} stage advances for ${campaignType}`);
+    res.json(stageDetails);
+    
+  } catch (error) {
+    console.error('❌ API Error in /stage-advance-details:', error);
+    res.status(500).json({ 
+      error: 'Failed to fetch stage advance details', 
+      details: error instanceof Error ? error.message : 'Unknown error' 
+    });
+  }
+});
+
+/**
  * Get summary dashboard data
  * High-level overview combining all comparative analytics
  */
