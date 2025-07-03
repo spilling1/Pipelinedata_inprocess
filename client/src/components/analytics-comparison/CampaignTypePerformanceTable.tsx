@@ -288,16 +288,7 @@ const CampaignTypePerformanceTable: React.FC<CampaignTypePerformanceTableProps> 
                     <SortIcon field="costEfficiency" />
                   </Button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleSort('totalCustomers')}
-                  >
-                    Customers
-                    <SortIcon field="totalCustomers" />
-                  </Button>
-                </th>
+
               </tr>
             </thead>
             <tbody>
@@ -316,7 +307,6 @@ const CampaignTypePerformanceTable: React.FC<CampaignTypePerformanceTableProps> 
                     {formatPercentage(item.averageWinRate)}
                   </td>
                   <td className="p-4 align-middle">{item.costEfficiency.toFixed(1)}x</td>
-                  <td className="p-4 align-middle">{formatNumber(item.totalCustomers)}</td>
                 </tr>
               ))}
             </tbody>
