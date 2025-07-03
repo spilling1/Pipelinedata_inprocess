@@ -104,23 +104,41 @@ export function registerSalesRoutes(app: Express) {
         conversionChange: 0
       };
 
+      // Get additional analytics data with sales rep filtering
+      const [
+        fiscalYearPipeline,
+        stageTimingData,
+        dateSlippageData,
+        duplicateOpportunities,
+        valueChanges,
+        closingProbabilityData,
+        lossReasons
+      ] = await Promise.all([
+        storage.salesStorage.getSalesFiscalYearPipeline(filters),
+        storage.salesStorage.getSalesStageTimingData(filters),
+        storage.salesStorage.getSalesDateSlippageData(filters),
+        storage.salesStorage.getSalesDuplicateOpportunities(filters),
+        storage.salesStorage.getSalesValueChanges(filters),
+        storage.salesStorage.getSalesClosingProbabilityData(filters),
+        storage.salesStorage.getSalesLossReasons(filters)
+      ]);
+
       res.json({
         metrics,
         pipelineValueByDate,
         stageDistribution,
-        // Return empty arrays for other data for now
-        fiscalYearPipeline: [],
+        fiscalYearPipeline,
         fiscalQuarterPipeline: [],
         monthlyPipeline: [],
-        stageTimingData: [],
-        dateSlippageData: [],
-        duplicateOpportunities: [],
-        valueChanges: [],
-        closingProbabilityData: [],
+        stageTimingData,
+        dateSlippageData,
+        duplicateOpportunities,
+        valueChanges,
+        closingProbabilityData,
         stageFunnel: [],
         winRateAnalysis: { winRate: 0.237 },
         closeRateAnalysis: { closeRate: 0.075 },
-        lossReasons: []
+        lossReasons
       });
     } catch (error) {
       console.error('Error fetching sales analytics:', error);

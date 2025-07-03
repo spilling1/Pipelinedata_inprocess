@@ -4,23 +4,23 @@ import SalesFilterPanel from "@/components/sales/SalesFilterPanel";
 import SalesMetricsCards from "@/components/sales/SalesMetricsCards";
 import SalesPipelineValueChart from "@/components/sales/SalesPipelineValueChart";
 import SalesStageDistributionChart from "@/components/sales/SalesStageDistributionChart";
-import FiscalYearPipelineChart from "@/components/FiscalYearPipelineChart";
+import SalesFiscalYearPipelineChart from "@/components/sales/SalesFiscalYearPipelineChart";
+import SalesStageTimingCard from "@/components/sales/SalesStageTimingCard";
+import SalesDateSlippageCard from "@/components/sales/SalesDateSlippageCard";
+import SalesValueChangeCard from "@/components/sales/SalesValueChangeCard";
+import SalesClosingProbabilityCard from "@/components/sales/SalesClosingProbabilityCard";
+import SalesClosedWonFYCard from "@/components/sales/SalesClosedWonFYCard";
+import SalesLossReasonOverview from "@/components/sales/SalesLossReasonOverview";
+
+// Keep some non-sales specific components that can work with FilterState
 import OpportunitiesTable from "@/components/OpportunitiesTable";
-
 import SankeyFlowChart from "@/components/SankeyFlowChart";
-import StageTimingCard from "@/components/StageTimingCard";
 import DuplicateOpportunitiesCard from "@/components/DuplicateOpportunitiesCard";
-
-import DateSlippageCard from "@/components/DateSlippageCard";
-import ValueChangeCard from "@/components/ValueChangeCard";
-import ClosingProbabilityCard from "@/components/ClosingProbabilityCard";
 import StageFunnelChart from "@/components/StageFunnelChart";
 import WinRateCard from "@/components/WinRateCard";
 import CloseRateCard from "@/components/CloseRateCard";
-import ClosedWonFYCard from "@/components/ClosedWonFYCard";
 import WinRateOverTimeCard from "@/components/WinRateOverTimeCard";
 import { CloseRateOverTimeCard } from "@/components/CloseRateOverTimeCard";
-import { LossReasonOverview } from "@/components/LossReasonOverview";
 import { LossReasonByStage } from "@/components/LossReasonByStage";
 import RecentLossesTable from "@/components/RecentLossesTable";
 import { Button } from "@/components/ui/button";
@@ -115,23 +115,23 @@ export default function SalesAnalytics() {
             {/* Charts Section */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
               <SalesPipelineValueChart filters={salesFilters} />
-              <FiscalYearPipelineChart filters={filters} />
+              <SalesFiscalYearPipelineChart filters={salesFilters} />
               <SalesStageDistributionChart filters={salesFilters} />
               <DuplicateOpportunitiesCard filters={filters} />
             </div>
 
             {/* Advanced Analytics Cards */}
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-5 gap-6">
-              <StageTimingCard filters={filters} />
-              <DateSlippageCard filters={filters} />
-              <ValueChangeCard filters={filters} />
-              <ClosingProbabilityCard filters={filters} />
-              <ClosedWonFYCard filters={filters} />
+              <SalesStageTimingCard filters={salesFilters} />
+              <SalesDateSlippageCard filters={salesFilters} />
+              <SalesValueChangeCard filters={salesFilters} />
+              <SalesClosingProbabilityCard filters={salesFilters} />
+              <SalesClosedWonFYCard filters={salesFilters} />
             </div>
 
             {/* Loss Analysis Section */}
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-              <LossReasonOverview />
+              <SalesLossReasonOverview filters={salesFilters} />
               <div className="lg:col-span-2">
                 <LossReasonByStage />
               </div>

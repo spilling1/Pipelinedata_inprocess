@@ -9,145 +9,70 @@ interface SalesValueChangeCardProps {
 }
 
 export default function SalesValueChangeCard({ filters }: SalesValueChangeCardProps) {
-  // Build query parameters
-  const queryParams = new URLSearchParams();
-  Object.entries(filters).forEach(([key, value]) => {
-    if (value && (Array.isArray(value) ? value.length > 0 : true)) {
-      if (Array.isArray(value)) {
-        queryParams.append(key, value.join(','));
-      } else {
-        queryParams.append(key, value.toString());
-      }
-    }
-  });
-
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/sales/analytics', queryParams.toString()],
+  const { data: valueChangeData, isLoading } = useQuery({
+    queryKey: ['/api/sales/value-changes', filters],
+    staleTime: 300000, // 5 minutes
   });
 
   if (isLoading) {
     return (
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            Value Changes
-          </CardTitle>
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-sm font-medium">Value Changes</CardTitle>
+          <DollarSign className="h-4 w-4 text-muted-foreground" />
         </CardHeader>
         <CardContent>
-          <div className="space-y-3">
-            {[...Array(4)].map((_, i) => (
-              <div key={i} className="h-16 bg-gray-100 rounded animate-pulse"></div>
-            ))}
-          </div>
+          <div className="h-6 bg-gray-200 rounded animate-pulse"></div>
         </CardContent>
       </Card>
     );
   }
 
-  const valueChangeData = analytics?.valueChanges || [];
+  const valueChanges = valueChangeData?.valueChanges || [];
 
   const formatCurrency = (value: number) => {
-    const absValue = Math.abs(value);
-    if (absValue >= 1000000) {
-      return `${value < 0 ? '-' : ''}$${(absValue / 1000000).toFixed(1)}M`;
-    } else if (absValue >= 1000) {
-      return `${value < 0 ? '-' : ''}$${(absValue / 1000).toFixed(0)}K`;
+    if (value >= 1000000) {
+      return `$${(value / 1000000).toFixed(1)}M`;
+    } else if (value >= 1000) {
+      return `$${(value / 1000).toFixed(0)}K`;
     } else {
-      return `${value < 0 ? '-' : ''}$${absValue?.toFixed(0) || 0}`;
+      return `$${value.toLocaleString()}`;
     }
   };
 
-  const formatPercent = (value: number) => {
-    return `${value > 0 ? '+' : ''}${value.toFixed(1)}%`;
-  };
-
-  const getChangeColor = (value: number) => {
-    if (value > 0) return 'bg-green-100 text-green-800';
-    if (value < 0) return 'bg-red-100 text-red-800';
-    return 'bg-gray-100 text-gray-800';
-  };
-
-  const totalValueChange = valueChangeData.reduce((sum: number, item: any) => sum + item.valueChange, 0);
-  const totalPercentChange = valueChangeData.reduce((sum: number, item: any) => sum + item.percentChange, 0) / (valueChangeData.length || 1);
-
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <DollarSign className="h-5 w-5 text-blue-500" />
-          Value Changes
-          {filters.salesRep !== 'all' && (
-            <span className="text-sm font-normal text-gray-500 ml-2">
-              - {filters.salesRep}
-            </span>
-          )}
-        </CardTitle>
-        <div className="flex items-center gap-4 text-sm">
-          <div className={`flex items-center gap-1 ${totalValueChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {totalValueChange >= 0 ? (
-              <TrendingUp className="h-4 w-4" />
-            ) : (
-              <TrendingDown className="h-4 w-4" />
-            )}
-            <span>{formatCurrency(totalValueChange)}</span>
-          </div>
-          <div className={`${totalPercentChange >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-            {formatPercent(totalPercentChange)}
-          </div>
-        </div>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-sm font-medium">Value Changes</CardTitle>
+        <DollarSign className="h-4 w-4 text-muted-foreground" />
       </CardHeader>
       <CardContent>
-        <div className="space-y-3 max-h-64 overflow-y-auto">
-          {valueChangeData.length > 0 ? (
-            valueChangeData.map((item: any, index: number) => (
-              <div key={index} className="p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="font-medium text-sm">{item.opportunityName}</span>
-                  <div className="flex items-center gap-2">
-                    <Badge className={getChangeColor(item.valueChange)}>
-                      {formatCurrency(item.valueChange)}
-                    </Badge>
-                    <Badge variant="outline" className="text-xs">
-                      {formatPercent(item.percentChange)}
-                    </Badge>
-                  </div>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4 text-xs text-gray-600">
-                  <div>
-                    <span className="font-medium">Previous:</span> {formatCurrency(item.previousValue)}
-                  </div>
-                  <div>
-                    <span className="font-medium">Current:</span> {formatCurrency(item.currentValue)}
-                  </div>
-                </div>
-                
-                <div className="text-xs text-gray-500 mt-1">
-                  <span className="font-medium">Client:</span> {item.clientName || 'N/A'}
-                  {item.stage && (
-                    <>
-                      <span className="mx-2">•</span>
-                      <span className="font-medium">Stage:</span> {item.stage}
-                    </>
-                  )}
-                </div>
+        <div className="space-y-3">
+          {valueChanges.slice(0, 3).map((change: any, index: number) => (
+            <div key={change.opportunityName} className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Badge variant={change.valueChange > 0 ? "default" : "destructive"}>
+                  {change.opportunityName.length > 15 
+                    ? change.opportunityName.substring(0, 15) + '...'
+                    : change.opportunityName}
+                </Badge>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8 text-gray-500">
-              <DollarSign className="h-8 w-8 mx-auto mb-2 text-gray-400" />
-              <p>No value changes detected</p>
-              <p className="text-xs">Opportunity values appear stable</p>
+              <div className="flex items-center space-x-1">
+                <span className="text-sm font-medium">{formatCurrency(Math.abs(change.valueChange))}</span>
+                {change.valueChange > 0 ? (
+                  <TrendingUp className="h-3 w-3 text-green-500" />
+                ) : (
+                  <TrendingDown className="h-3 w-3 text-red-500" />
+                )}
+              </div>
             </div>
-          )}
+          ))}
         </div>
-        
-        {valueChangeData.length > 5 && (
-          <div className="mt-3 pt-3 border-t border-gray-200">
-            <p className="text-xs text-gray-500 text-center">
-              Showing recent value changes
-            </p>
+        {valueChanges.length > 3 && (
+          <div className="pt-2 mt-2 border-t">
+            <span className="text-xs text-muted-foreground">
+              +{valueChanges.length - 3} more changes
+            </span>
           </div>
         )}
       </CardContent>
