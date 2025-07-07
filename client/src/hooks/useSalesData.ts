@@ -8,9 +8,11 @@ export function useSalesData(filters: SalesFilterState) {
   // Build query parameters for sales-specific endpoints
   const queryParams = new URLSearchParams();
   Object.entries(filters).forEach(([key, value]) => {
-    if (value && (Array.isArray(value) ? value.length > 0 : true)) {
+    if (value !== undefined && value !== null && value !== '') {
       if (Array.isArray(value)) {
-        queryParams.append(key, value.join(','));
+        if (value.length > 0) {
+          queryParams.append(key, value.join(','));
+        }
       } else {
         queryParams.append(key, value.toString());
       }
@@ -26,6 +28,8 @@ export function useSalesData(filters: SalesFilterState) {
     queryKey: ['/api/sales/analytics', queryParams.toString()],
     staleTime: 30000, // 30 seconds
   });
+
+
 
   const salesRepsQuery = useQuery({
     queryKey: ['/api/sales/reps'],
