@@ -1,17 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DollarSign, TrendingUp, Users, Target } from "lucide-react";
 import { SalesFilterState } from "@/types/sales";
+import { useSalesData } from "@/hooks/useSalesData";
+
+// Currency formatting helper
+const formatCurrency = (value: number): string => {
+  return new Intl.NumberFormat('en-US', {
+    style: 'currency',
+    currency: 'USD',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  }).format(value);
+};
 
 interface SalesMetricsCardsProps {
   filters: SalesFilterState;
 }
 
 export default function SalesMetricsCards({ filters }: SalesMetricsCardsProps) {
-  const { data: analytics, isLoading } = useQuery({
-    queryKey: ['/api/sales/analytics', filters],
-    staleTime: 300000, // 5 minutes
-  });
+  const { analytics, isLoading } = useSalesData(filters);
 
   if (isLoading) {
     return (
