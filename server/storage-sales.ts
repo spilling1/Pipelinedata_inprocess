@@ -453,8 +453,51 @@ export class PostgreSQLSalesStorage implements ISalesStorage {
   }
 
   async getSalesWinRateAnalysis(filters: any): Promise<any> {
-    // Return sample win rate analysis filtered by sales rep
-    return { winRate: 0.237 };
+    // Get the most recent snapshot date
+    const latestDateResult = await db
+      .select({ maxDate: sql<string>`MAX(${snapshots.snapshotDate})::date::text` })
+      .from(snapshots);
+    
+    const latestDateStr = latestDateResult[0]?.maxDate;
+    console.log('📊 Using latest snapshot date for sales win rate:', latestDateStr);
+    
+    if (!latestDateStr) {
+      console.log('❌ No snapshots found for win rate calculation');
+      return { winRate: 0 };
+    }
+    
+    // Build where conditions for filtering (only closed deals in latest snapshot)
+    let whereConditions = [
+      sql`${snapshots.snapshotDate}::date = ${latestDateStr}::date`,
+      sql`${snapshots.stage} IN ('Closed Won', 'Closed Lost')`,
+      sql`${snapshots.enteredPipeline} IS NOT NULL` // Only count deals that entered pipeline
+    ];
+    
+    // Add sales rep filter if specified
+    if (filters.salesRep && filters.salesRep !== 'all') {
+      whereConditions.push(eq(opportunities.owner, filters.salesRep));
+    }
+    
+    // Get closed deals for this sales rep
+    const closedDeals = await db
+      .select({
+        stage: snapshots.stage,
+        opportunityId: snapshots.opportunityId
+      })
+      .from(snapshots)
+      .innerJoin(opportunities, eq(snapshots.opportunityId, opportunities.id))
+      .where(and(...whereConditions));
+    
+    // Count won vs lost
+    const wonDeals = closedDeals.filter(deal => deal.stage === 'Closed Won').length;
+    const lostDeals = closedDeals.filter(deal => deal.stage === 'Closed Lost').length;
+    const totalClosed = wonDeals + lostDeals;
+    
+    const winRate = totalClosed > 0 ? wonDeals / totalClosed : 0;
+    
+    console.log(`📊 Sales win rate for ${filters.salesRep || 'all'}: ${wonDeals} won, ${lostDeals} lost, ${(winRate * 100).toFixed(1)}% win rate`);
+    
+    return { winRate };
   }
 
   async getSalesCloseRateAnalysis(filters: any): Promise<any> {

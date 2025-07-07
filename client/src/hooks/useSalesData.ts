@@ -26,7 +26,7 @@ export function useSalesData(filters: SalesFilterState) {
       if (!response.ok) throw new Error('Failed to fetch opportunities');
       return response.json();
     },
-    staleTime: 5000, // 5 seconds - shorter cache for responsive filtering
+    staleTime: 0, // No cache - always fetch fresh data for testing
   });
 
   const analyticsQuery = useQuery({
@@ -36,7 +36,7 @@ export function useSalesData(filters: SalesFilterState) {
       if (!response.ok) throw new Error('Failed to fetch analytics');
       return response.json();
     },
-    staleTime: 5000, // 5 seconds - shorter cache for responsive filtering
+    staleTime: 0, // No cache - always fetch fresh data for testing
   });
 
 

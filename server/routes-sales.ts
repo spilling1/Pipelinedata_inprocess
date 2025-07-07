@@ -76,17 +76,21 @@ export function registerSalesRoutes(app: Express) {
       }
       
       // Calculate metrics using the same logic as original pipeline analytics
-      // Total Pipeline Value: Sum of Year1 ARR from stage distribution (current snapshot)
+      // Total Pipeline Value: Sum of TCV from stage distribution (current snapshot)
       const totalValue = stageDistribution.reduce((sum, stage) => sum + stage.value, 0);
       
       // Active Opportunities: Count from stage distribution (excludes Validation/Introduction and Closed)
       const activeCount = stageDistribution.reduce((sum, stage) => sum + stage.count, 0);
       
-      // Average Deal Size: Total Pipeline Value / Active Opportunities
-      const avgDealSize = activeCount > 0 ? totalValue / activeCount : 0;
+      // Average Deal Size: Year1 ARR / Active Opportunities (as requested by user)
+      const avgDealSize = activeCount > 0 ? totalYear1ARR / activeCount : 0;
+      console.log(`💰 Avg Deal Size Calculation: ${totalYear1ARR} / ${activeCount} = ${avgDealSize}`);
       
-      // Simple conversion rate calculation
-      const conversionRate = 0.237; // Default win rate, can be calculated later
+      // Calculate filtered win rate for this sales rep
+      console.log('🔍 Getting win rate analysis for filters:', filters);
+      const winRateData = await storage.salesStorage.getSalesWinRateAnalysis(filters);
+      const conversionRate = winRateData.winRate || 0.237;
+      console.log('🔍 Win rate data received:', winRateData);
 
       const metrics = {
         totalValue,
