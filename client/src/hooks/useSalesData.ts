@@ -20,13 +20,23 @@ export function useSalesData(filters: SalesFilterState) {
   });
 
   const opportunitiesQuery = useQuery({
-    queryKey: ['/api/sales/opportunities', queryParams.toString()],
-    staleTime: 30000, // 30 seconds
+    queryKey: ['/api/sales/opportunities', filters],
+    queryFn: async () => {
+      const response = await fetch(`/api/sales/opportunities?${queryParams.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch opportunities');
+      return response.json();
+    },
+    staleTime: 5000, // 5 seconds - shorter cache for responsive filtering
   });
 
   const analyticsQuery = useQuery({
-    queryKey: ['/api/sales/analytics', queryParams.toString()],
-    staleTime: 30000, // 30 seconds
+    queryKey: ['/api/sales/analytics', filters],
+    queryFn: async () => {
+      const response = await fetch(`/api/sales/analytics?${queryParams.toString()}`);
+      if (!response.ok) throw new Error('Failed to fetch analytics');
+      return response.json();
+    },
+    staleTime: 5000, // 5 seconds - shorter cache for responsive filtering
   });
 
 
