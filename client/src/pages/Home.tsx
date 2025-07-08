@@ -3,7 +3,7 @@ import { usePermissions } from "@/hooks/usePermissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BarChart3, TrendingUp, Users, LogOut, Target, Database, UserCheck, Settings, Activity, CheckCircle } from "lucide-react";
+import { BarChart3, TrendingUp, Users, LogOut, Target, Database, UserCheck, Settings, Activity, CheckCircle, Building2 } from "lucide-react";
 import { Link } from "wouter";
 import { User } from "@shared/schema";
 
@@ -198,6 +198,24 @@ export default function Home() {
                     <CardTitle>Implementation Status</CardTitle>
                     <CardDescription>
                       Track project implementation progress and milestones
+                    </CardDescription>
+                  </CardHeader>
+                </Card>
+              </a>
+            )}
+
+            {canAccessPage('builder-analytics') && (
+              <a 
+                href="https://lookerstudio.google.com/u/0/reporting/a032bc79-1248-410b-ae8f-562c701e5c3c/page/rZAaD" 
+                target="_blank" 
+                rel="noopener noreferrer"
+              >
+                <Card className="cursor-pointer hover:shadow-lg transition-shadow">
+                  <CardHeader>
+                    <Building2 className="h-8 w-8 text-blue-600 mb-2" />
+                    <CardTitle>Builder Analytics Dashboard</CardTitle>
+                    <CardDescription>
+                      Comprehensive builder performance and market insights
                     </CardDescription>
                   </CardHeader>
                 </Card>

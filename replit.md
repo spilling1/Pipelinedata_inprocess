@@ -123,6 +123,13 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 
 ## Recent Changes
 
+✓ Builder Analytics Dashboard Card Added (July 8, 2025)
+- Added new Builder Analytics Dashboard card with Building2 icon and blue color scheme
+- Implemented builder_analytics permission with proper access control
+- Card links to Google Looker Studio dashboard for comprehensive builder performance insights
+- Updated permissions system to include builder_analytics in development middleware
+- Enhanced home dashboard with comprehensive builder performance and market insights
+
 ✓ Sales Analytics Dashboard Complete with Beautiful Donut Chart (July 3, 2025)
 - Fixed Sales Pipeline Value chart with restored date filter dropdown and blue color consistency
 - Completely rebuilt Sales Stage Distribution chart as proper donut chart matching original design

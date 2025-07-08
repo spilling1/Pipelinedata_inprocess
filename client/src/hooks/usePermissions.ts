@@ -25,6 +25,7 @@ export const PERMISSIONS = {
   marketing_comparative: 'Marketing Comparative Analytics',
   sales: 'Sales Analytics',
   people_ops: 'People Ops Analytics',
+  builder_analytics: 'Builder Analytics',
   database: 'Database Management',
   settings: 'System Settings',
   user_management: 'User Management',
@@ -71,6 +72,8 @@ export function usePermissions() {
         return hasPermission('customer_adoption');
       case 'implementation-status':
         return hasPermission('implementation_status');
+      case 'builder-analytics':
+        return hasPermission('builder_analytics');
       case 'database':
         return hasPermission('database');
       case 'settings':

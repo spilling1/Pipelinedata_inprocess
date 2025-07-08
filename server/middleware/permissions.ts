@@ -12,7 +12,7 @@ export function requirePermission(permission: string) {
       if (!userId) {
         // For development, use hardcoded user (sampilling@higharc.com has all permissions)
         if (process.env.NODE_ENV === 'development') {
-          const testUserPermissions = ['pipeline', 'marketing', 'sales', 'settings', 'user_management', 'financial', 'reporting', 'people_ops', 'database'];
+          const testUserPermissions = ['pipeline', 'marketing', 'sales', 'settings', 'user_management', 'financial', 'reporting', 'people_ops', 'database', 'builder_analytics'];
           if (!testUserPermissions.includes(permission)) {
             return res.status(403).json({ 
               error: 'Insufficient permissions',
