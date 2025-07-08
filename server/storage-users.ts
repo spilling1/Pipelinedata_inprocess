@@ -175,6 +175,25 @@ export class UserManagementStorage {
       return [];
     }
 
+    // Admin users automatically get all permissions
+    if (user.roleInfo.name === 'admin') {
+      return [
+        'pipeline',
+        'marketing', 
+        'marketing_comparative',
+        'sales',
+        'people_ops',
+        'builder_analytics',
+        'database',
+        'settings',
+        'user_management',
+        'financial',
+        'reporting',
+        'customer_adoption',
+        'implementation_status'
+      ];
+    }
+
     return Array.isArray(user.roleInfo.permissions) 
       ? user.roleInfo.permissions as string[]
       : [];

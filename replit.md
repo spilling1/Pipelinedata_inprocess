@@ -129,6 +129,8 @@ The Pipeline Opportunity Tracker is a comprehensive sales pipeline analytics app
 - Card links to Google Looker Studio dashboard for comprehensive builder performance insights
 - Updated permissions system to include builder_analytics in development middleware
 - Enhanced home dashboard with comprehensive builder performance and market insights
+- Added builder_analytics to user management interface for role assignment
+- Implemented automatic admin permission system - Admin users now get all permissions automatically
 
 ✓ Sales Analytics Dashboard Complete with Beautiful Donut Chart (July 3, 2025)
 - Fixed Sales Pipeline Value chart with restored date filter dropdown and blue color consistency

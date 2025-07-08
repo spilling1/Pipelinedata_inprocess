@@ -46,6 +46,8 @@ export function usePermissions() {
 
   const hasPermission = (permission: Permission): boolean => {
     if (!data || isInactive) return false;
+    // Admin users automatically have all permissions
+    if (data.isAdmin) return true;
     return data.permissions.includes(permission);
   };
 
